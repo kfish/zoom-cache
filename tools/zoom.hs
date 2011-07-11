@@ -4,10 +4,15 @@ module Main (
 ) where
 
 import Blaze.ByteString.Builder
-import Control.Monad.Trans (liftIO)
+import Control.Applicative ((<$>))
+import Control.Monad (replicateM_)
+import Control.Monad.Trans (MonadIO, liftIO)
 import qualified Data.ByteString as BS
 import Data.Default
+import Data.Iteratee (Iteratee)
+import qualified Data.Iteratee as I
 import Data.Monoid
+import Data.Word
 import System.IO
 import UI.Command
 
@@ -56,12 +61,15 @@ zoomDumpHandler = liftIO . zoomReadFile =<< appArgs
 
 zoomReadFile :: [FilePath] -> IO ()
 zoomReadFile []       = return ()
-zoomReadFile (path:_) = do
-    h <- openFile path ReadMode
-    putStrLn path
-    bs <- BS.hGetContents h
-    putStrLn . show $ bs
-    hClose h
+zoomReadFile (path:_) = zFile path
+
+zFile = I.fileDriverRandom zReader
+
+zReader :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
+zReader = replicateM_ 10 (zReadInt32 >>= liftIO . putStrLn . show)
+
+zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
+zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
 
 ------------------------------------------------------------
 -- The Application
