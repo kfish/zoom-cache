@@ -43,6 +43,27 @@ zoomGenDouble :: IO [Double]
 zoomGenDouble = return [3.5, 3.5, 4.2, 3.7, 3.6, 6.3, 6.7, 7.7, 4.3, 9.3]
 
 ------------------------------------------------------------
+
+zoomDump = defCmd {
+          cmdName = "dump"
+        , cmdHandler = zoomDumpHandler
+        , cmdCategory = "Reading"
+        , cmdShortDesc = "Read zoom data"
+        , cmdExamples = [("Yo", "")]
+        }
+
+zoomDumpHandler = liftIO . zoomReadFile =<< appArgs
+
+zoomReadFile :: [FilePath] -> IO ()
+zoomReadFile []       = return ()
+zoomReadFile (path:_) = do
+    h <- openFile path ReadMode
+    putStrLn path
+    bs <- BS.hGetContents h
+    putStrLn . show $ bs
+    hClose h
+
+------------------------------------------------------------
 -- The Application
 --
 
@@ -54,10 +75,10 @@ zoom = def {
         , appBugEmail = "conrad@metadecks.org"
         , appShortDesc = "Trivial zoom inspection tools"
         , appLongDesc = longDesc
-        , appCategories = ["Reporting", "Writing"]
+        , appCategories = ["Reading", "Writing"]
         , appSeeAlso = [""]
         , appProject = "Zoom"
-        , appCmds = [zoomGen]
+        , appCmds = [zoomGen, zoomDump]
 	}
 
 longDesc = "This is a bunch of trivial routines for inspecting git repositories. It is in no way useful beyond that."
