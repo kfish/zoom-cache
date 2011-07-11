@@ -3,8 +3,12 @@ module Main (
     main
 ) where
 
+import Blaze.ByteString.Builder
 import Control.Monad.Trans (liftIO)
+import qualified Data.ByteString as BS
 import Data.Default
+import Data.Monoid
+import System.IO
 import UI.Command
 
 ------------------------------------------------------------
@@ -17,7 +21,23 @@ zoomGen = defCmd {
         , cmdExamples = [("Yo", "")]
         }
 
-zoomGenHandler = liftIO $ mapM_ (putStrLn . show) =<< zoomGenDouble
+zoomGenHandler = liftIO . zoomWriteFile =<< appArgs
+
+zoomWriteFile :: [FilePath] -> IO ()
+zoomWriteFile []       = return ()
+zoomWriteFile (path:_) = do
+    h <- openFile path WriteMode
+    putStrLn path
+    d <- zoomGenInt
+    mapM_ (putStrLn . show) d
+
+    let b = mconcat $ map (fromInt32le . fromIntegral) d
+
+    toByteStringIO (BS.hPut h) b
+    hClose h
+
+zoomGenInt :: IO [Int]
+zoomGenInt = return [3, 3, 4, 3, 3, 6, 6, 7, 4, 9]
 
 zoomGenDouble :: IO [Double]
 zoomGenDouble = return [3.5, 3.5, 4.2, 3.7, 3.6, 6.3, 6.7, 7.7, 4.3, 9.3]
