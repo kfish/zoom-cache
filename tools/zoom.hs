@@ -7,6 +7,7 @@ import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
 import Control.Monad (replicateM_)
 import Control.Monad.Trans (MonadIO, liftIO)
+import Data.Bits
 import qualified Data.ByteString as BS
 import Data.Default
 import Data.Iteratee (Iteratee)
@@ -15,6 +16,7 @@ import Data.Monoid
 import Data.Word
 import System.IO
 import UI.Command
+import Unsafe.Coerce (unsafeCoerce)
 
 ------------------------------------------------------------
 
@@ -33,13 +35,18 @@ zoomWriteFile []       = return ()
 zoomWriteFile (path:_) = do
     h <- openFile path WriteMode
     putStrLn path
-    d <- zoomGenInt
+    -- d <- zoomGenInt
+    d <- zoomGenDouble
     mapM_ (putStrLn . show) d
 
-    let b = mconcat $ map (fromInt32le . fromIntegral) d
+    -- let b = mconcat $ map (fromInt32le . fromIntegral) d
+    let b = mconcat $ map (fromWord64be . toWord64) d
 
     toByteStringIO (BS.hPut h) b
     hClose h
+
+toWord64 :: Double -> Word64
+toWord64 = unsafeCoerce
 
 zoomGenInt :: IO [Int]
 zoomGenInt = return [3, 3, 4, 3, 3, 6, 6, 7, 4, 9]
@@ -66,10 +73,31 @@ zoomReadFile (path:_) = zFile path
 zFile = I.fileDriverRandom zReader
 
 zReader :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
-zReader = replicateM_ 10 (zReadInt32 >>= liftIO . putStrLn . show)
+zReader = replicateM_ 10 (zReadFloat64be >>= liftIO . putStrLn . show)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
+
+zReadFloat64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
+zReadFloat64be = do
+    c1 <- I.head
+    c2 <- I.head
+    c3 <- I.head
+    c4 <- I.head
+    c5 <- I.head
+    c6 <- I.head
+    c7 <- I.head
+    c8 <- I.head
+    let n :: Word64
+        n = (((((((((((((fromIntegral c1
+             `shiftL` 8) .|. fromIntegral c2)
+             `shiftL` 8) .|. fromIntegral c3)
+             `shiftL` 8) .|. fromIntegral c4)
+             `shiftL` 8) .|. fromIntegral c5)
+             `shiftL` 8) .|. fromIntegral c6)
+             `shiftL` 8) .|. fromIntegral c7)
+             `shiftL` 8) .|. fromIntegral c8
+    return (unsafeCoerce n :: Double)
 
 ------------------------------------------------------------
 -- The Application
