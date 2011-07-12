@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 
 module Main (
     main
@@ -6,6 +7,7 @@ module Main (
 import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
 import Control.Monad (replicateM_)
+import Control.Monad.State
 import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Bits
 import qualified Data.ByteString as BS
@@ -17,6 +19,36 @@ import Data.Word
 import System.IO
 import UI.Command
 import Unsafe.Coerce (unsafeCoerce)
+
+------------------------------------------------------------
+
+(<>) = mappend
+
+data ZoomState = ZoomState
+    { zoomHandle  :: Handle
+    , zoomBuilder :: Builder
+    }
+
+zoomOpenW :: FilePath -> IO ZoomState
+zoomOpenW path = do
+    h <- openFile path WriteMode
+    return (ZoomState h mempty)
+
+zoomPutInt :: Int -> ZoomState -> ZoomState
+zoomPutInt d z = z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
+
+zoomPutDouble :: Double -> ZoomState -> ZoomState
+zoomPutDouble d z = z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
+
+zoomFlush :: ZoomState -> IO ZoomState
+zoomFlush z@ZoomState{..} = do
+    toByteStringIO (BS.hPut zoomHandle) zoomBuilder
+    return z { zoomBuilder = mempty }
+    
+zoomClose :: ZoomState -> IO ()
+zoomClose z@ZoomState{..} = do
+    _ <- zoomFlush z
+    hClose zoomHandle
 
 ------------------------------------------------------------
 
@@ -33,17 +65,14 @@ zoomGenHandler = liftIO . zoomWriteFile =<< appArgs
 zoomWriteFile :: [FilePath] -> IO ()
 zoomWriteFile []       = return ()
 zoomWriteFile (path:_) = do
-    h <- openFile path WriteMode
+    z <- zoomOpenW path
     putStrLn path
     -- d <- zoomGenInt
     d <- zoomGenDouble
     mapM_ (putStrLn . show) d
-
-    -- let b = mconcat $ map (fromInt32le . fromIntegral) d
-    let b = mconcat $ map (fromWord64be . toWord64) d
-
-    toByteStringIO (BS.hPut h) b
-    hClose h
+    let z' = foldl (flip zoomPutDouble) z d
+    zoomFlush z'
+    zoomClose z'
 
 toWord64 :: Double -> Word64
 toWord64 = unsafeCoerce
