@@ -20,35 +20,7 @@ import System.IO
 import UI.Command
 import Unsafe.Coerce (unsafeCoerce)
 
-------------------------------------------------------------
-
-(<>) = mappend
-
-data ZoomState = ZoomState
-    { zoomHandle  :: Handle
-    , zoomBuilder :: Builder
-    }
-
-zoomOpenW :: FilePath -> IO ZoomState
-zoomOpenW path = do
-    h <- openFile path WriteMode
-    return (ZoomState h mempty)
-
-zoomPutInt :: Int -> ZoomState -> ZoomState
-zoomPutInt d z = z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
-
-zoomPutDouble :: Double -> ZoomState -> ZoomState
-zoomPutDouble d z = z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
-
-zoomFlush :: ZoomState -> IO ZoomState
-zoomFlush z@ZoomState{..} = do
-    toByteStringIO (BS.hPut zoomHandle) zoomBuilder
-    return z { zoomBuilder = mempty }
-    
-zoomClose :: ZoomState -> IO ()
-zoomClose z@ZoomState{..} = do
-    _ <- zoomFlush z
-    hClose zoomHandle
+import Zoom.Write
 
 ------------------------------------------------------------
 
@@ -65,14 +37,12 @@ zoomGenHandler = liftIO . zoomWriteFile =<< appArgs
 zoomWriteFile :: [FilePath] -> IO ()
 zoomWriteFile []       = return ()
 zoomWriteFile (path:_) = do
-    z <- zoomOpenW path
-    putStrLn path
-    -- d <- zoomGenInt
-    d <- zoomGenDouble
-    mapM_ (putStrLn . show) d
-    let z' = foldl (flip zoomPutDouble) z d
-    zoomFlush z'
-    zoomClose z'
+    zoomWithFileW path $ do
+        liftIO $ putStrLn path
+        -- d <- liftIO zoomGenInt
+        d <- liftIO zoomGenDouble
+        liftIO $ mapM_ (putStrLn . show) d
+        mapM_ zoomPutDouble d
 
 toWord64 :: Double -> Word64
 toWord64 = unsafeCoerce

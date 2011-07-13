@@ -46,9 +46,9 @@ Build-type:          Simple
 Cabal-version:       >=1.2
 
 
--- Library
+Library
   -- Modules exported by the library.
-  -- Exposed-modules:     Zoom.Common, Zoom.Write
+  Exposed-modules:     Zoom.Write
   
   -- Packages needed in order to build this package.
   -- Build-depends:       
