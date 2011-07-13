@@ -34,6 +34,7 @@ import Unsafe.Coerce (unsafeCoerce)
 data ZoomState = ZoomState
     { zoomHandle  :: Handle
     , zoomBuilder :: Builder
+    , zoomPending :: Int
     }
 
 type Zoom = StateT ZoomState IO
@@ -41,7 +42,7 @@ type Zoom = StateT ZoomState IO
 zoomOpenW :: FilePath -> IO ZoomState
 zoomOpenW path = do
     h <- openFile path WriteMode
-    return (ZoomState h mempty)
+    return (ZoomState h mempty 0)
 
 zoomWithFileW :: FilePath -> Zoom () -> IO ()
 zoomWithFileW path f = do
@@ -49,11 +50,26 @@ zoomWithFileW path f = do
     z' <- execStateT f z
     zoomClose z'
 
+zoomIncPending :: Zoom ()
+zoomIncPending = do
+    p <- gets zoomPending
+    if (p >= 1024) 
+        then do
+            z <- get
+            z' <- liftIO $ zoomFlush z
+            put $ z' { zoomPending = 0 }
+        else
+            modify $ \z -> z { zoomPending = p+1 }
+
 zoomPutInt :: Int -> Zoom ()
-zoomPutInt d = modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
+zoomPutInt d = do
+    zoomIncPending
+    modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
 
 zoomPutDouble :: Double -> Zoom ()
-zoomPutDouble d = modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
+zoomPutDouble d = do
+    zoomIncPending
+    modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
 
 zoomFlush :: ZoomState -> IO ZoomState
 zoomFlush z@ZoomState{..} = do
