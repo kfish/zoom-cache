@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS -Wall #-}
 
 module Zoom.Write (
       Zoom
@@ -18,23 +19,16 @@ module Zoom.Write (
 ) where
 
 import Blaze.ByteString.Builder
-import Control.Applicative ((<$>))
-import Control.Monad (replicateM_)
 import Control.Monad.State
-import Control.Monad.Trans (MonadIO, liftIO)
-import Data.Bits
 import qualified Data.ByteString as BS
-import Data.Default
-import Data.Iteratee (Iteratee)
-import qualified Data.Iteratee as I
 import Data.Monoid
 import Data.Word
 import System.IO
-import UI.Command
 import Unsafe.Coerce (unsafeCoerce)
 
 ------------------------------------------------------------
 
+(<>) :: Builder -> Builder -> Builder
 (<>) = mappend
 
 data ZoomState = ZoomState
