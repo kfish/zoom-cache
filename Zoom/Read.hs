@@ -5,7 +5,7 @@ module Zoom.Read (
     zoomReadFile
 ) where
 
-import Control.Monad (replicateM_)
+import Control.Monad (forever)
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Bits
 import Data.Iteratee (Iteratee)
@@ -20,7 +20,7 @@ zoomReadFile []       = return ()
 zoomReadFile (path:_) = I.fileDriverRandom zReader path
 
 zReader :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
-zReader = replicateM_ 10 (zReadFloat64be >>= liftIO . putStrLn . show)
+zReader = forever (zReadFloat64be >>= liftIO . putStrLn . show)
 
 -- zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 -- zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
