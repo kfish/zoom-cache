@@ -74,7 +74,7 @@ zoom = def {
 	}
 
 longDesc :: String
-longDesc = "This is a bunch of trivial routines for inspecting git repositories. It is in no way useful beyond that."
+longDesc = "Manipulate zoom files"
 
 ------------------------------------------------------------
 -- Main
