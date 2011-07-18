@@ -32,8 +32,8 @@ zReadPacket = do
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
 
-zReadFloat64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
-zReadFloat64be = do
+zRead8be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word64
+zRead8be = do
     c1 <- I.head
     c2 <- I.head
     c3 <- I.head
@@ -42,8 +42,7 @@ zReadFloat64be = do
     c6 <- I.head
     c7 <- I.head
     c8 <- I.head
-    let n :: Word64
-        n = (((((((((((((fromIntegral c1
+    return $ (((((((((((((fromIntegral c1
              `shiftL` 8) .|. fromIntegral c2)
              `shiftL` 8) .|. fromIntegral c3)
              `shiftL` 8) .|. fromIntegral c4)
@@ -51,5 +50,10 @@ zReadFloat64be = do
              `shiftL` 8) .|. fromIntegral c6)
              `shiftL` 8) .|. fromIntegral c7)
              `shiftL` 8) .|. fromIntegral c8
+
+
+zReadFloat64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
+zReadFloat64be = do
+    n <- zRead8be
     return (unsafeCoerce n :: Double)
 
