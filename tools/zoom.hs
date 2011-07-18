@@ -32,15 +32,14 @@ zoomWriteFile (path:_) = do
     zoomWithFileW path $ do
         liftIO $ putStrLn path
         -- d <- liftIO zoomGenInt
-        d <- liftIO zoomGenDouble
-        liftIO $ mapM_ (putStrLn . show) d
+        let d = zoomGenDouble
         mapM_ zoomPutDouble d
 
 -- zoomGenInt :: IO [Int]
 -- zoomGenInt = return [3, 3, 4, 3, 3, 6, 6, 7, 4, 9]
 
-zoomGenDouble :: IO [Double]
-zoomGenDouble = return [3.5, 3.5, 4.2, 3.7, 3.6, 6.3, 6.7, 7.7, 4.3, 9.3]
+zoomGenDouble :: [Double]
+zoomGenDouble = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
 
 ------------------------------------------------------------
 
