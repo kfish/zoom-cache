@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
@@ -20,7 +21,8 @@ module Zoom.Write (
 
 import Blaze.ByteString.Builder
 import Control.Monad.State
-import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Monoid
 import Data.Word
 import System.IO
@@ -73,7 +75,12 @@ zoomPutDouble d = do
 
 zoomFlush :: ZoomState -> IO ZoomState
 zoomFlush z@ZoomState{..} = do
-    toByteStringIO (BS.hPut zoomHandle) zoomBuilder
+    let h  = LC.pack "ZXe4"
+        bs = toLazyByteString zoomBuilder
+        l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
+    L.hPut zoomHandle h
+    L.hPut zoomHandle l
+    L.hPut zoomHandle bs
     return z { zoomBuilder = mempty }
     
 zoomClose :: ZoomState -> IO ()
