@@ -59,7 +59,7 @@ zoomIncPending = do
         then do
             z <- get
             z' <- liftIO $ zoomFlush z
-            put $ z' { zoomPending = 0 }
+            put $ z' { zoomPending = 1 }
         else
             modify $ \z -> z { zoomPending = p+1 }
 
