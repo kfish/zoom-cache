@@ -25,7 +25,8 @@ zReader = forever zReadPacket
 
 zReadPacket :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
 zReadPacket = do
-    I.drop 4
+    I.drop 4 -- header
+    I.drop 4 -- timestamp
     n <- flip div 8 <$> zReadInt32
     replicateM_ n (zReadFloat64be >>= liftIO . putStrLn . show)
 

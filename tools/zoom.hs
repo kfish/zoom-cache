@@ -33,7 +33,7 @@ zoomWriteFile (path:_) = do
         liftIO $ putStrLn path
         -- d <- liftIO zoomGenInt
         let d = zoomGenDouble
-        mapM_ zoomPutDouble d
+        mapM_ (uncurry zoomPutDouble) (zip [1..] d)
 
 -- zoomGenInt :: IO [Int]
 -- zoomGenInt = return [3, 3, 4, 3, 3, 6, 6, 7, 4, 9]

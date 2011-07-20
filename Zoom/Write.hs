@@ -23,6 +23,7 @@ import Blaze.ByteString.Builder
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Monoid
 import Data.Word
 import System.IO
@@ -37,6 +38,7 @@ data ZoomState = ZoomState
     { zoomHandle  :: Handle
     , zoomBuilder :: Builder
     , zoomPending :: Int
+    , zoomTime    :: Maybe Int
     }
 
 type Zoom = StateT ZoomState IO
@@ -44,13 +46,18 @@ type Zoom = StateT ZoomState IO
 zoomOpenW :: FilePath -> IO ZoomState
 zoomOpenW path = do
     h <- openFile path WriteMode
-    return (ZoomState h mempty 0)
+    return (ZoomState h mempty 0 Nothing)
 
 zoomWithFileW :: FilePath -> Zoom () -> IO ()
 zoomWithFileW path f = do
     z <- zoomOpenW path
     z' <- execStateT f z
     zoomClose z'
+
+zoomSetTime :: Int -> Zoom ()
+zoomSetTime t = do
+    t' <- gets zoomTime
+    when (isNothing t') . modify $ \z -> z { zoomTime = Just t }
 
 zoomIncPending :: Zoom ()
 zoomIncPending = do
@@ -63,13 +70,15 @@ zoomIncPending = do
         else
             modify $ \z -> z { zoomPending = p+1 }
 
-zoomPutInt :: Int -> Zoom ()
-zoomPutInt d = do
+zoomPutInt :: Int -> Int -> Zoom ()
+zoomPutInt t d = do
+    zoomSetTime t
     zoomIncPending
     modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
 
-zoomPutDouble :: Double -> Zoom ()
-zoomPutDouble d = do
+zoomPutDouble :: Int -> Double -> Zoom ()
+zoomPutDouble t d = do
+    zoomSetTime t
     zoomIncPending
     modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
 
@@ -78,10 +87,14 @@ zoomFlush z@ZoomState{..} = do
     let h  = LC.pack "ZXe4"
         bs = toLazyByteString zoomBuilder
         l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
+        t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
     L.hPut zoomHandle h
+    L.hPut zoomHandle t'
     L.hPut zoomHandle l
     L.hPut zoomHandle bs
-    return z { zoomBuilder = mempty }
+    return z { zoomBuilder = mempty
+             , zoomTime = Nothing
+             }
     
 zoomClose :: ZoomState -> IO ()
 zoomClose z@ZoomState{..} = do
