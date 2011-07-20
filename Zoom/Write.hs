@@ -22,12 +22,13 @@ module Zoom.Write (
 import Blaze.ByteString.Builder
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Monoid
 import Data.Word
 import System.IO
 import Unsafe.Coerce (unsafeCoerce)
+
+import Zoom.Common
 
 ------------------------------------------------------------
 
@@ -84,11 +85,10 @@ zoomPutDouble t d = do
 
 zoomFlush :: ZoomState -> IO ZoomState
 zoomFlush z@ZoomState{..} = do
-    let h  = LC.pack "ZXe4"
-        bs = toLazyByteString zoomBuilder
+    let bs = toLazyByteString zoomBuilder
         l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
         t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
-    L.hPut zoomHandle h
+    L.hPut zoomHandle zoomHeader
     L.hPut zoomHandle t'
     L.hPut zoomHandle l
     L.hPut zoomHandle bs
