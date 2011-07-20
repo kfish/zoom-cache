@@ -6,13 +6,17 @@ module Zoom.Read (
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, replicateM_)
+import Control.Monad (forever, replicateM_, when)
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Bits
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
+
+import Zoom.Common
 
 ------------------------------------------------------------
 
@@ -25,10 +29,11 @@ zReader = forever zReadPacket
 
 zReadPacket :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
 zReadPacket = do
-    I.drop 4 -- header
-    I.drop 4 -- timestamp
-    n <- flip div 8 <$> zReadInt32
-    replicateM_ n (zReadFloat64be >>= liftIO . putStrLn . show)
+    h <- I.joinI $ I.takeUpTo 4 I.stream2list -- header
+    when (h == L.unpack zoomHeader) $ do
+        I.drop 4 -- timestamp
+        n <- flip div 8 <$> zReadInt32
+        replicateM_ n (zReadFloat64be >>= liftIO . putStrLn . show)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
