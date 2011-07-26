@@ -7,7 +7,7 @@ module Zoom.Read (
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, replicateM_, when)
+import Control.Monad (forever, replicateM, when)
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans (lift, MonadIO)
 import Data.Bits
@@ -28,7 +28,7 @@ data Packet = Packet
     }
 
 zoomDumpFile :: [FilePath] -> IO ()
-zoomDumpFile = zoomReadFile dumpTime
+zoomDumpFile = zoomReadFile dumpData
 
 zoomReadFile :: (Functor m, MonadCatchIO m) => (Packet -> m ()) -> [FilePath] -> m ()
 zoomReadFile _ []       = return ()
@@ -40,6 +40,9 @@ zReader f = forever (zReadPacket f)
 dumpTime :: Packet -> IO ()
 dumpTime Packet{..} = print packetTimeStamp
 
+dumpData :: Packet -> IO ()
+dumpData Packet{..} = mapM_ print packetData
+
 zReadPacket :: (Functor m, MonadIO m) =>
                (Packet -> m ()) -> Iteratee [Word8] m ()
 zReadPacket f = do
@@ -47,9 +50,8 @@ zReadPacket f = do
     when (h == L.unpack zoomHeader) $ do
         t <- zReadInt32 -- timestamp
         n <- flip div 8 <$> zReadInt32
-        -- replicateM_ n (zReadFloat64be >>= liftIO . putStrLn . show)
-        replicateM_ n zReadFloat64be
-        lift $ f (Packet t n [])
+        d <- replicateM n zReadFloat64be
+        lift $ f (Packet t n d)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
