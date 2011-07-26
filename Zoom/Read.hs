@@ -10,7 +10,6 @@ import Control.Monad (forever, replicateM_, when)
 import Control.Monad.Trans (liftIO, MonadIO)
 import Data.Bits
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import Data.Word
