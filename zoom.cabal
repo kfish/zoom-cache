@@ -64,5 +64,5 @@ Library
 Executable zoom
   Main-is:             zoom.hs
   Hs-Source-Dirs:      ., tools
-  Build-Depends:       base < 5, blaze-builder, bytestring, data-default, iteratee >= 0.8.0, mtl >= 2.0.0.0 && < 3, ui-command
+  Build-Depends:       base < 5, blaze-builder, bytestring, data-default, iteratee >= 0.8.0, MonadCatchIO-transformers, mtl >= 2.0.0.0 && < 3, ui-command
 

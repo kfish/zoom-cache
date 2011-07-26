@@ -53,7 +53,7 @@ zoomDump = defCmd {
         }
 
 zoomDumpHandler :: App () ()
-zoomDumpHandler = liftIO . zoomReadFile =<< appArgs
+zoomDumpHandler = liftIO . zoomDumpFile =<< appArgs
 
 ------------------------------------------------------------
 -- The Application

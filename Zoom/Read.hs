@@ -2,12 +2,14 @@
 {-# OPTIONS -Wall #-}
 
 module Zoom.Read (
-    zoomReadFile
+      zoomDumpFile
+    , zoomReadFile
 ) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (forever, replicateM_, when)
-import Control.Monad.Trans (liftIO, MonadIO)
+import Control.Monad.CatchIO (MonadCatchIO)
+import Control.Monad.Trans (lift, MonadIO)
 import Data.Bits
 import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
@@ -19,20 +21,35 @@ import Zoom.Common
 
 ------------------------------------------------------------
 
-zoomReadFile :: [FilePath] -> IO ()
-zoomReadFile []       = return ()
-zoomReadFile (path:_) = I.fileDriverRandom zReader path
+data Packet = Packet
+    { packetTimeStamp :: Int
+    , packetLength :: Int
+    , packetData :: [Double]
+    }
 
-zReader :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
-zReader = forever zReadPacket
+zoomDumpFile :: [FilePath] -> IO ()
+zoomDumpFile = zoomReadFile dumpTime
 
-zReadPacket :: (Functor m, MonadIO m) => Iteratee [Word8] m ()
-zReadPacket = do
+zoomReadFile :: (Functor m, MonadCatchIO m) => (Packet -> m ()) -> [FilePath] -> m ()
+zoomReadFile _ []       = return ()
+zoomReadFile f (path:_) = I.fileDriverRandom (zReader f) path
+
+zReader :: (Functor m, MonadIO m) => (Packet -> m ()) -> Iteratee [Word8] m ()
+zReader f = forever (zReadPacket f)
+
+dumpTime :: Packet -> IO ()
+dumpTime Packet{..} = print packetTimeStamp
+
+zReadPacket :: (Functor m, MonadIO m) =>
+               (Packet -> m ()) -> Iteratee [Word8] m ()
+zReadPacket f = do
     h <- I.joinI $ I.takeUpTo 4 I.stream2list -- header
     when (h == L.unpack zoomHeader) $ do
-        I.drop 4 -- timestamp
+        t <- zReadInt32 -- timestamp
         n <- flip div 8 <$> zReadInt32
-        replicateM_ n (zReadFloat64be >>= liftIO . putStrLn . show)
+        -- replicateM_ n (zReadFloat64be >>= liftIO . putStrLn . show)
+        replicateM_ n zReadFloat64be
+        lift $ f (Packet t n [])
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
