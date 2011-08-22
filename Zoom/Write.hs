@@ -48,6 +48,7 @@ data ZoomState = ZoomState
 
 data ZoomTrackState = ZoomTrackState
     { zoomBuilder :: Builder
+    , zoomMin     :: Double
     , zoomMax     :: Double
     , zoomPending :: Int
     , zoomTime    :: Maybe Int
@@ -57,9 +58,10 @@ instance Default ZoomTrackState where
     def = defTrackState
 
 defTrackState :: ZoomTrackState
-defTrackState = ZoomTrackState mempty minDouble 1 Nothing
+defTrackState = ZoomTrackState mempty maxDouble minDouble 1 Nothing
     where
         minDouble = -1000.0 -- lol
+        maxDouble = 10000.0 -- lol
 
 type Zoom = StateT ZoomState IO
 
@@ -142,6 +144,7 @@ zoomPutDouble trackNo t d = do
     zoomSetTime trackNo t
     zoomIncPending trackNo
     modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d
+                                  , zoomMin = min (zoomMin z) d
                                   , zoomMax = max (zoomMax z) d
                                   }
 
@@ -165,11 +168,13 @@ zoomBuildTrack trackNo ZoomTrackState{..} =
 
 zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildSummary trackNo ZoomTrackState{..} =
-    zoomSummaryHeader <> no <> t' <> l <> bs
+    zoomSummaryHeader <> no <> t' <> l <> bsMin <> bsMax
     where
          no = toLazyByteString . fromInt32le . fromIntegral $ trackNo
-         bs = toLazyByteString . fromWord64be . toWord64 $ zoomMax
-         l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
+         bsMin = toLazyByteString . fromWord64be . toWord64 $ zoomMin
+         bsMax = toLazyByteString . fromWord64be . toWord64 $ zoomMax
+         l = toLazyByteString . fromInt32le . fromIntegral $
+                 (L.length bsMin + L.length bsMax)
          t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
     
 zoomClose :: ZoomState -> IO ()
