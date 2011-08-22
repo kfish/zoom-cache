@@ -21,7 +21,8 @@ import Zoom.Common
 ------------------------------------------------------------
 
 data Packet = Packet
-    { packetTimeStamp :: Int
+    { packetTrack :: ZoomTrackNo
+    , packetTimeStamp :: Int
     , packetLength :: Int
     , packetData :: [Double]
     }
@@ -47,10 +48,11 @@ zReadPacket :: (Functor m, MonadIO m) =>
 zReadPacket f = do
     h <- I.joinI $ I.takeUpTo 8 I.stream2list -- header
     when (h == L.unpack zoomPacketHeader) $ do
-        t <- zReadInt32 -- timestamp
+        trackNo <- zReadInt32
+        timestamp <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         d <- replicateM n zReadFloat64be
-        lift $ f (Packet t n d)
+        lift $ f (Packet trackNo timestamp n d)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB

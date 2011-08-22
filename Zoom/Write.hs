@@ -20,11 +20,16 @@ module Zoom.Write (
 ) where
 
 import Blaze.ByteString.Builder
+import Control.Applicative ((<$>))
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Default
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as IM
+import Data.Maybe (fromMaybe)
 import Data.Monoid
+import qualified Data.Foldable as Fold
 import Data.Word
 import System.IO
 import Unsafe.Coerce (unsafeCoerce)
@@ -33,15 +38,22 @@ import Zoom.Common
 
 ------------------------------------------------------------
 
-(<>) :: Builder -> Builder -> Builder
+(<>) :: Monoid a => a -> a -> a
 (<>) = mappend
 
 data ZoomState = ZoomState
     { zoomHandle  :: Handle
-    , zoomBuilder :: Builder
+    , zoomTracks  :: IntMap ZoomTrackState
+    }
+
+data ZoomTrackState = ZoomTrackState
+    { zoomBuilder :: Builder
     , zoomPending :: Int
     , zoomTime    :: Maybe Int
     }
+
+instance Default ZoomTrackState where
+    def = ZoomTrackState mempty 1 Nothing
 
 type Zoom = StateT ZoomState IO
 
@@ -72,7 +84,7 @@ zoomOpenW :: FilePath -> IO ZoomState
 zoomOpenW path = do
     h <- openFile path WriteMode
     zoomWriteInitialHeader h
-    return (ZoomState h mempty 0 Nothing)
+    return (ZoomState h IM.empty)
 
 zoomWithFileW :: FilePath -> Zoom () -> IO ()
 zoomWithFileW path f = do
@@ -80,46 +92,68 @@ zoomWithFileW path f = do
     z' <- execStateT f z
     zoomClose z'
 
-zoomSetTime :: Int -> Zoom ()
-zoomSetTime t = do
-    t' <- gets zoomTime
-    when (isNothing t') . modify $ \z -> z { zoomTime = Just t }
+modifyTracks :: (IntMap ZoomTrackState -> IntMap ZoomTrackState) -> Zoom ()
+modifyTracks f = modify (\z -> z { zoomTracks = f (zoomTracks z) })
 
-zoomIncPending :: Zoom ()
-zoomIncPending = do
-    p <- gets zoomPending
-    if (p >= 1024) 
-        then do
-            z <- get
-            z' <- liftIO $ zoomFlush z
-            put $ z' { zoomPending = 1 }
-        else
-            modify $ \z -> z { zoomPending = p+1 }
+modifyTrack :: ZoomTrackNo -> (ZoomTrackState -> ZoomTrackState) -> Zoom ()
+modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
-zoomPutInt :: Int -> Int -> Zoom ()
-zoomPutInt t d = do
-    zoomSetTime t
-    zoomIncPending
-    modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
+addTrack :: ZoomTrackNo -> Zoom ()
+addTrack trackNo = modifyTracks (IM.insert trackNo def)
 
-zoomPutDouble :: Int -> Double -> Zoom ()
-zoomPutDouble t d = do
-    zoomSetTime t
-    zoomIncPending
-    modify $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
+zoomSetTime :: ZoomTrackNo -> Int -> Zoom ()
+zoomSetTime trackNo t = modifyTrack trackNo f
+    where
+        f zt = zt { zoomTime = Just $ maybe t id (zoomTime zt) }
+
+zoomIncPending :: ZoomTrackNo -> Zoom ()
+zoomIncPending trackNo = do
+    zt <- IM.lookup trackNo <$> gets zoomTracks
+    case zt of
+        Just track -> do
+            let p = zoomPending track
+            if (p >= 1024)
+                then do
+                    z <- get
+                    z' <- liftIO $ zoomFlush z
+                    put z'
+                    modifyTrack trackNo (setPending 1)
+                else
+                    modifyTrack trackNo (setPending (p+1))
+        Nothing -> addTrack trackNo
+    where
+        setPending :: Int -> ZoomTrackState -> ZoomTrackState
+        setPending p zt = zt { zoomPending = p }
+
+zoomPutInt :: ZoomTrackNo -> Int -> Int -> Zoom ()
+zoomPutInt trackNo t d = do
+    zoomSetTime trackNo t
+    zoomIncPending trackNo
+    modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
+
+zoomPutDouble :: ZoomTrackNo -> Int -> Double -> Zoom ()
+zoomPutDouble trackNo t d = do
+    zoomSetTime trackNo t
+    zoomIncPending trackNo
+    modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d }
 
 zoomFlush :: ZoomState -> IO ZoomState
 zoomFlush z@ZoomState{..} = do
-    let bs = toLazyByteString zoomBuilder
-        l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
-        t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
-    L.hPut zoomHandle zoomPacketHeader
-    L.hPut zoomHandle t'
-    L.hPut zoomHandle l
-    L.hPut zoomHandle bs
-    return z { zoomBuilder = mempty
-             , zoomTime = Nothing
-             }
+    let b = IM.mapWithKey zoomBuildTrack zoomTracks
+    Fold.mapM_ (L.hPut zoomHandle) b
+    return z { zoomTracks = IM.map flushTrack zoomTracks }
+    where
+        flushTrack :: ZoomTrackState -> ZoomTrackState
+        flushTrack _ = def
+
+zoomBuildTrack :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
+zoomBuildTrack trackNo ZoomTrackState{..} =
+    zoomPacketHeader <> no <> t' <> l <> bs
+    where
+         no = toLazyByteString . fromInt32le . fromIntegral $ trackNo
+         bs = toLazyByteString zoomBuilder
+         l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
+         t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
     
 zoomClose :: ZoomState -> IO ()
 zoomClose z@ZoomState{..} = do

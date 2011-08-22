@@ -1,8 +1,11 @@
 {-# OPTIONS -Wall #-}
 
 module Zoom.Common (
+  -- * Types
+    ZoomTrackNo
+
   -- * Initial header
-    zoomVersionMajor
+  , zoomVersionMajor
   , zoomVersionMinor
   , zoomInitialHeader
 
@@ -65,11 +68,11 @@ Packet header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                                                               | 4-7
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Timestamp                                                     | 8-11
+   | Track no.                                                     | 8-11
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Data length in bytes                                          | 12-15
+   | Timestamp                                                     | 12-15
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Data ...                                                      | 16-19
+   | Data length in bytes                                          | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                                                               | 20-23
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -91,6 +94,8 @@ Packet header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 -}
+
+type ZoomTrackNo = Int
 
 zoomInitialHeader :: L.ByteString
 zoomInitialHeader = LC.pack "ZXe5hed\0"
