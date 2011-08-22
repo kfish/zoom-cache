@@ -22,6 +22,7 @@ module Zoom.Write (
 import Blaze.ByteString.Builder
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Monoid
 import Data.Word
@@ -44,9 +45,33 @@ data ZoomState = ZoomState
 
 type Zoom = StateT ZoomState IO
 
+zoomWriteInitialHeader :: Handle -> IO ()
+zoomWriteInitialHeader h = do
+    let vMajor = buildInt16 zoomVersionMajor
+        vMinor = buildInt16 zoomVersionMinor
+        pNum = buildInt64 0 -- Presentation time numerator
+        pDen = buildInt64 0 -- Presentation time denominator
+        bNum = buildInt64 0 -- Base time numerator
+        bDen = buildInt64 0 -- Base time denominator
+        utc = LC.pack (replicate 20 '\0')
+    L.hPut h zoomInitialHeader
+    L.hPut h vMajor
+    L.hPut h vMinor
+    L.hPut h pNum
+    L.hPut h pDen
+    L.hPut h bNum
+    L.hPut h bDen
+    L.hPut h utc
+    where
+        buildInt16 :: Int -> L.ByteString
+        buildInt16 = toLazyByteString . fromInt16le . fromIntegral
+        buildInt64 :: Integer -> L.ByteString
+        buildInt64 = toLazyByteString . fromInt64le . fromIntegral
+
 zoomOpenW :: FilePath -> IO ZoomState
 zoomOpenW path = do
     h <- openFile path WriteMode
+    zoomWriteInitialHeader h
     return (ZoomState h mempty 0 Nothing)
 
 zoomWithFileW :: FilePath -> Zoom () -> IO ()
