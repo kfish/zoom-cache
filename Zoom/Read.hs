@@ -45,8 +45,8 @@ dumpData Packet{..} = mapM_ print packetData
 zReadPacket :: (Functor m, MonadIO m) =>
                (Packet -> m ()) -> Iteratee [Word8] m ()
 zReadPacket f = do
-    h <- I.joinI $ I.takeUpTo 4 I.stream2list -- header
-    when (h == L.unpack zoomHeader) $ do
+    h <- I.joinI $ I.takeUpTo 8 I.stream2list -- header
+    when (h == L.unpack zoomPacketHeader) $ do
         t <- zReadInt32 -- timestamp
         n <- flip div 8 <$> zReadInt32
         d <- replicateM n zReadFloat64be

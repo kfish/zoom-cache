@@ -1,10 +1,13 @@
 {-# OPTIONS -Wall #-}
 
 module Zoom.Common (
+  -- * Initial header
     zoomVersionMajor
   , zoomVersionMinor
   , zoomInitialHeader
-  , zoomHeader
+
+  -- * Packet header
+  , zoomPacketHeader
 ) where
 
 import qualified Data.ByteString.Lazy as L
@@ -60,13 +63,13 @@ Packet header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Identifier                                                    | 0-3
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Timestamp                                                     | 4-7
+   |                                                               | 4-7
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Data length in bytes                                          | 8-11
+   | Timestamp                                                     | 8-11
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Data ...                                                      | 12-15
+   | Data length in bytes                                          | 12-15
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                                                               | 16-19
+   | Data ...                                                      | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                                                               | 20-23
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -98,5 +101,5 @@ zoomVersionMajor = 0
 zoomVersionMinor :: Int
 zoomVersionMinor = 1
 
-zoomHeader :: L.ByteString
-zoomHeader = LC.pack "ZXe4"
+zoomPacketHeader :: L.ByteString
+zoomPacketHeader = LC.pack "ZXe4bon\0"

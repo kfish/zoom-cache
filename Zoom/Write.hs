@@ -113,7 +113,7 @@ zoomFlush z@ZoomState{..} = do
     let bs = toLazyByteString zoomBuilder
         l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
         t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
-    L.hPut zoomHandle zoomHeader
+    L.hPut zoomHandle zoomPacketHeader
     L.hPut zoomHandle t'
     L.hPut zoomHandle l
     L.hPut zoomHandle bs
