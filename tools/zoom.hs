@@ -56,6 +56,20 @@ zoomDumpHandler :: App () ()
 zoomDumpHandler = liftIO . zoomDumpFile =<< appArgs
 
 ------------------------------------------------------------
+
+zoomSummary :: Command ()
+zoomSummary = defCmd {
+          cmdName = "summary"
+        , cmdHandler = zoomSummaryHandler
+        , cmdCategory = "Reading"
+        , cmdShortDesc = "Read zoom summary data"
+        , cmdExamples = [("Yo", "")]
+        }
+
+zoomSummaryHandler :: App () ()
+zoomSummaryHandler = liftIO . zoomDumpSummary =<< appArgs
+
+------------------------------------------------------------
 -- The Application
 --
 
@@ -70,7 +84,7 @@ zoom = def {
         , appCategories = ["Reading", "Writing"]
         , appSeeAlso = [""]
         , appProject = "Zoom"
-        , appCmds = [zoomGen, zoomDump]
+        , appCmds = [zoomGen, zoomDump, zoomSummary]
 	}
 
 longDesc :: String

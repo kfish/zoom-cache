@@ -3,6 +3,7 @@
 
 module Zoom.Read (
       zoomDumpFile
+    , zoomDumpSummary
     , zoomReadFile
 ) where
 
