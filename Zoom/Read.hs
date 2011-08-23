@@ -15,6 +15,7 @@ import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import Data.Word
+import Text.Printf
 import Unsafe.Coerce (unsafeCoerce)
 
 import Zoom.Common
@@ -66,10 +67,8 @@ dumpData Packet{..} = mapM_ print packetData
 
 dumpSummary :: Summary -> IO ()
 dumpSummary Summary{..} = do
-    print summaryMin
-    print summaryMax
-    print summaryAvg
-    print summaryRMS
+    putStrLn $ printf "min: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+        summaryMin summaryMax summaryAvg summaryRMS
 
 zReadPacket :: (Functor m, MonadIO m)
             => (Packet -> m ())
