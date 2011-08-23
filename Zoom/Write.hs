@@ -48,8 +48,10 @@ data ZoomState = ZoomState
 
 data ZoomTrackState = ZoomTrackState
     { zoomBuilder :: Builder
+    , zoomCount   :: Int
     , zoomMin     :: Double
     , zoomMax     :: Double
+    , zoomSum     :: Double
     , zoomPending :: Int
     , zoomTime    :: Maybe Int
     }
@@ -58,7 +60,7 @@ instance Default ZoomTrackState where
     def = defTrackState
 
 defTrackState :: ZoomTrackState
-defTrackState = ZoomTrackState mempty maxDouble minDouble 1 Nothing
+defTrackState = ZoomTrackState mempty 0 maxDouble minDouble 0.0 1 Nothing
     where
         minDouble = -1000.0 -- lol
         maxDouble = 10000.0 -- lol
@@ -144,8 +146,10 @@ zoomPutDouble trackNo t d = do
     zoomSetTime trackNo t
     zoomIncPending trackNo
     modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d
+                                  , zoomCount = (zoomCount z) + 1
                                   , zoomMin = min (zoomMin z) d
                                   , zoomMax = max (zoomMax z) d
+                                  , zoomSum = (zoomSum z) + d
                                   }
 
 zoomFlush :: ZoomState -> IO ZoomState
@@ -168,13 +172,14 @@ zoomBuildTrack trackNo ZoomTrackState{..} =
 
 zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildSummary trackNo ZoomTrackState{..} =
-    zoomSummaryHeader <> no <> t' <> l <> bsMin <> bsMax
+    zoomSummaryHeader <> no <> t' <> l <> bs
     where
          no = toLazyByteString . fromInt32le . fromIntegral $ trackNo
          bsMin = toLazyByteString . fromWord64be . toWord64 $ zoomMin
          bsMax = toLazyByteString . fromWord64be . toWord64 $ zoomMax
-         l = toLazyByteString . fromInt32le . fromIntegral $
-                 (L.length bsMin + L.length bsMax)
+         bsAvg = toLazyByteString . fromWord64be . toWord64 $ zoomSum / (fromIntegral zoomCount)
+         bs = bsMin <> bsMax <> bsAvg
+         l = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
          t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
     
 zoomClose :: ZoomState -> IO ()
