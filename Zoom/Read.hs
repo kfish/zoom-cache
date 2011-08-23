@@ -35,6 +35,7 @@ data Summary = Summary
     , summaryMin :: Double
     , summaryMax :: Double
     , summaryAvg :: Double
+    , summaryRMS :: Double
     }
 
 zoomDumpFile :: [FilePath] -> IO ()
@@ -68,6 +69,7 @@ dumpSummary Summary{..} = do
     print summaryMin
     print summaryMax
     print summaryAvg
+    print summaryRMS
 
 zReadPacket :: (Functor m, MonadIO m)
             => (Packet -> m ())
@@ -85,8 +87,8 @@ zReadPacket pFunc sFunc = do
         trackNo <- zReadInt32
         timestamp <- zReadInt32
         n <- flip div 8 <$> zReadInt32
-        [mn,mx,avg] <- replicateM n zReadFloat64be
-        lift $ sFunc (Summary trackNo timestamp n mn mx avg)
+        [mn,mx,avg,rms] <- replicateM n zReadFloat64be
+        lift $ sFunc (Summary trackNo timestamp n mn mx avg rms)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
