@@ -49,6 +49,8 @@ data ZoomState = ZoomState
 data ZoomTrackState = ZoomTrackState
     { zoomBuilder :: Builder
     , zoomCount   :: Int
+    , zoomEntry   :: Double
+    , zoomExit    :: Double
     , zoomMin     :: Double
     , zoomMax     :: Double
     , zoomSum     :: Double
@@ -61,7 +63,7 @@ instance Default ZoomTrackState where
     def = defTrackState
 
 defTrackState :: ZoomTrackState
-defTrackState = ZoomTrackState mempty 0 maxDouble minDouble 0.0 0.0 1 Nothing
+defTrackState = ZoomTrackState mempty 0 0.0 0.0 maxDouble minDouble 0.0 0.0 1 Nothing
     where
         minDouble = -1000.0 -- lol
         maxDouble = 10000.0 -- lol
@@ -148,6 +150,8 @@ zoomPutDouble trackNo t d = do
     zoomIncPending trackNo
     modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d
                                   , zoomCount = (zoomCount z) + 1
+                                  , zoomEntry = if zoomCount z == 0 then d else zoomEntry z
+                                  , zoomExit = d
                                   , zoomMin = min (zoomMin z) d
                                   , zoomMax = max (zoomMax z) d
                                   , zoomSum = (zoomSum z) + d
@@ -177,11 +181,13 @@ zoomBuildSummary trackNo ZoomTrackState{..} =
     zoomSummaryHeader <> no <> t' <> l <> bs
     where
          no = toLazyByteString . fromInt32le . fromIntegral $ trackNo
+         bsEn  = toLazyByteString . fromWord64be . toWord64 $ zoomEntry
+         bsEx  = toLazyByteString . fromWord64be . toWord64 $ zoomExit
          bsMin = toLazyByteString . fromWord64be . toWord64 $ zoomMin
          bsMax = toLazyByteString . fromWord64be . toWord64 $ zoomMax
          bsAvg = toLazyByteString . fromWord64be . toWord64 $ zoomSum / (fromIntegral zoomCount)
          bsRMS = toLazyByteString . fromWord64be . toWord64 . sqrt $ zoomSumSq / (fromIntegral zoomCount)
-         bs = bsMin <> bsMax <> bsAvg <> bsRMS
+         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
          l = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
          t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
     

@@ -33,6 +33,8 @@ data Summary = Summary
     { summaryTrack :: ZoomTrackNo
     , summaryTimeStamp :: Int
     , summaryLength :: Int
+    , summaryEntry :: Double
+    , summaryExit :: Double
     , summaryMin :: Double
     , summaryMax :: Double
     , summaryAvg :: Double
@@ -67,8 +69,8 @@ dumpData Packet{..} = mapM_ print packetData
 
 dumpSummary :: Summary -> IO ()
 dumpSummary Summary{..} = do
-    putStrLn $ printf "min: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
-        summaryMin summaryMax summaryAvg summaryRMS
+    putStrLn $ printf "entry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+        summaryEntry summaryExit summaryMin summaryMax summaryAvg summaryRMS
 
 zReadPacket :: (Functor m, MonadIO m)
             => (Packet -> m ())
@@ -86,8 +88,8 @@ zReadPacket pFunc sFunc = do
         trackNo <- zReadInt32
         timestamp <- zReadInt32
         n <- flip div 8 <$> zReadInt32
-        [mn,mx,avg,rms] <- replicateM n zReadFloat64be
-        lift $ sFunc (Summary trackNo timestamp n mn mx avg rms)
+        [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
+        lift $ sFunc (Summary trackNo timestamp n en ex mn mx avg rms)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
