@@ -142,3 +142,4 @@ zoomPacketHeader = LC.pack "ZXe4bon\0"
 
 zoomSummaryHeader :: L.ByteString
 zoomSummaryHeader = LC.pack "ZXe3sum\0"
+

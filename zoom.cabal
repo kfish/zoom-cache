@@ -50,6 +50,7 @@ Library
   -- Modules exported by the library.
   Exposed-modules:     Zoom.Common
                        Zoom.Read
+                       Zoom.Summary
                        Zoom.Write
   
   -- Packages needed in order to build this package.

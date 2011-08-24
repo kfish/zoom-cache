@@ -19,6 +19,7 @@ import Text.Printf
 import Unsafe.Coerce (unsafeCoerce)
 
 import Zoom.Common
+import Zoom.Summary
 
 ------------------------------------------------------------
 
@@ -28,19 +29,6 @@ data Packet = Packet
     , packetExitTime :: Int
     , packetLength :: Int
     , packetData :: [Double]
-    }
-
-data Summary = Summary
-    { summaryTrack :: ZoomTrackNo
-    , summaryEntryTime :: Int
-    , summaryExitTime :: Int
-    , summaryLength :: Int
-    , summaryEntry :: Double
-    , summaryExit :: Double
-    , summaryMin :: Double
-    , summaryMax :: Double
-    , summaryAvg :: Double
-    , summaryRMS :: Double
     }
 
 zoomDumpFile :: [FilePath] -> IO ()
