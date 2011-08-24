@@ -149,15 +149,16 @@ zoomPutDouble :: ZoomTrackNo -> Int -> Double -> Zoom ()
 zoomPutDouble trackNo t d = do
     zoomSetTime trackNo t
     zoomIncPending trackNo
-    modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d
-                                  , zoomCount = (zoomCount z) + 1
-                                  , zoomEntry = if zoomCount z == 0 then d else zoomEntry z
-                                  , zoomExit = d
-                                  , zoomMin = min (zoomMin z) d
-                                  , zoomMax = max (zoomMax z) d
-                                  , zoomSum = (zoomSum z) + d
-                                  , zoomSumSq = (zoomSumSq z) + (d*d)
-                                  }
+    modifyTrack trackNo $ \z -> z
+        { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d
+        , zoomCount = (zoomCount z) + 1
+        , zoomEntry = if zoomCount z == 0 then d else zoomEntry z
+        , zoomExit = d
+        , zoomMin = min (zoomMin z) d
+        , zoomMax = max (zoomMax z) d
+        , zoomSum = (zoomSum z) + d
+        , zoomSumSq = (zoomSumSq z) + (d*d)
+        }
 
 zoomFlush :: ZoomState -> IO ZoomState
 zoomFlush z@ZoomState{..} = do
