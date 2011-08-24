@@ -28,7 +28,6 @@ import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Default
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
-import Data.Maybe (fromMaybe)
 import Data.Monoid
 import qualified Data.Foldable as Fold
 import Data.Word
@@ -48,23 +47,36 @@ data ZoomState = ZoomState
     }
 
 data ZoomTrackState = ZoomTrackState
-    { zoomBuilder :: Builder
-    , zoomCount   :: Int
-    , zoomEntry   :: Double
-    , zoomExit    :: Double
-    , zoomMin     :: Double
-    , zoomMax     :: Double
-    , zoomSum     :: Double
-    , zoomSumSq   :: Double
-    , zoomPending :: Int
-    , zoomTime    :: Maybe Int
+    { zoomBuilder   :: Builder
+    , zoomCount     :: Int
+    , zoomEntryTime :: Int
+    , zoomExitTime  :: Int
+    , zoomEntry     :: Double
+    , zoomExit      :: Double
+    , zoomMin      :: Double
+    , zoomMax      :: Double
+    , zoomSum      :: Double
+    , zoomSumSq    :: Double
+    , zoomPending  :: Int
     }
 
 instance Default ZoomTrackState where
     def = defTrackState
 
 defTrackState :: ZoomTrackState
-defTrackState = ZoomTrackState mempty 0 0.0 0.0 maxDouble minDouble 0.0 0.0 1 Nothing
+defTrackState = ZoomTrackState
+    { zoomBuilder = mempty
+    , zoomCount = 0
+    , zoomEntryTime = 0
+    , zoomExitTime = 0
+    , zoomEntry = 0.0
+    , zoomExit = 0.0
+    , zoomMin = maxDouble
+    , zoomMax = minDouble
+    , zoomSum = 0.0
+    , zoomSumSq = 0.0
+    , zoomPending = 1
+    }
     where
         minDouble = -1000.0 -- lol
         maxDouble = 10000.0 -- lol
@@ -116,9 +128,10 @@ addTrack :: ZoomTrackNo -> Zoom ()
 addTrack trackNo = modifyTracks (IM.insert trackNo def)
 
 zoomSetTime :: ZoomTrackNo -> Int -> Zoom ()
-zoomSetTime trackNo t = modifyTrack trackNo f
-    where
-        f zt = zt { zoomTime = Just $ maybe t id (zoomTime zt) }
+zoomSetTime trackNo t = modifyTrack trackNo $ \zt -> zt
+    { zoomEntryTime = if zoomCount zt == 0 then t else zoomEntryTime zt
+    , zoomExitTime = t
+    }
 
 zoomIncPending :: ZoomTrackNo -> Zoom ()
 zoomIncPending trackNo = do
@@ -171,18 +184,21 @@ zoomFlush z@ZoomState{..} = do
 
 zoomBuildTrack :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildTrack trackNo ZoomTrackState{..} =
-    zoomPacketHeader <> no <> t' <> l <> bs
+    zoomPacketHeader <> no <> entryTime <> exitTime <> l <> bs
     where
-         no = encInt trackNo
-         bs = toLazyByteString zoomBuilder
-         l  = encInt . L.length $ bs
-         t' = encInt $ fromMaybe 0 zoomTime
+        no = encInt trackNo
+        entryTime = encInt zoomEntryTime
+        exitTime = encInt zoomExitTime
+        bs = toLazyByteString zoomBuilder
+        l  = encInt . L.length $ bs
 
 zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildSummary trackNo ZoomTrackState{..} =
-    zoomSummaryHeader <> no <> t' <> l <> bs
+    zoomSummaryHeader <> no <> entryTime <> exitTime <> l <> bs
     where
         no = encInt trackNo
+        entryTime = encInt zoomEntryTime
+        exitTime = encInt zoomExitTime
         bsEn  = encDbl zoomEntry
         bsEx  = encDbl zoomExit
         bsMin = encDbl zoomMin
@@ -191,7 +207,6 @@ zoomBuildSummary trackNo ZoomTrackState{..} =
         bsRMS = encDbl . sqrt $ zoomSumSq / (fromIntegral zoomCount)
         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
         l = encInt . L.length $ bs
-        t' = encInt $ fromMaybe 0 zoomTime
     
 zoomClose :: ZoomState -> IO ()
 zoomClose z@ZoomState{..} = do

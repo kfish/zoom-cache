@@ -24,14 +24,16 @@ import Zoom.Common
 
 data Packet = Packet
     { packetTrack :: ZoomTrackNo
-    , packetTimeStamp :: Int
+    , packetEntryTime :: Int
+    , packetExitTime :: Int
     , packetLength :: Int
     , packetData :: [Double]
     }
 
 data Summary = Summary
     { summaryTrack :: ZoomTrackNo
-    , summaryTimeStamp :: Int
+    , summaryEntryTime :: Int
+    , summaryExitTime :: Int
     , summaryLength :: Int
     , summaryEntry :: Double
     , summaryExit :: Double
@@ -62,14 +64,15 @@ zReader :: (Functor m, MonadIO m)
 zReader pFunc sFunc = forever (zReadPacket pFunc sFunc)
 
 dumpTime :: Packet -> IO ()
-dumpTime Packet{..} = print packetTimeStamp
+dumpTime Packet{..} = putStrLn $ printf "[%d - %d]" packetEntryTime packetExitTime
 
 dumpData :: Packet -> IO ()
 dumpData Packet{..} = mapM_ print packetData
 
 dumpSummary :: Summary -> IO ()
 dumpSummary Summary{..} = do
-    putStrLn $ printf "entry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+    putStrLn $ printf "[%d - %d] entry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+        summaryEntryTime summaryExitTime
         summaryEntry summaryExit summaryMin summaryMax summaryAvg summaryRMS
 
 zReadPacket :: (Functor m, MonadIO m)
@@ -80,16 +83,18 @@ zReadPacket pFunc sFunc = do
     h <- I.joinI $ I.takeUpTo 8 I.stream2list -- header
     when (h == L.unpack zoomPacketHeader) $ do
         trackNo <- zReadInt32
-        timestamp <- zReadInt32
+        entryTime <- zReadInt32
+        exitTime <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         d <- replicateM n zReadFloat64be
-        lift $ pFunc (Packet trackNo timestamp n d)
+        lift $ pFunc (Packet trackNo entryTime exitTime n d)
     when (h == L.unpack zoomSummaryHeader) $ do
         trackNo <- zReadInt32
-        timestamp <- zReadInt32
+        entryTime <- zReadInt32
+        exitTime <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-        lift $ sFunc (Summary trackNo timestamp n en ex mn mx avg rms)
+        lift $ sFunc (Summary trackNo entryTime exitTime n en ex mn mx avg rms)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
