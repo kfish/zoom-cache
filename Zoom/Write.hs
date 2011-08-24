@@ -130,7 +130,7 @@ addTrack trackNo = modifyTracks (IM.insert trackNo def)
 
 zoomSetTime :: ZoomTrackNo -> Int -> Zoom ()
 zoomSetTime trackNo t = modifyTrack trackNo $ \zt -> zt
-    { zoomEntryTime = if zoomCount zt == 0 then t else zoomEntryTime zt
+    { zoomEntryTime = if zoomCount zt == 1 then t else zoomEntryTime zt
     , zoomExitTime = t
     }
 
