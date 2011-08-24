@@ -82,7 +82,7 @@ zReadPacket pFunc sFunc = do
         exitTime <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-        lift $ sFunc (Summary trackNo entryTime exitTime n en ex mn mx avg rms)
+        lift $ sFunc (Summary trackNo entryTime exitTime en ex mn mx avg rms)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB

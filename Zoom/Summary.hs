@@ -11,7 +11,6 @@ data Summary = Summary
     { summaryTrack :: ZoomTrackNo
     , summaryEntryTime :: Int
     , summaryExitTime :: Int
-    , summaryLength :: Int
     , summaryEntry :: Double
     , summaryExit :: Double
     , summaryMin :: Double

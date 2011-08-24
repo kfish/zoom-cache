@@ -35,6 +35,7 @@ import System.IO
 import Unsafe.Coerce (unsafeCoerce)
 
 import Zoom.Common
+import Zoom.Summary
 
 ------------------------------------------------------------
 
@@ -176,7 +177,8 @@ zoomPutDouble trackNo t d = do
 zoomFlush :: ZoomState -> IO ZoomState
 zoomFlush z@ZoomState{..} = do
     Fold.mapM_ (L.hPut zoomHandle) $ IM.mapWithKey zoomBuildTrack zoomTracks
-    Fold.mapM_ (L.hPut zoomHandle) $ IM.mapWithKey zoomBuildSummary zoomTracks
+    Fold.mapM_ (L.hPut zoomHandle) $
+        IM.mapWithKey (\k v -> summaryToLazyByteString $ zoomBuildSummary k v) zoomTracks
     return z { zoomTracks = IM.map flushTrack zoomTracks }
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
@@ -192,19 +194,32 @@ zoomBuildTrack trackNo ZoomTrackState{..} =
         bs = toLazyByteString zoomBuilder
         l  = encInt . L.length $ bs
 
-zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
-zoomBuildSummary trackNo ZoomTrackState{..} =
+zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> Summary
+zoomBuildSummary trackNo ZoomTrackState{..} = Summary
+    { summaryTrack = trackNo
+    , summaryEntryTime = zoomEntryTime
+    , summaryExitTime = zoomExitTime
+    , summaryEntry = zoomEntry
+    , summaryExit = zoomExit
+    , summaryMin = zoomMin
+    , summaryMax = zoomMax
+    , summaryAvg = zoomSum / (fromIntegral zoomCount)
+    , summaryRMS = sqrt $ zoomSumSq / (fromIntegral zoomCount)
+    }
+
+summaryToLazyByteString :: Summary -> L.ByteString
+summaryToLazyByteString Summary{..} =
     zoomSummaryHeader <> no <> entryTime <> exitTime <> l <> bs
     where
-        no = encInt trackNo
-        entryTime = encInt zoomEntryTime
-        exitTime = encInt zoomExitTime
-        bsEn  = encDbl zoomEntry
-        bsEx  = encDbl zoomExit
-        bsMin = encDbl zoomMin
-        bsMax = encDbl zoomMax
-        bsAvg = encDbl $ zoomSum / (fromIntegral zoomCount)
-        bsRMS = encDbl . sqrt $ zoomSumSq / (fromIntegral zoomCount)
+        no = encInt summaryTrack
+        entryTime = encInt summaryEntryTime
+        exitTime = encInt summaryExitTime
+        bsEn  = encDbl summaryEntry
+        bsEx  = encDbl summaryExit
+        bsMin = encDbl summaryMin
+        bsMax = encDbl summaryMax
+        bsAvg = encDbl summaryAvg
+        bsRMS = encDbl summaryRMS
         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
         l = encInt . L.length $ bs
     
