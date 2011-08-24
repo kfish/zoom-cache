@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
@@ -171,30 +172,36 @@ zoomBuildTrack :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildTrack trackNo ZoomTrackState{..} =
     zoomPacketHeader <> no <> t' <> l <> bs
     where
-         no = toLazyByteString . fromInt32le . fromIntegral $ trackNo
+         no = encInt trackNo
          bs = toLazyByteString zoomBuilder
-         l  = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
-         t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
+         l  = encInt . L.length $ bs
+         t' = encInt $ fromMaybe 0 zoomTime
 
 zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildSummary trackNo ZoomTrackState{..} =
     zoomSummaryHeader <> no <> t' <> l <> bs
     where
-         no = toLazyByteString . fromInt32le . fromIntegral $ trackNo
-         bsEn  = toLazyByteString . fromWord64be . toWord64 $ zoomEntry
-         bsEx  = toLazyByteString . fromWord64be . toWord64 $ zoomExit
-         bsMin = toLazyByteString . fromWord64be . toWord64 $ zoomMin
-         bsMax = toLazyByteString . fromWord64be . toWord64 $ zoomMax
-         bsAvg = toLazyByteString . fromWord64be . toWord64 $ zoomSum / (fromIntegral zoomCount)
-         bsRMS = toLazyByteString . fromWord64be . toWord64 . sqrt $ zoomSumSq / (fromIntegral zoomCount)
-         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
-         l = toLazyByteString . fromInt32le . fromIntegral . L.length $ bs
-         t' = toLazyByteString . fromInt32le . fromIntegral $ fromMaybe 0 zoomTime
+        no = encInt trackNo
+        bsEn  = encDbl zoomEntry
+        bsEx  = encDbl zoomExit
+        bsMin = encDbl zoomMin
+        bsMax = encDbl zoomMax
+        bsAvg = encDbl $ zoomSum / (fromIntegral zoomCount)
+        bsRMS = encDbl . sqrt $ zoomSumSq / (fromIntegral zoomCount)
+        bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
+        l = encInt . L.length $ bs
+        t' = encInt $ fromMaybe 0 zoomTime
     
 zoomClose :: ZoomState -> IO ()
 zoomClose z@ZoomState{..} = do
     _ <- zoomFlush z
     hClose zoomHandle
+
+encInt :: forall a . (Integral a) => a -> L.ByteString
+encInt = toLazyByteString . fromInt32le . fromIntegral
+
+encDbl :: Double -> L.ByteString
+encDbl = toLazyByteString . fromWord64be . toWord64
 
 toWord64 :: Double -> Word64
 toWord64 = unsafeCoerce
