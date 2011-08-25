@@ -16,8 +16,6 @@ module Zoom.Write (
     , zoomPutDouble
     
     , zoomFlush
-
-    , zoomClose
 ) where
 
 import Blaze.ByteString.Builder
@@ -116,8 +114,8 @@ zoomOpenW path = do
 zoomWithFileW :: FilePath -> Zoom () -> IO ()
 zoomWithFileW path f = do
     z <- zoomOpenW path
-    z' <- execStateT f z
-    zoomClose z'
+    z' <- execStateT (f >> zoomFlush) z
+    hClose (zoomHandle z')
 
 modifyTracks :: (IntMap ZoomTrackState -> IntMap ZoomTrackState) -> Zoom ()
 modifyTracks f = modify (\z -> z { zoomTracks = f (zoomTracks z) })
@@ -142,9 +140,7 @@ zoomIncPending trackNo = do
             let p = zoomPending track
             if (p >= 1024)
                 then do
-                    z <- get
-                    z' <- liftIO $ zoomFlush z
-                    put z'
+                    zoomFlush
                     modifyTrack trackNo (setPending 1)
                 else
                     modifyTrack trackNo (setPending (p+1))
@@ -174,12 +170,13 @@ zoomPutDouble trackNo t d = do
         , zoomSumSq = (zoomSumSq z) + (d*d)
         }
 
-zoomFlush :: ZoomState -> IO ZoomState
-zoomFlush z@ZoomState{..} = do
-    Fold.mapM_ (L.hPut zoomHandle) $ IM.mapWithKey zoomBuildTrack zoomTracks
-    Fold.mapM_ (L.hPut zoomHandle) $
-        IM.mapWithKey (\k v -> summaryToLazyByteString $ zoomBuildSummary k v) zoomTracks
-    return z { zoomTracks = IM.map flushTrack zoomTracks }
+zoomFlush :: Zoom ()
+zoomFlush = do
+    ZoomState{..} <- get
+    liftIO $ Fold.mapM_ (L.hPut zoomHandle) $ IM.mapWithKey zoomBuildTrack zoomTracks
+    let ss = IM.mapWithKey zoomBuildSummary zoomTracks
+    liftIO $ Fold.mapM_ (L.hPut zoomHandle . summaryToLazyByteString) ss
+    modify $ \z -> z { zoomTracks = IM.map flushTrack zoomTracks }
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
         flushTrack _ = def
@@ -225,11 +222,6 @@ summaryToLazyByteString Summary{..} =
         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
         l = encInt . L.length $ bs
     
-zoomClose :: ZoomState -> IO ()
-zoomClose z@ZoomState{..} = do
-    _ <- zoomFlush z
-    hClose zoomHandle
-
 encInt :: forall a . (Integral a) => a -> L.ByteString
 encInt = toLazyByteString . fromInt32le . fromIntegral
 
