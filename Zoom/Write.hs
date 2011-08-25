@@ -197,6 +197,7 @@ zoomBuildTrack trackNo ZoomTrackState{..} =
 zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> Summary
 zoomBuildSummary trackNo ZoomTrackState{..} = Summary
     { summaryTrack = trackNo
+    , summaryLevel = 1
     , summaryEntryTime = zoomEntryTime
     , summaryExitTime = zoomExitTime
     , summaryEntry = zoomEntry
@@ -209,9 +210,10 @@ zoomBuildSummary trackNo ZoomTrackState{..} = Summary
 
 summaryToLazyByteString :: Summary -> L.ByteString
 summaryToLazyByteString Summary{..} =
-    zoomSummaryHeader <> no <> entryTime <> exitTime <> l <> bs
+    zoomSummaryHeader <> no <> lvl <> entryTime <> exitTime <> l <> bs
     where
         no = encInt summaryTrack
+        lvl = encInt summaryLevel
         entryTime = encInt summaryEntryTime
         exitTime = encInt summaryExitTime
         bsEn  = encDbl summaryEntry

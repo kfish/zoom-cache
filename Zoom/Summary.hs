@@ -12,6 +12,7 @@ import Zoom.Common
 
 data Summary = Summary
     { summaryTrack :: ZoomTrackNo
+    , summaryLevel :: Int
     , summaryEntryTime :: Int
     , summaryExitTime :: Int
     , summaryEntry :: Double
@@ -25,9 +26,11 @@ data Summary = Summary
 summaryDuration :: Summary -> Int
 summaryDuration Summary{..} = summaryExitTime - summaryEntryTime
 
+-- XXX: summaries are only compatible if tracks and levels are equal
 appendSummary :: Summary -> Summary -> Summary
 appendSummary s1 s2 = Summary
     { summaryTrack = summaryTrack s1
+    , summaryLevel = summaryLevel s1
     , summaryEntryTime = summaryEntryTime s1
     , summaryExitTime = summaryExitTime s2
     , summaryEntry = summaryEntry s1

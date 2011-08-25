@@ -59,8 +59,8 @@ dumpData Packet{..} = mapM_ print packetData
 
 dumpSummary :: Summary -> IO ()
 dumpSummary Summary{..} = do
-    putStrLn $ printf "[%d - %d] entry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
-        summaryEntryTime summaryExitTime
+    putStrLn $ printf "[%d - %d] lvl; %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+        summaryEntryTime summaryExitTime summaryLevel
         summaryEntry summaryExit summaryMin summaryMax summaryAvg summaryRMS
 
 zReadPacket :: (Functor m, MonadIO m)
@@ -78,11 +78,12 @@ zReadPacket pFunc sFunc = do
         lift $ pFunc (Packet trackNo entryTime exitTime n d)
     when (h == L.unpack zoomSummaryHeader) $ do
         trackNo <- zReadInt32
+        lvl <- zReadInt32
         entryTime <- zReadInt32
         exitTime <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-        lift $ sFunc (Summary trackNo entryTime exitTime en ex mn mx avg rms)
+        lift $ sFunc (Summary trackNo lvl entryTime exitTime en ex mn mx avg rms)
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
