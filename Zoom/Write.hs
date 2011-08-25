@@ -57,6 +57,7 @@ data ZoomTrackState = ZoomTrackState
     , zoomSum      :: Double
     , zoomSumSq    :: Double
     , zoomPending  :: Int
+    , zoomLevels    :: IntMap (Maybe Summary)
     }
 
 instance Default ZoomTrackState where
@@ -75,6 +76,7 @@ defTrackState = ZoomTrackState
     , zoomSum = 0.0
     , zoomSumSq = 0.0
     , zoomPending = 1
+    , zoomLevels = IM.empty
     }
     where
         minDouble = -1000.0 -- lol
@@ -172,14 +174,40 @@ zoomPutDouble trackNo t d = do
 
 zoomFlush :: Zoom ()
 zoomFlush = do
-    ZoomState{..} <- get
-    liftIO $ Fold.mapM_ (L.hPut zoomHandle) $ IM.mapWithKey zoomBuildTrack zoomTracks
-    let ss = IM.mapWithKey zoomBuildSummary zoomTracks
-    liftIO $ Fold.mapM_ (L.hPut zoomHandle . summaryToLazyByteString) ss
-    modify $ \z -> z { zoomTracks = IM.map flushTrack zoomTracks }
+    h <- gets zoomHandle
+    tracks <- gets zoomTracks
+    liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey zoomBuildTrack tracks
+    let ss = IM.mapWithKey zoomBuildSummary tracks
+    Fold.mapM_ pushSummary ss
+    modify $ \z -> z { zoomTracks = IM.map flushTrack (zoomTracks z)}
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
-        flushTrack _ = def
+        flushTrack zt = def {zoomLevels = zoomLevels zt}
+
+pushSummary :: Summary -> Zoom ()
+pushSummary s@Summary{..} = do
+    zoomWriteSummary s
+    zt'm <- IM.lookup summaryTrack <$> gets zoomTracks
+    maybe (return ()) pushSummary' zt'm
+    where
+        pushSummary' :: ZoomTrackState -> Zoom ()
+        pushSummary' zt = do
+            case IM.lookup summaryLevel (zoomLevels zt) of
+                Just (Just prev) -> do
+                    let new = (prev `appendSummary` s) { summaryLevel = summaryLevel + 1 }
+                    insert Nothing
+                    pushSummary new
+                _                -> do
+                    insert (Just s)
+            where
+                insert :: Maybe Summary -> Zoom ()
+                insert x = modifyTrack summaryTrack (\ztt ->
+                    ztt { zoomLevels = IM.insert summaryLevel x (zoomLevels ztt) } )
+
+zoomWriteSummary :: Summary -> Zoom ()
+zoomWriteSummary s = do
+    h <- gets zoomHandle
+    liftIO . L.hPut h . summaryToLazyByteString $ s
 
 zoomBuildTrack :: ZoomTrackNo -> ZoomTrackState -> L.ByteString
 zoomBuildTrack trackNo ZoomTrackState{..} =
