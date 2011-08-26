@@ -43,6 +43,7 @@ import Zoom.Summary
 data ZoomState = ZoomState
     { zoomHandle  :: Handle
     , zoomTracks  :: IntMap ZoomTrackState
+    , zoomWritePending :: IntMap [Summary]
     }
 
 data ZoomTrackState = ZoomTrackState
@@ -111,7 +112,7 @@ zoomOpenW :: FilePath -> IO ZoomState
 zoomOpenW path = do
     h <- openFile path WriteMode
     zoomWriteInitialHeader h
-    return (ZoomState h IM.empty)
+    return (ZoomState h IM.empty IM.empty)
 
 zoomWithFileW :: FilePath -> Zoom () -> IO ()
 zoomWithFileW path f = do
@@ -179,14 +180,19 @@ zoomFlush = do
     liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey zoomBuildTrack tracks
     let ss = IM.mapWithKey zoomBuildSummary tracks
     Fold.mapM_ pushSummary ss
-    modify $ \z -> z { zoomTracks = IM.map flushTrack (zoomTracks z)}
+    pending <- concat . IM.elems <$> gets zoomWritePending
+    mapM_ zoomWriteSummary pending
+    modify $ \z -> z
+        { zoomTracks = IM.map flushTrack (zoomTracks z)
+        , zoomWritePending = IM.empty
+        }
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
         flushTrack zt = def {zoomLevels = zoomLevels zt}
 
 pushSummary :: Summary -> Zoom ()
 pushSummary s@Summary{..} = do
-    zoomWriteSummary s
+    deferSummary s
     zt'm <- IM.lookup summaryTrack <$> gets zoomTracks
     maybe (return ()) pushSummary' zt'm
     where
@@ -203,6 +209,14 @@ pushSummary s@Summary{..} = do
                 insert :: Maybe Summary -> Zoom ()
                 insert x = modifyTrack summaryTrack (\ztt ->
                     ztt { zoomLevels = IM.insert summaryLevel x (zoomLevels ztt) } )
+
+deferSummary :: Summary -> Zoom ()
+deferSummary s = do
+    modify $ \z -> z
+        { zoomWritePending = IM.alter f (summaryLevel s) (zoomWritePending z) }
+    where
+        f Nothing        = Just [s]
+        f (Just pending) = Just (pending ++ [s])
 
 zoomWriteSummary :: Summary -> Zoom ()
 zoomWriteSummary s = do
