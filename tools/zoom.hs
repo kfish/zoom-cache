@@ -63,11 +63,14 @@ zoomSummary = defCmd {
         , cmdHandler = zoomSummaryHandler
         , cmdCategory = "Reading"
         , cmdShortDesc = "Read zoom summary data"
-        , cmdExamples = [("Yo", "")]
+        , cmdExamples = [("Read summary level 3 from foo.zxd", "3 foo.zxd")]
         }
 
 zoomSummaryHandler :: App () ()
-zoomSummaryHandler = liftIO . zoomDumpSummary =<< appArgs
+zoomSummaryHandler = liftIO . f =<< appArgs
+    where
+        f (lvl:paths) = zoomDumpSummaryLevel (read lvl) paths
+        f _ = putStrLn "Usage: zoom summary n file.zxd"
 
 ------------------------------------------------------------
 -- The Application
