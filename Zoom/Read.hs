@@ -4,6 +4,7 @@
 module Zoom.Read (
       zoomDumpFile
     , zoomDumpSummary
+    , zoomDumpSummaryLevel
     , zoomReadFile
 ) where
 
@@ -37,6 +38,9 @@ zoomDumpFile = zoomReadFile dumpData (const (return ()))
 zoomDumpSummary :: [FilePath] -> IO ()
 zoomDumpSummary = zoomReadFile (const (return ())) dumpSummary
 
+zoomDumpSummaryLevel :: Int -> [FilePath] -> IO ()
+zoomDumpSummaryLevel lvl = zoomReadFile (const (return ())) (dumpSummaryLevel lvl)
+
 zoomReadFile :: (Functor m, MonadCatchIO m)
              => (Packet -> m ())
              -> (Summary -> m ())
@@ -62,6 +66,11 @@ dumpSummary Summary{..} = do
     putStrLn $ printf "[%d - %d] lvl; %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
         summaryEntryTime summaryExitTime summaryLevel
         summaryEntry summaryExit summaryMin summaryMax summaryAvg summaryRMS
+
+dumpSummaryLevel :: Int -> Summary -> IO ()
+dumpSummaryLevel lvl s@Summary{..}
+    | lvl == summaryLevel = dumpSummary s
+    | otherwise           = return ()
 
 zReadPacket :: (Functor m, MonadIO m)
             => (Packet -> m ())
