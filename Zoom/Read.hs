@@ -13,6 +13,9 @@ import Control.Monad (forever, replicateM, when)
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans (lift, MonadIO)
 import qualified Data.ByteString.Lazy as L
+import Data.Default
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import Data.Word
@@ -24,9 +27,13 @@ import Zoom.Summary
 
 ------------------------------------------------------------
 
+data ZoomReader m = ZoomReader
+    { zrTracks :: IntMap (TrackReader m)
+    }
+
 data TrackReader m = TrackReader
     { trTrack       :: ZoomTrackNo
-    , trReadTrack   :: Packet -> m ()
+    , trReadPacket  :: Packet -> m ()
     , trReadSummary :: Summary -> m ()
     }
 
@@ -38,24 +45,35 @@ data Packet = Packet
     , packetData :: [Double]
     }
 
+instance Default (ZoomReader m) where
+    def = ZoomReader IM.empty
+
+------------------------------------------------------------
+
+addTrack :: (Monad m) => ZoomTrackNo -> (Packet -> m ()) -> (Summary -> m ())
+         -> ZoomReader m -> ZoomReader m
+addTrack track pFunc sFunc zr = ZoomReader (IM.insert track tr (zrTracks zr))
+    where
+        tr = TrackReader track pFunc sFunc
+
 zoomDumpFile :: [FilePath] -> IO ()
-zoomDumpFile = zoomReadFile (TrackReader 1 dumpData (const (return ())))
+zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
 
 zoomDumpSummary :: [FilePath] -> IO ()
-zoomDumpSummary = zoomReadFile (TrackReader 1 (const (return ())) dumpSummary)
+zoomDumpSummary = zoomReadFile (addTrack 1 (const (return ())) dumpSummary def)
 
 zoomDumpSummaryLevel :: Int -> [FilePath] -> IO ()
-zoomDumpSummaryLevel lvl = zoomReadFile (TrackReader 1 (const (return ())) (dumpSummaryLevel lvl))
+zoomDumpSummaryLevel lvl = zoomReadFile (addTrack 1 (const (return ())) (dumpSummaryLevel lvl) def)
 
 zoomReadFile :: (Functor m, MonadCatchIO m)
-             => TrackReader m
+             => ZoomReader m
              -> [FilePath]
              -> m ()
 zoomReadFile _      []       = return ()
 zoomReadFile reader (path:_) = I.fileDriverRandom (zReader reader) path
 
 zReader :: (Functor m, MonadIO m)
-        => TrackReader m
+        => ZoomReader m
         -> Iteratee [Word8] m ()
 zReader = forever . zReadPacket
 
@@ -77,9 +95,9 @@ dumpSummaryLevel lvl s@Summary{..}
     | otherwise           = return ()
 
 zReadPacket :: (Functor m, MonadIO m)
-            => TrackReader m
+            => ZoomReader m
             -> Iteratee [Word8] m ()
-zReadPacket (TrackReader _ pFunc sFunc) = do
+zReadPacket zr = do
     h <- I.joinI $ I.takeUpTo 8 I.stream2list -- header
     when (h == L.unpack zoomPacketHeader) $ do
         trackNo <- zReadInt32
@@ -87,7 +105,11 @@ zReadPacket (TrackReader _ pFunc sFunc) = do
         exitTime <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         d <- replicateM n zReadFloat64be
-        lift $ pFunc (Packet trackNo entryTime exitTime n d)
+        case IM.lookup trackNo (zrTracks zr) of
+            Just tr -> do
+                let pFunc = trReadPacket tr
+                lift $ pFunc (Packet trackNo entryTime exitTime n d)
+            Nothing -> return ()
     when (h == L.unpack zoomSummaryHeader) $ do
         trackNo <- zReadInt32
         lvl <- zReadInt32
@@ -95,7 +117,11 @@ zReadPacket (TrackReader _ pFunc sFunc) = do
         exitTime <- zReadInt32
         n <- flip div 8 <$> zReadInt32
         [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-        lift $ sFunc (Summary trackNo lvl entryTime exitTime en ex mn mx avg rms)
+        case IM.lookup trackNo (zrTracks zr) of
+            Just tr -> do
+                let sFunc = trReadSummary tr
+                lift $ sFunc (Summary trackNo lvl entryTime exitTime en ex mn mx avg rms)
+            Nothing -> return ()
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
