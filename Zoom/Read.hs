@@ -63,7 +63,7 @@ dumpData Packet{..} = mapM_ print packetData
 
 dumpSummary :: Summary -> IO ()
 dumpSummary Summary{..} = do
-    putStrLn $ printf "[%d - %d] lvl; %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+    putStrLn $ printf "[%d - %d] lvl: %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
         summaryEntryTime summaryExitTime summaryLevel
         summaryEntry summaryExit summaryMin summaryMax summaryAvg summaryRMS
 
