@@ -24,6 +24,12 @@ import Zoom.Summary
 
 ------------------------------------------------------------
 
+data TrackReader m = TrackReader
+    { trTrack       :: ZoomTrackNo
+    , trReadTrack   :: Packet -> m ()
+    , trReadSummary :: Summary -> m ()
+    }
+
 data Packet = Packet
     { packetTrack :: ZoomTrackNo
     , packetEntryTime :: Int
@@ -33,27 +39,25 @@ data Packet = Packet
     }
 
 zoomDumpFile :: [FilePath] -> IO ()
-zoomDumpFile = zoomReadFile dumpData (const (return ()))
+zoomDumpFile = zoomReadFile (TrackReader 1 dumpData (const (return ())))
 
 zoomDumpSummary :: [FilePath] -> IO ()
-zoomDumpSummary = zoomReadFile (const (return ())) dumpSummary
+zoomDumpSummary = zoomReadFile (TrackReader 1 (const (return ())) dumpSummary)
 
 zoomDumpSummaryLevel :: Int -> [FilePath] -> IO ()
-zoomDumpSummaryLevel lvl = zoomReadFile (const (return ())) (dumpSummaryLevel lvl)
+zoomDumpSummaryLevel lvl = zoomReadFile (TrackReader 1 (const (return ())) (dumpSummaryLevel lvl))
 
 zoomReadFile :: (Functor m, MonadCatchIO m)
-             => (Packet -> m ())
-             -> (Summary -> m ())
+             => TrackReader m
              -> [FilePath]
              -> m ()
-zoomReadFile _     _     []       = return ()
-zoomReadFile pFunc sFunc (path:_) = I.fileDriverRandom (zReader pFunc sFunc) path
+zoomReadFile _      []       = return ()
+zoomReadFile reader (path:_) = I.fileDriverRandom (zReader reader) path
 
 zReader :: (Functor m, MonadIO m)
-        => (Packet -> m ())
-        -> (Summary -> m ())
+        => TrackReader m
         -> Iteratee [Word8] m ()
-zReader pFunc sFunc = forever (zReadPacket pFunc sFunc)
+zReader = forever . zReadPacket
 
 dumpTime :: Packet -> IO ()
 dumpTime Packet{..} = putStrLn $ printf "[%d - %d]" packetEntryTime packetExitTime
@@ -73,10 +77,9 @@ dumpSummaryLevel lvl s@Summary{..}
     | otherwise           = return ()
 
 zReadPacket :: (Functor m, MonadIO m)
-            => (Packet -> m ())
-            -> (Summary -> m ())
+            => TrackReader m
             -> Iteratee [Word8] m ()
-zReadPacket pFunc sFunc = do
+zReadPacket (TrackReader _ pFunc sFunc) = do
     h <- I.joinI $ I.takeUpTo 8 I.stream2list -- header
     when (h == L.unpack zoomPacketHeader) $ do
         trackNo <- zReadInt32
