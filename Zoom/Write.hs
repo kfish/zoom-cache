@@ -33,6 +33,7 @@ import System.IO
 import Unsafe.Coerce (unsafeCoerce)
 
 import Zoom.Common
+import Zoom.FloatMinMax
 import Zoom.Summary
 
 ------------------------------------------------------------
@@ -72,16 +73,13 @@ defTrackState = ZoomTrackState
     , zoomExitTime = 0
     , zoomEntry = 0.0
     , zoomExit = 0.0
-    , zoomMin = maxDouble
-    , zoomMax = minDouble
+    , zoomMin = floatMax
+    , zoomMax = floatMin
     , zoomSum = 0.0
     , zoomSumSq = 0.0
     , zoomPending = 1
     , zoomLevels = IM.empty
     }
-    where
-        minDouble = -1000.0 -- lol
-        maxDouble = 10000.0 -- lol
 
 type Zoom = StateT ZoomState IO
 
