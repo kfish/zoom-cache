@@ -131,7 +131,7 @@ Summary Data Packet header:
 type ZoomTrackNo = Int
 
 zoomInitialHeader :: L.ByteString
-zoomInitialHeader = LC.pack "ZXe5hed\0"
+zoomInitialHeader = LC.pack "\xe5ZXhe4d\0"
 
 zoomVersionMajor :: Int
 zoomVersionMajor = 0
@@ -140,8 +140,8 @@ zoomVersionMinor :: Int
 zoomVersionMinor = 1
 
 zoomPacketHeader :: L.ByteString
-zoomPacketHeader = LC.pack "ZXe4bon\0"
+zoomPacketHeader = LC.pack "\xe5ZXp4ck\0"
 
 zoomSummaryHeader :: L.ByteString
-zoomSummaryHeader = LC.pack "ZXe3sum\0"
+zoomSummaryHeader = LC.pack "\xe5ZX5umm\0"
 
