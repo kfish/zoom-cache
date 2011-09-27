@@ -1,14 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
-module Zoom.Summary (
+module Data.ZoomCache.Summary (
   -- * Types
     Summary(..)
   , summaryDuration
   , appendSummary
 ) where
 
-import Zoom.Common
+import Data.ZoomCache.Common
 
 data Summary = Summary
     { summaryTrack :: ZoomTrackNo

@@ -9,8 +9,8 @@ import Control.Monad.Trans (liftIO)
 import Data.Default
 import UI.Command
 
-import Zoom.Read
-import Zoom.Write
+import Data.ZoomCache.Read
+import Data.ZoomCache.Write
 
 ------------------------------------------------------------
 
@@ -19,7 +19,7 @@ zoomGen = defCmd {
           cmdName = "gen"
         , cmdHandler = zoomGenHandler
         , cmdCategory = "Writing"
-        , cmdShortDesc = "Generate zoom data"
+        , cmdShortDesc = "Generate zoom-cache data"
         , cmdExamples = [("Yo", "")]
         }
 
@@ -48,7 +48,7 @@ zoomDump = defCmd {
           cmdName = "dump"
         , cmdHandler = zoomDumpHandler
         , cmdCategory = "Reading"
-        , cmdShortDesc = "Read zoom data"
+        , cmdShortDesc = "Read zoom-cache data"
         , cmdExamples = [("Yo", "")]
         }
 
@@ -62,7 +62,7 @@ zoomSummary = defCmd {
           cmdName = "summary"
         , cmdHandler = zoomSummaryHandler
         , cmdCategory = "Reading"
-        , cmdShortDesc = "Read zoom summary data"
+        , cmdShortDesc = "Read zoom-cache summary data"
         , cmdExamples = [("Read summary level 3 from foo.zxd", "3 foo.zxd")]
         }
 
@@ -70,7 +70,7 @@ zoomSummaryHandler :: App () ()
 zoomSummaryHandler = liftIO . f =<< appArgs
     where
         f (lvl:paths) = zoomDumpSummaryLevel (read lvl) paths
-        f _ = putStrLn "Usage: zoom summary n file.zxd"
+        f _ = putStrLn "Usage: zoom-cache summary n file.zxd"
 
 ------------------------------------------------------------
 -- The Application
@@ -82,7 +82,7 @@ zoom = def {
         , appVersion = "0.1"
         , appAuthors = ["Conrad Parker"]
         , appBugEmail = "conrad@metadecks.org"
-        , appShortDesc = "Trivial zoom inspection tools"
+        , appShortDesc = "Trivial zoom-cache inspection tools"
         , appLongDesc = longDesc
         , appCategories = ["Reading", "Writing"]
         , appSeeAlso = [""]
@@ -91,7 +91,7 @@ zoom = def {
 	}
 
 longDesc :: String
-longDesc = "Manipulate zoom files"
+longDesc = "Manipulate zoom-cache files"
 
 ------------------------------------------------------------
 -- Main

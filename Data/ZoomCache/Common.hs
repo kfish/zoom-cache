@@ -1,6 +1,6 @@
 {-# OPTIONS -Wall #-}
 
-module Zoom.Common (
+module Data.ZoomCache.Common (
   -- * Types
     ZoomTrackNo
 

@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
-module Zoom.Write (
+module Data.ZoomCache.Write (
       Zoom
     , ZoomState(..)
 
@@ -32,9 +32,9 @@ import Data.Word
 import System.IO
 import Unsafe.Coerce (unsafeCoerce)
 
-import Zoom.Common
-import Zoom.FloatMinMax
-import Zoom.Summary
+import Data.ZoomCache.Common
+import Data.ZoomCache.Summary
+import Numeric.FloatMinMax
 
 ------------------------------------------------------------
 

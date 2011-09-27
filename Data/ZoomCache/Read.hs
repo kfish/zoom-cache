@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
-module Zoom.Read (
+module Data.ZoomCache.Read (
       zoomDumpFile
     , zoomDumpSummary
     , zoomDumpSummaryLevel
@@ -22,8 +22,8 @@ import Data.Word
 import Text.Printf
 import Unsafe.Coerce (unsafeCoerce)
 
-import Zoom.Common
-import Zoom.Summary
+import Data.ZoomCache.Common
+import Data.ZoomCache.Summary
 
 ------------------------------------------------------------
 
