@@ -102,9 +102,9 @@ zoomWriteInitialHeader h = do
     L.hPut h utc
     where
         buildInt16 :: Int -> L.ByteString
-        buildInt16 = toLazyByteString . fromInt16le . fromIntegral
+        buildInt16 = toLazyByteString . fromInt16be . fromIntegral
         buildInt64 :: Integer -> L.ByteString
-        buildInt64 = toLazyByteString . fromInt64le . fromIntegral
+        buildInt64 = toLazyByteString . fromInt64be . fromIntegral
 
 zoomOpenW :: FilePath -> IO ZoomState
 zoomOpenW path = do
@@ -154,7 +154,7 @@ zoomPutInt :: ZoomTrackNo -> Int -> Int -> Zoom ()
 zoomPutInt trackNo t d = do
     zoomSetTime trackNo t
     zoomIncPending trackNo
-    modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32le . fromIntegral) d }
+    modifyTrack trackNo $ \z -> z { zoomBuilder = zoomBuilder z <> (fromInt32be . fromIntegral) d }
 
 zoomPutDouble :: ZoomTrackNo -> Int -> Double -> Zoom ()
 zoomPutDouble trackNo t d = do
@@ -263,7 +263,7 @@ summaryToLazyByteString Summary{..} =
         l = encInt . L.length $ bs
     
 encInt :: forall a . (Integral a) => a -> L.ByteString
-encInt = toLazyByteString . fromInt32le . fromIntegral
+encInt = toLazyByteString . fromInt32be . fromIntegral
 
 encDbl :: Double -> L.ByteString
 encDbl = toLazyByteString . fromWord64be . toWord64

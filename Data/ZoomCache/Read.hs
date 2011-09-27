@@ -124,7 +124,7 @@ zReadPacket zr = do
             Nothing -> return ()
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
-zReadInt32 = fromIntegral <$> I.endianRead4 I.LSB
+zReadInt32 = fromIntegral <$> I.endianRead4 I.MSB
 
 zReadFloat64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
 zReadFloat64be = do

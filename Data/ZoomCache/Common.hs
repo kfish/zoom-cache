@@ -23,6 +23,8 @@ import qualified Data.ByteString.Lazy.Char8 as LC
 
 {-
 
+All fields are big-endian.
+
 Initial header:
 
     0                   1                   2                   3
