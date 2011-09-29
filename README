@@ -1,7 +1,6 @@
+zoom-cache: A streamable, seekable, zoomable cache file format
 
 Goals:
-  A streamable, seekable, zoomable file
-
   Writing
     * can be written to in streaming manner, with no backseeking
 
