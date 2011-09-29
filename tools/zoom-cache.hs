@@ -25,18 +25,17 @@ zoomGen = defCmd {
         }
 
 zoomGenHandler :: App () ()
-zoomGenHandler = liftIO . zoomWriteFile =<< appArgs
+zoomGenHandler = liftIO . (zoomWriteFile ZoomDouble doubles) =<< appArgs
 
-zoomWriteFile :: [FilePath] -> IO ()
-zoomWriteFile []       = return ()
-zoomWriteFile (path:_) = do
-    zoomWithFile1TrackW ZoomDouble path $ do
+zoomWriteFile :: (ZoomPut a) => ZoomTrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile _     _ []       = return ()
+zoomWriteFile ztype d (path:_) = do
+    zoomWithFile1TrackW ztype path $ do
         liftIO $ putStrLn path
-        let d = zoomGenDouble
         mapM_ (uncurry (zPut 1)) (zip [1..] d)
 
-zoomGenDouble :: [Double]
-zoomGenDouble = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
+doubles :: [Double]
+doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
 
 ------------------------------------------------------------
 
@@ -50,18 +49,10 @@ zoomGenI = defCmd {
         }
 
 zoomGenIHandler :: App () ()
-zoomGenIHandler = liftIO . zoomWriteFileI =<< appArgs
+zoomGenIHandler = liftIO . (zoomWriteFile ZoomInt ints) =<< appArgs
 
-zoomWriteFileI :: [FilePath] -> IO ()
-zoomWriteFileI []       = return ()
-zoomWriteFileI (path:_) = do
-    zoomWithFile1TrackW ZoomInt path $ do
-        liftIO $ putStrLn path
-        let d = zoomGenInt
-        mapM_ (uncurry (zPut 1)) (zip [1..] d)
-
-zoomGenInt :: [Int]
-zoomGenInt = map round zoomGenDouble
+ints :: [Int]
+ints = map round doubles
 
 ------------------------------------------------------------
 
