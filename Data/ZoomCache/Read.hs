@@ -40,8 +40,8 @@ data ZoomReader m = ZoomReader
     }
 
 data TrackReader m = TrackReader
-    { _trTrack      :: ZoomTrackNo
-    , trType        :: Maybe ZoomTrackType
+    { _trTrack      :: TrackNo
+    , trType        :: Maybe TrackType
     , trReadPacket  :: Packet -> m ()
     , trReadSummary :: Summary -> m ()
     }
@@ -49,7 +49,7 @@ data TrackReader m = TrackReader
 data PacketData = PDDouble [Double] | PDInt [Int]
 
 data Packet = Packet
-    { packetTrack :: ZoomTrackNo
+    { packetTrack :: TrackNo
     , packetEntryTime :: Int
     , packetExitTime :: Int
     , packetLength :: Int
@@ -61,7 +61,7 @@ instance Default (ZoomReader m) where
 
 ------------------------------------------------------------
 
-addTrack :: (Monad m) => ZoomTrackNo
+addTrack :: (Monad m) => TrackNo
          -> (Packet -> m ()) -> (Summary -> m ())
          -> ZoomReader m -> ZoomReader m
 addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTracks zr)) }
@@ -115,12 +115,12 @@ dumpSummaryLevel level s
     | level == summaryLevel s = dumpSummary s
     | otherwise               = return ()
 
-parseHeader :: L.ByteString -> Maybe ZoomHeaderType
+parseHeader :: L.ByteString -> Maybe HeaderType
 parseHeader h
-    | h == zoomGlobalHeader  = Just GlobalHeader
-    | h == zoomTrackHeader   = Just TrackHeader
-    | h == zoomPacketHeader  = Just PacketHeader
-    | h == zoomSummaryHeader = Just SummaryHeader
+    | h == globalHeader  = Just GlobalHeader
+    | h == trackHeader   = Just TrackHeader
+    | h == packetHeader  = Just PacketHeader
+    | h == summaryHeader = Just SummaryHeader
     | otherwise              = Nothing
 
 zReadPacket :: (Functor m, MonadIO m)
@@ -138,11 +138,11 @@ zReadPacket zr = do
                 Just tr -> do
                     let pFunc = trReadPacket tr
                     case trType tr of
-                        Just ZoomDouble -> do
+                        Just ZDouble -> do
                             let n = flip div 8 byteLength
                             d <- PDDouble <$> replicateM n zReadFloat64be
                             lift $ pFunc (Packet trackNo entryTime exitTime n d)
-                        Just ZoomInt -> do
+                        Just ZInt -> do
                             let n = flip div 4 byteLength
                             d <- PDInt <$> replicateM n zReadInt32
                             lift $ pFunc (Packet trackNo entryTime exitTime n d)
@@ -160,11 +160,11 @@ zReadPacket zr = do
                 Just tr -> do
                     let sFunc = trReadSummary tr
                     case trType tr of
-                        Just ZoomDouble -> do
+                        Just ZDouble -> do
                             let n = flip div 8 byteLength
                             [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
                             lift $ sFunc (SummaryDouble trackNo lvl entryTime exitTime en ex mn mx avg rms)
-                        Just ZoomInt -> do
+                        Just ZInt -> do
                             [en,ex,mn,mx] <- replicateM 4 zReadInt32
                             [avg,rms] <- replicateM 2 zReadFloat64be
                             lift $ sFunc (SummaryInt trackNo lvl entryTime exitTime en ex mn mx avg rms)
@@ -183,7 +183,7 @@ zReadPacket zr = do
                      }
         _ -> return zr
     where
-        setType :: ZoomTrackType -> TrackReader m -> TrackReader m
+        setType :: TrackType -> TrackReader m -> TrackReader m
         setType trackType tr = tr { trType = Just trackType }
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
@@ -197,10 +197,10 @@ zReadFloat64be = do
     n <- I.endianRead8 I.MSB
     return (unsafeCoerce n :: Double)
 
-zReadTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m ZoomTrackType
+zReadTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
 zReadTrackType = do
     n <- zReadInt32
     case n of
-        0 -> return ZoomDouble
-        1 -> return ZoomInt
+        0 -> return ZDouble
+        1 -> return ZInt
         _ -> error "Bad tracktype"

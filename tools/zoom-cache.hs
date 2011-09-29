@@ -25,9 +25,9 @@ zoomGen = defCmd {
         }
 
 zoomGenHandler :: App () ()
-zoomGenHandler = liftIO . (zoomWriteFile ZoomDouble doubles) =<< appArgs
+zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
 
-zoomWriteFile :: (ZoomPut a) => ZoomTrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile :: (ZoomPut a) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
 zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype "gen")
     (mapM_ (uncurry (zPut 1)) (zip [1..] d)) path
@@ -47,7 +47,7 @@ zoomGenI = defCmd {
         }
 
 zoomGenIHandler :: App () ()
-zoomGenIHandler = liftIO . (zoomWriteFile ZoomInt ints) =<< appArgs
+zoomGenIHandler = liftIO . (zoomWriteFile ZInt ints) =<< appArgs
 
 ints :: [Int]
 ints = map round doubles

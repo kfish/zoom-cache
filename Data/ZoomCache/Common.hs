@@ -2,23 +2,23 @@
 
 module Data.ZoomCache.Common (
   -- * Types
-    ZoomHeaderType(..)
-  , ZoomTrackNo
-  , ZoomTrackType(..)
+    HeaderType(..)
+  , TrackType(..)
+  , TrackNo
 
-  -- * Initial header
-  , zoomVersionMajor
-  , zoomVersionMinor
-  , zoomGlobalHeader
+  -- * Global header
+  , globalHeader
+  , versionMajor
+  , versionMinor
 
   -- * Track header
-  , zoomTrackHeader
+  , trackHeader
 
   -- * Packet header
-  , zoomPacketHeader
+  , packetHeader
 
   -- * Summary header
-  , zoomSummaryHeader
+  , summaryHeader
 ) where
 
 import qualified Data.ByteString.Lazy as L
@@ -191,28 +191,28 @@ Summary Data Packet header (signed 32-bit integer)
 
 -}
 
-type ZoomTrackNo = Int
+type TrackNo = Int
 
-data ZoomHeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
+data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
 
-data ZoomTrackType = ZoomDouble | ZoomInt
+data TrackType = ZDouble | ZInt
     deriving (Eq)
 
-zoomGlobalHeader :: L.ByteString
-zoomGlobalHeader = LC.pack "\xe5ZXhe4d\0"
+globalHeader :: L.ByteString
+globalHeader = LC.pack "\xe5ZXhe4d\0"
 
-zoomVersionMajor :: Int
-zoomVersionMajor = 0
+versionMajor :: Int
+versionMajor = 0
 
-zoomVersionMinor :: Int
-zoomVersionMinor = 1
+versionMinor :: Int
+versionMinor = 1
 
-zoomTrackHeader :: L.ByteString
-zoomTrackHeader = LC.pack "\xe5ZXtRcK\0"
+trackHeader :: L.ByteString
+trackHeader = LC.pack "\xe5ZXtRcK\0"
 
-zoomPacketHeader :: L.ByteString
-zoomPacketHeader = LC.pack "\xe5ZXp4ck\0"
+packetHeader :: L.ByteString
+packetHeader = LC.pack "\xe5ZXp4ck\0"
 
-zoomSummaryHeader :: L.ByteString
-zoomSummaryHeader = LC.pack "\xe5ZX5umm\0"
+summaryHeader :: L.ByteString
+summaryHeader = LC.pack "\xe5ZX5umm\0"
 

@@ -11,7 +11,7 @@ module Data.ZoomCache.Summary (
 import Data.ZoomCache.Common
 
 data Summary = SummaryDouble
-    { summaryTrack :: ZoomTrackNo
+    { summaryTrack :: TrackNo
     , summaryLevel :: Int
     , summaryEntryTime :: Int
     , summaryExitTime :: Int
@@ -23,7 +23,7 @@ data Summary = SummaryDouble
     , summaryRMS :: Double
     }
     | SummaryInt
-    { summaryTrack :: ZoomTrackNo
+    { summaryTrack :: TrackNo
     , summaryLevel :: Int
     , summaryEntryTime :: Int
     , summaryExitTime :: Int
