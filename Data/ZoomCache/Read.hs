@@ -36,11 +36,12 @@ import Data.ZoomCache.Summary
 
 data ZoomReader m = ZoomReader
     { zrTracks :: IntMap (TrackReader m)
+    , zrNames :: IntMap L.ByteString
     }
 
 data TrackReader m = TrackReader
     { _trTrack      :: ZoomTrackNo
-    , trTrackType   :: Maybe ZoomTrackType
+    , trType        :: Maybe ZoomTrackType
     , trReadPacket  :: Packet -> m ()
     , trReadSummary :: Summary -> m ()
     }
@@ -56,15 +57,16 @@ data Packet = Packet
     }
 
 instance Default (ZoomReader m) where
-    def = ZoomReader IM.empty
+    def = ZoomReader IM.empty IM.empty
 
 ------------------------------------------------------------
 
-addTrack :: (Monad m) => ZoomTrackNo -> (Packet -> m ()) -> (Summary -> m ())
+addTrack :: (Monad m) => ZoomTrackNo
+         -> (Packet -> m ()) -> (Summary -> m ())
          -> ZoomReader m -> ZoomReader m
-addTrack track pFunc sFunc zr = ZoomReader (IM.insert track tr (zrTracks zr))
+addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTracks zr)) }
     where
-        tr = TrackReader track Nothing pFunc sFunc
+        tr = TrackReader trackNo Nothing pFunc sFunc
 
 zoomDumpFile :: [FilePath] -> IO ()
 zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
@@ -135,7 +137,7 @@ zReadPacket zr = do
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let pFunc = trReadPacket tr
-                    case trTrackType tr of
+                    case trType tr of
                         Just ZoomDouble -> do
                             let n = flip div 8 byteLength
                             d <- PDDouble <$> replicateM n zReadFloat64be
@@ -157,7 +159,7 @@ zReadPacket zr = do
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let sFunc = trReadSummary tr
-                    case trTrackType tr of
+                    case trType tr of
                         Just ZoomDouble -> do
                             let n = flip div 8 byteLength
                             [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
@@ -172,15 +174,17 @@ zReadPacket zr = do
         Just TrackHeader -> do
             trackNo <- zReadInt32
             trackType <- zReadTrackType
+            byteLength <- zReadInt32
+            name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
             return zr{ zrTracks = IM.adjust (setType trackType)
                                             trackNo
                                             (zrTracks zr)
+                     , zrNames = IM.insert trackNo name (zrNames zr)
                      }
         _ -> return zr
     where
         setType :: ZoomTrackType -> TrackReader m -> TrackReader m
-        setType trackType tr = tr{trTrackType = Just trackType}
-
+        setType trackType tr = tr { trType = Just trackType }
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB

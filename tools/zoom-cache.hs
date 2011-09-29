@@ -29,7 +29,7 @@ zoomGenHandler = liftIO . (zoomWriteFile ZoomDouble doubles) =<< appArgs
 
 zoomWriteFile :: (ZoomPut a) => ZoomTrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
-zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype)
+zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype "gen")
     (mapM_ (uncurry (zPut 1)) (zip [1..] d)) path
 
 doubles :: [Double]

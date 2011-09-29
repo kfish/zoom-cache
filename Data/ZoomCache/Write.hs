@@ -52,6 +52,8 @@ instance ZoomPut Int where
 (<>) :: Monoid a => a -> a -> a
 (<>) = mappend
 
+type TrackMap = IntMap (ZoomTrackType, String)
+
 data ZoomState = ZoomState
     { zoomHandle  :: Handle
     , zoomTracks  :: IntMap ZoomTrackState
@@ -60,6 +62,7 @@ data ZoomState = ZoomState
 
 data ZoomTrackState = ZoomTrackState
     { ztrkType      :: ZoomTrackType
+    , ztrkName      :: LC.ByteString
     , ztrkBuilder   :: Builder
     , ztrkCount     :: Int
     , ztrkPending   :: Int
@@ -89,6 +92,7 @@ data ZTSData = ZTSDouble
 defTrackState :: ZoomTrackType -> ZoomTrackState
 defTrackState ZoomDouble = ZoomTrackState
     { ztrkType = ZoomDouble
+    , ztrkName = ""
     , ztrkBuilder = mempty
     , ztrkCount = 0
     , ztrkPending = 1
@@ -106,6 +110,7 @@ defTrackState ZoomDouble = ZoomTrackState
     }
 defTrackState ZoomInt = ZoomTrackState
     { ztrkType = ZoomInt
+    , ztrkName = ""
     , ztrkBuilder = mempty
     , ztrkCount = 0
     , ztrkPending = 1
@@ -156,11 +161,13 @@ zoomWriteTrackHeader h trackNo ZoomTrackState{..} = do
     L.hPut h zoomTrackHeader
     L.hPut h (buildInt32 trackNo)
     L.hPut h (buildInt32 (encType ztrkType))
+    L.hPut h (buildInt32 (fromIntegral . LC.length $ ztrkName))
+    L.hPut h ztrkName
     where
         encType ZoomDouble = 0
         encType ZoomInt = 1
 
-openWrite :: IntMap ZoomTrackType -> FilePath -> IO ZoomState
+openWrite :: TrackMap -> FilePath -> IO ZoomState
 openWrite ztypes path = do
     h <- openFile path WriteMode
     zoomWriteInitialHeader h
@@ -168,14 +175,17 @@ openWrite ztypes path = do
     mapM_ (uncurry (zoomWriteTrackHeader h)) (IM.assocs tracks)
     return $ ZoomState h tracks IM.empty
     where
-        addTrack :: ZoomTrackNo -> ZoomTrackType -> IntMap ZoomTrackState -> IntMap ZoomTrackState
-        addTrack trackNo ztype = IM.insert trackNo (defTrackState ztype)
+        addTrack :: ZoomTrackNo -> (ZoomTrackType, String) ->
+                    IntMap ZoomTrackState -> IntMap ZoomTrackState
+        addTrack trackNo (ztype, name) = IM.insert trackNo trackState
+            where
+                trackState = (defTrackState ztype){ztrkName = LC.pack name}
 
 -- | Create a track map for a single stream of a given type, as track no. 1
-oneTrack :: ZoomTrackType -> IntMap ZoomTrackType
-oneTrack = IM.singleton 1
+oneTrack :: ZoomTrackType -> String -> TrackMap
+oneTrack ztype name = IM.singleton 1 (ztype, name)
 
-withFileWrite :: IntMap ZoomTrackType -> Zoom () -> FilePath -> IO ()
+withFileWrite :: TrackMap  -> Zoom () -> FilePath -> IO ()
 withFileWrite ztypes f path = do
     z <- openWrite ztypes path
     z' <- execStateT (f >> flush) z
