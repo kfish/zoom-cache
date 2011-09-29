@@ -59,14 +59,14 @@ data ZoomState = ZoomState
     }
 
 data ZoomTrackState = ZoomTrackState
-    { zoomType      :: ZoomTrackType
-    , zoomBuilder   :: Builder
-    , zoomCount     :: Int
-    , zoomPending   :: Int
-    , zoomLevels    :: IntMap (Maybe Summary)
-    , zoomEntryTime :: Int
-    , zoomExitTime  :: Int
-    , zoomTrackData :: ZTSData
+    { ztrkType      :: ZoomTrackType
+    , ztrkBuilder   :: Builder
+    , ztrkCount     :: Int
+    , ztrkPending   :: Int
+    , ztrkLevels    :: IntMap (Maybe Summary)
+    , ztrkEntryTime :: Int
+    , ztrkExitTime  :: Int
+    , ztrkData      :: ZTSData
     }
 
 data ZTSData = ZTSDouble
@@ -88,14 +88,14 @@ data ZTSData = ZTSDouble
 
 defTrackState :: ZoomTrackType -> ZoomTrackState
 defTrackState ZoomDouble = ZoomTrackState
-    { zoomType = ZoomDouble
-    , zoomBuilder = mempty
-    , zoomCount = 0
-    , zoomPending = 1
-    , zoomLevels = IM.empty
-    , zoomEntryTime = 0
-    , zoomExitTime = 0
-    , zoomTrackData = ZTSDouble
+    { ztrkType = ZoomDouble
+    , ztrkBuilder = mempty
+    , ztrkCount = 0
+    , ztrkPending = 1
+    , ztrkLevels = IM.empty
+    , ztrkEntryTime = 0
+    , ztrkExitTime = 0
+    , ztrkData = ZTSDouble
         { ztsdEntry = 0.0
         , ztsdExit = 0.0
         , ztsdMin = floatMax
@@ -105,14 +105,14 @@ defTrackState ZoomDouble = ZoomTrackState
         }
     }
 defTrackState ZoomInt = ZoomTrackState
-    { zoomType = ZoomInt
-    , zoomBuilder = mempty
-    , zoomCount = 0
-    , zoomPending = 1
-    , zoomLevels = IM.empty
-    , zoomEntryTime = 0
-    , zoomExitTime = 0
-    , zoomTrackData = ZTSInt
+    { ztrkType = ZoomInt
+    , ztrkBuilder = mempty
+    , ztrkCount = 0
+    , ztrkPending = 1
+    , ztrkLevels = IM.empty
+    , ztrkEntryTime = 0
+    , ztrkExitTime = 0
+    , ztrkData = ZTSInt
         { ztsiEntry = 0
         , ztsiExit = 0
         , ztsiMin = maxBound
@@ -155,7 +155,7 @@ zoomWriteTrackHeader :: Handle -> Int -> ZoomTrackState -> IO ()
 zoomWriteTrackHeader h trackNo ZoomTrackState{..} = do
     L.hPut h zoomTrackHeader
     L.hPut h (buildInt32 trackNo)
-    L.hPut h (buildInt32 (encType zoomType))
+    L.hPut h (buildInt32 (encType ztrkType))
     where
         encType ZoomDouble = 0
         encType ZoomInt = 1
@@ -189,8 +189,8 @@ modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
 zoomSetTime :: ZoomTrackNo -> Int -> Zoom ()
 zoomSetTime trackNo t = modifyTrack trackNo $ \zt -> zt
-    { zoomEntryTime = if zoomCount zt == 1 then t else zoomEntryTime zt
-    , zoomExitTime = t
+    { ztrkEntryTime = if ztrkCount zt == 1 then t else ztrkEntryTime zt
+    , ztrkExitTime = t
     }
 
 zoomIncPending :: ZoomTrackNo -> Zoom ()
@@ -198,7 +198,7 @@ zoomIncPending trackNo = do
     zt <- IM.lookup trackNo <$> gets zoomTracks
     case zt of
         Just track -> do
-            let p = zoomPending track
+            let p = ztrkPending track
             if (p >= 1024)
                 then do
                     flush
@@ -208,16 +208,16 @@ zoomIncPending trackNo = do
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
     where
         setPending :: Int -> ZoomTrackState -> ZoomTrackState
-        setPending p zt = zt { zoomPending = p }
+        setPending p zt = zt { ztrkPending = p }
 
 zoomPutDouble :: ZoomTrackNo -> Int -> Double -> Zoom ()
 zoomPutDouble trackNo t d = do
     zoomSetTime trackNo t
     zoomIncPending trackNo
     modifyTrack trackNo $ \z -> z
-        { zoomBuilder = zoomBuilder z <> (fromWord64be . toWord64) d
-        , zoomCount = (zoomCount z) + 1
-        , zoomTrackData = updateZTSDouble (zoomCount z) d (zoomTrackData z)
+        { ztrkBuilder = ztrkBuilder z <> (fromWord64be . toWord64) d
+        , ztrkCount = (ztrkCount z) + 1
+        , ztrkData = updateZTSDouble (ztrkCount z) d (ztrkData z)
         }
 
 updateZTSDouble :: Int -> Double -> ZTSData -> ZTSData
@@ -236,9 +236,9 @@ zoomPutInt trackNo t i = do
     zoomSetTime trackNo t
     zoomIncPending trackNo
     modifyTrack trackNo $ \z -> z
-        { zoomBuilder = zoomBuilder z <> (fromInt32be . fromIntegral) i
-        , zoomCount = (zoomCount z) + 1
-        , zoomTrackData = updateZTSInt (zoomCount z) i (zoomTrackData z)
+        { ztrkBuilder = ztrkBuilder z <> (fromInt32be . fromIntegral) i
+        , ztrkCount = (ztrkCount z) + 1
+        , ztrkData = updateZTSInt (ztrkCount z) i (ztrkData z)
         }
 
 updateZTSInt :: Int -> Int -> ZTSData -> ZTSData
@@ -267,7 +267,7 @@ flush = do
         }
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
-        flushTrack zt = (defTrackState (zoomType zt)) {zoomLevels = zoomLevels zt}
+        flushTrack zt = (defTrackState (ztrkType zt)) {ztrkLevels = ztrkLevels zt}
 
 pushSummary :: Summary -> Zoom ()
 pushSummary s = do
@@ -277,7 +277,7 @@ pushSummary s = do
     where
         pushSummary' :: ZoomTrackState -> Zoom ()
         pushSummary' zt = do
-            case IM.lookup (summaryLevel s) (zoomLevels zt) of
+            case IM.lookup (summaryLevel s) (ztrkLevels zt) of
                 Just (Just prev) -> do
                     let new = (prev `appendSummary` s) { summaryLevel = summaryLevel s + 1 }
                     insert Nothing
@@ -287,7 +287,7 @@ pushSummary s = do
             where
                 insert :: Maybe Summary -> Zoom ()
                 insert x = modifyTrack (summaryTrack s) (\ztt ->
-                    ztt { zoomLevels = IM.insert (summaryLevel s) x (zoomLevels ztt) } )
+                    ztt { ztrkLevels = IM.insert (summaryLevel s) x (ztrkLevels ztt) } )
 
 deferSummary :: Summary -> Zoom ()
 deferSummary s = do
@@ -307,37 +307,37 @@ zoomBuildTrack trackNo ZoomTrackState{..} =
     zoomPacketHeader <> no <> entryTime <> exitTime <> l <> bs
     where
         no = encInt trackNo
-        entryTime = encInt zoomEntryTime
-        exitTime = encInt zoomExitTime
-        bs = toLazyByteString zoomBuilder
+        entryTime = encInt ztrkEntryTime
+        exitTime = encInt ztrkExitTime
+        bs = toLazyByteString ztrkBuilder
         l  = encInt . L.length $ bs
 
 zoomBuildSummary :: ZoomTrackNo -> ZoomTrackState -> Summary
-zoomBuildSummary trackNo ZoomTrackState{..} = build zoomType
+zoomBuildSummary trackNo ZoomTrackState{..} = build ztrkType
     where
         build ZoomDouble = SummaryDouble
             { summaryTrack = trackNo
             , summaryLevel = 1
-            , summaryEntryTime = zoomEntryTime
-            , summaryExitTime = zoomExitTime
-            , summaryDoubleEntry = ztsdEntry zoomTrackData
-            , summaryDoubleExit = ztsdExit zoomTrackData
-            , summaryDoubleMin = ztsdMin zoomTrackData
-            , summaryDoubleMax = ztsdMax zoomTrackData
-            , summaryAvg = ztsdSum zoomTrackData / (fromIntegral zoomCount)
-            , summaryRMS = sqrt $ ztsSumSq  zoomTrackData / (fromIntegral zoomCount)
+            , summaryEntryTime = ztrkEntryTime
+            , summaryExitTime = ztrkExitTime
+            , summaryDoubleEntry = ztsdEntry ztrkData
+            , summaryDoubleExit = ztsdExit ztrkData
+            , summaryDoubleMin = ztsdMin ztrkData
+            , summaryDoubleMax = ztsdMax ztrkData
+            , summaryAvg = ztsdSum ztrkData / (fromIntegral ztrkCount)
+            , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
             }
         build ZoomInt = SummaryInt
             { summaryTrack = trackNo
             , summaryLevel = 1
-            , summaryEntryTime = zoomEntryTime
-            , summaryExitTime = zoomExitTime
-            , summaryIntEntry = ztsiEntry zoomTrackData
-            , summaryIntExit = ztsiExit zoomTrackData
-            , summaryIntMin = ztsiMin zoomTrackData
-            , summaryIntMax = ztsiMax zoomTrackData
-            , summaryAvg = fromIntegral (ztsiSum zoomTrackData) / (fromIntegral zoomCount)
-            , summaryRMS = sqrt $ ztsSumSq  zoomTrackData / (fromIntegral zoomCount)
+            , summaryEntryTime = ztrkEntryTime
+            , summaryExitTime = ztrkExitTime
+            , summaryIntEntry = ztsiEntry ztrkData
+            , summaryIntExit = ztsiExit ztrkData
+            , summaryIntMin = ztsiMin ztrkData
+            , summaryIntMax = ztsiMax ztrkData
+            , summaryAvg = fromIntegral (ztsiSum ztrkData) / (fromIntegral ztrkCount)
+            , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
             }
 
 summaryToLazyByteString :: Summary -> L.ByteString
