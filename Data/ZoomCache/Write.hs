@@ -16,10 +16,10 @@ module Data.ZoomCache.Write (
     , openWrite
     , withFileWrite
     
-    , zoomFlush
+    , flush
 ) where
 
-import Blaze.ByteString.Builder
+import Blaze.ByteString.Builder hiding (flush)
 import Control.Applicative ((<$>))
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
@@ -178,7 +178,7 @@ oneTrack = IM.singleton 1
 withFileWrite :: IntMap ZoomTrackType -> Zoom () -> FilePath -> IO ()
 withFileWrite ztypes f path = do
     z <- openWrite ztypes path
-    z' <- execStateT (f >> zoomFlush) z
+    z' <- execStateT (f >> flush) z
     hClose (zoomHandle z')
 
 modifyTracks :: (IntMap ZoomTrackState -> IntMap ZoomTrackState) -> Zoom ()
@@ -201,7 +201,7 @@ zoomIncPending trackNo = do
             let p = zoomPending track
             if (p >= 1024)
                 then do
-                    zoomFlush
+                    flush
                     modifyTrack trackNo (setPending 1)
                 else
                     modifyTrack trackNo (setPending (p+1))
@@ -252,8 +252,8 @@ updateZTSInt count i ZTSInt{..} = ZTSInt
     }
 updateZTSInt _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
 
-zoomFlush :: Zoom ()
-zoomFlush = do
+flush :: Zoom ()
+flush = do
     h <- gets zoomHandle
     tracks <- gets zoomTracks
     liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey zoomBuildTrack tracks
