@@ -91,9 +91,6 @@ zReader zr = do
         zr' <- zReadPacket zr
         zReader zr'
 
-dumpTime :: Packet -> IO ()
-dumpTime p = putStrLn $ printf "[%d - %d]" (packetEntryTime p) (packetExitTime p)
-
 dumpData :: Packet -> IO ()
 dumpData p = case packetData p of
     PDDouble ds -> mapM_ print ds
