@@ -33,7 +33,7 @@ zoomWriteFile (path:_) = do
     zoomWithFile1TrackW ZoomDouble path $ do
         liftIO $ putStrLn path
         let d = zoomGenDouble
-        mapM_ (uncurry (zoomPutDouble 1)) (zip [1..] d)
+        mapM_ (uncurry (zPut 1)) (zip [1..] d)
 
 zoomGenDouble :: [Double]
 zoomGenDouble = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
@@ -58,7 +58,7 @@ zoomWriteFileI (path:_) = do
     zoomWithFile1TrackW ZoomInt path $ do
         liftIO $ putStrLn path
         let d = zoomGenInt
-        mapM_ (uncurry (zoomPutInt 1)) (zip [1..] d)
+        mapM_ (uncurry (zPut 1)) (zip [1..] d)
 
 zoomGenInt :: [Int]
 zoomGenInt = map round zoomGenDouble

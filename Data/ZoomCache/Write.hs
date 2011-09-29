@@ -4,7 +4,11 @@
 {-# OPTIONS -Wall #-}
 
 module Data.ZoomCache.Write (
-      Zoom
+    -- Classes
+      ZoomPut(..)
+
+    -- Types
+    , Zoom
     , ZoomState(..)
 
     -- * State initialisation
@@ -36,6 +40,17 @@ import Unsafe.Coerce (unsafeCoerce)
 import Data.ZoomCache.Common
 import Data.ZoomCache.Summary
 import Numeric.FloatMinMax
+
+------------------------------------------------------------
+
+class ZoomPut a where
+    zPut :: ZoomTrackNo -> Int -> a -> Zoom ()
+
+instance ZoomPut Double where
+    zPut = zoomPutDouble
+
+instance ZoomPut Int where
+    zPut = zoomPutInt
 
 ------------------------------------------------------------
 
