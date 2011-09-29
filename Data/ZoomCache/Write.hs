@@ -132,12 +132,14 @@ zoomWriteInitialHeader :: Handle -> IO ()
 zoomWriteInitialHeader h = do
     L.hPut h . mconcat $
         [ globalHeader
-        , buildInt16 versionMajor
-        , buildInt16 versionMinor
-        , buildInt64 0 -- Presentation time numerator
-        , buildInt64 0 -- Presentation time denominator
-        , buildInt64 0 -- Base time numerator
-        , buildInt64 0 -- Base time denominator
+        , toLazyByteString . mconcat $
+            [ fromInt16be . fromIntegral $ versionMajor
+            , fromInt16be . fromIntegral $ versionMinor
+            , fromInt64be 0 -- Presentation time numerator
+            , fromInt64be 0 -- Presentation time denominator
+            , fromInt64be 0 -- Base time numerator
+            , fromInt64be 0  -- Base time denominator
+            ]
         , LC.pack (replicate 20 '\0')
         ]
 
@@ -145,14 +147,12 @@ zoomWriteTrackHeader :: Handle -> Int -> ZoomTrackState -> IO ()
 zoomWriteTrackHeader h trackNo ZoomTrackState{..} = do
     L.hPut h . mconcat $
         [ trackHeader
-        , (buildInt32 trackNo)
-        , (buildInt32 (encType ztrkType))
-        , (buildInt32 (fromIntegral . LC.length $ ztrkName))
+        , toLazyByteString $
+            fromTrackNo trackNo <>
+            fromTrackType ztrkType <>
+            fromInt32be (fromIntegral . LC.length $ ztrkName)
         , ztrkName
         ]
-    where
-        encType ZDouble = 0
-        encType ZInt = 1
 
 openWrite :: TrackMap -> FilePath -> IO ZoomState
 openWrite ztypes path = do

@@ -8,12 +8,28 @@ module Data.ZoomCache.Binary (
     , encInt
     , encDbl
     , toWord64
+
+    -- * Builders
+    , fromTrackType
+    , fromTrackNo
 ) where
 
 import Blaze.ByteString.Builder hiding (flush)
 import qualified Data.ByteString.Lazy as L
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
+
+import Data.ZoomCache.Common
+
+----------------------------------------------------------------------
+--
+
+fromTrackType :: TrackType -> Builder
+fromTrackType ZDouble = fromInt32be 0
+fromTrackType ZInt    = fromInt32be 1
+
+fromTrackNo :: TrackNo -> Builder
+fromTrackNo = fromInt32be . fromIntegral
 
 ----------------------------------------------------------------------
 -- Binary data helpers
