@@ -2,12 +2,17 @@
 
 module Data.ZoomCache.Common (
   -- * Types
-    ZoomTrackNo
+    ZoomHeaderType(..)
+  , ZoomTrackNo
+  , ZoomTrackType(..)
 
   -- * Initial header
   , zoomVersionMajor
   , zoomVersionMinor
-  , zoomInitialHeader
+  , zoomGlobalHeader
+
+  -- * Track header
+  , zoomTrackHeader
 
   -- * Packet header
   , zoomPacketHeader
@@ -25,7 +30,7 @@ import qualified Data.ByteString.Lazy.Char8 as LC
 
 All fields are big-endian.
 
-Initial header:
+Global header:
 
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1| Byte
@@ -63,6 +68,22 @@ Initial header:
    |                                                               | 60-63
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+Track header:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1| Byte
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Identifier                                                    | 0-3
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 4-7
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Track no.                                                     | 8-11
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Type                                                          | 12-15
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Type: 0 64 bit IEEE754 floating point (Double)
+      1 32 bit signed integer (Word32)
 
 Raw Data Packet header:
 
@@ -132,14 +153,22 @@ Summary Data Packet header:
 
 type ZoomTrackNo = Int
 
-zoomInitialHeader :: L.ByteString
-zoomInitialHeader = LC.pack "\xe5ZXhe4d\0"
+data ZoomHeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
+
+data ZoomTrackType = ZoomDouble | ZoomInt
+    deriving (Eq)
+
+zoomGlobalHeader :: L.ByteString
+zoomGlobalHeader = LC.pack "\xe5ZXhe4d\0"
 
 zoomVersionMajor :: Int
 zoomVersionMajor = 0
 
 zoomVersionMinor :: Int
 zoomVersionMinor = 1
+
+zoomTrackHeader :: L.ByteString
+zoomTrackHeader = LC.pack "\xe5ZXtRcK\0"
 
 zoomPacketHeader :: L.ByteString
 zoomPacketHeader = LC.pack "\xe5ZXp4ck\0"

@@ -9,6 +9,7 @@ import Control.Monad.Trans (liftIO)
 import Data.Default
 import UI.Command
 
+import Data.ZoomCache.Common
 import Data.ZoomCache.Read
 import Data.ZoomCache.Write
 
@@ -19,8 +20,8 @@ zoomGen = defCmd {
           cmdName = "gen"
         , cmdHandler = zoomGenHandler
         , cmdCategory = "Writing"
-        , cmdShortDesc = "Generate zoom-cache data"
-        , cmdExamples = [("Yo", "")]
+        , cmdShortDesc = "Generate floating-point zoom-cache data"
+        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
         }
 
 zoomGenHandler :: App () ()
@@ -29,17 +30,38 @@ zoomGenHandler = liftIO . zoomWriteFile =<< appArgs
 zoomWriteFile :: [FilePath] -> IO ()
 zoomWriteFile []       = return ()
 zoomWriteFile (path:_) = do
-    zoomWithFileW path $ do
+    zoomWithFile1TrackW ZoomDouble path $ do
         liftIO $ putStrLn path
-        -- d <- liftIO zoomGenInt
         let d = zoomGenDouble
         mapM_ (uncurry (zoomPutDouble 1)) (zip [1..] d)
 
--- zoomGenInt :: IO [Int]
--- zoomGenInt = return [3, 3, 4, 3, 3, 6, 6, 7, 4, 9]
-
 zoomGenDouble :: [Double]
 zoomGenDouble = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
+
+------------------------------------------------------------
+
+zoomGenI :: Command ()
+zoomGenI = defCmd {
+          cmdName = "geni"
+        , cmdHandler = zoomGenIHandler
+        , cmdCategory = "Writing"
+        , cmdShortDesc = "Generate integer zoom-cache data"
+        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
+        }
+
+zoomGenIHandler :: App () ()
+zoomGenIHandler = liftIO . zoomWriteFileI =<< appArgs
+
+zoomWriteFileI :: [FilePath] -> IO ()
+zoomWriteFileI []       = return ()
+zoomWriteFileI (path:_) = do
+    zoomWithFile1TrackW ZoomInt path $ do
+        liftIO $ putStrLn path
+        let d = zoomGenInt
+        mapM_ (uncurry (zoomPutInt 1)) (zip [1..] d)
+
+zoomGenInt :: [Int]
+zoomGenInt = map round zoomGenDouble
 
 ------------------------------------------------------------
 
@@ -87,7 +109,7 @@ zoom = def {
         , appCategories = ["Reading", "Writing"]
         , appSeeAlso = [""]
         , appProject = "Zoom"
-        , appCmds = [zoomGen, zoomDump, zoomSummary]
+        , appCmds = [zoomGen, zoomGenI, zoomDump, zoomSummary]
 	}
 
 longDesc :: String

@@ -1,23 +1,30 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
 module Data.ZoomCache.Read (
-      zoomDumpFile
+    -- * Types
+      Packet(..)
+
+    -- * Functions
+    , zoomDumpFile
     , zoomDumpSummary
     , zoomDumpSummaryLevel
     , zoomReadFile
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, replicateM, when)
+import Control.Monad (replicateM, when)
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans (lift, MonadIO)
 import qualified Data.ByteString.Lazy as L
 import Data.Default
+import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
+import Data.Maybe
 import Data.Word
 import Text.Printf
 import Unsafe.Coerce (unsafeCoerce)
@@ -32,17 +39,20 @@ data ZoomReader m = ZoomReader
     }
 
 data TrackReader m = TrackReader
-    { trTrack       :: ZoomTrackNo
+    { _trTrack      :: ZoomTrackNo
+    , trTrackType   :: Maybe ZoomTrackType
     , trReadPacket  :: Packet -> m ()
     , trReadSummary :: Summary -> m ()
     }
+
+data PacketData = PDDouble [Double] | PDInt [Int]
 
 data Packet = Packet
     { packetTrack :: ZoomTrackNo
     , packetEntryTime :: Int
     , packetExitTime :: Int
     , packetLength :: Int
-    , packetData :: [Double]
+    , packetData :: PacketData
     }
 
 instance Default (ZoomReader m) where
@@ -54,7 +64,7 @@ addTrack :: (Monad m) => ZoomTrackNo -> (Packet -> m ()) -> (Summary -> m ())
          -> ZoomReader m -> ZoomReader m
 addTrack track pFunc sFunc zr = ZoomReader (IM.insert track tr (zrTracks zr))
     where
-        tr = TrackReader track pFunc sFunc
+        tr = TrackReader track Nothing pFunc sFunc
 
 zoomDumpFile :: [FilePath] -> IO ()
 zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
@@ -75,59 +85,121 @@ zoomReadFile reader (path:_) = I.fileDriverRandom (zReader reader) path
 zReader :: (Functor m, MonadIO m)
         => ZoomReader m
         -> Iteratee [Word8] m ()
-zReader = forever . zReadPacket
+zReader zr = do
+    e <- I.isStreamFinished
+    when (isNothing e) $ do
+        zr' <- zReadPacket zr
+        zReader zr'
 
 dumpTime :: Packet -> IO ()
-dumpTime Packet{..} = putStrLn $ printf "[%d - %d]" packetEntryTime packetExitTime
+dumpTime p = putStrLn $ printf "[%d - %d]" (packetEntryTime p) (packetExitTime p)
 
 dumpData :: Packet -> IO ()
-dumpData Packet{..} = mapM_ print packetData
+dumpData p = case packetData p of
+    PDDouble ds -> mapM_ print ds
+    PDInt is    -> mapM_ print is
 
 dumpSummary :: Summary -> IO ()
-dumpSummary Summary{..} = do
+dumpSummary SummaryDouble{..} = do
     putStrLn $ printf "[%d - %d] lvl: %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
         summaryEntryTime summaryExitTime summaryLevel
-        summaryEntry summaryExit summaryMin summaryMax summaryAvg summaryRMS
+        summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
+        summaryAvg summaryRMS
+dumpSummary SummaryInt{..} = do
+    putStrLn $ printf "[%d - %d] lvl: %d\tentry: %d\texit: %df\tmin: %d\tmax: %d\tavg: %.3f\trms: %.3f"
+        summaryEntryTime summaryExitTime summaryLevel
+        summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
+        summaryAvg summaryRMS
 
 dumpSummaryLevel :: Int -> Summary -> IO ()
-dumpSummaryLevel lvl s@Summary{..}
-    | lvl == summaryLevel = dumpSummary s
-    | otherwise           = return ()
+dumpSummaryLevel level s
+    | level == summaryLevel s = dumpSummary s
+    | otherwise               = return ()
+
+parseHeader :: L.ByteString -> Maybe ZoomHeaderType
+parseHeader h
+    | h == zoomGlobalHeader  = Just GlobalHeader
+    | h == zoomTrackHeader   = Just TrackHeader
+    | h == zoomPacketHeader  = Just PacketHeader
+    | h == zoomSummaryHeader = Just SummaryHeader
+    | otherwise              = Nothing
 
 zReadPacket :: (Functor m, MonadIO m)
             => ZoomReader m
-            -> Iteratee [Word8] m ()
+            -> Iteratee [Word8] m (ZoomReader m)
 zReadPacket zr = do
-    h <- I.joinI $ I.takeUpTo 8 I.stream2list -- header
-    when (h == L.unpack zoomPacketHeader) $ do
-        trackNo <- zReadInt32
-        entryTime <- zReadInt32
-        exitTime <- zReadInt32
-        n <- flip div 8 <$> zReadInt32
-        d <- replicateM n zReadFloat64be
-        case IM.lookup trackNo (zrTracks zr) of
-            Just tr -> do
-                let pFunc = trReadPacket tr
-                lift $ pFunc (Packet trackNo entryTime exitTime n d)
-            Nothing -> return ()
-    when (h == L.unpack zoomSummaryHeader) $ do
-        trackNo <- zReadInt32
-        lvl <- zReadInt32
-        entryTime <- zReadInt32
-        exitTime <- zReadInt32
-        n <- flip div 8 <$> zReadInt32
-        [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-        case IM.lookup trackNo (zrTracks zr) of
-            Just tr -> do
-                let sFunc = trReadSummary tr
-                lift $ sFunc (Summary trackNo lvl entryTime exitTime en ex mn mx avg rms)
-            Nothing -> return ()
+    header <- I.joinI $ I.takeUpTo 8 I.stream2list
+    case parseHeader (L.pack header) of
+        Just PacketHeader -> do
+            trackNo <- zReadInt32
+            entryTime <- zReadInt32
+            exitTime <- zReadInt32
+            byteLength <- zReadInt32
+            case IM.lookup trackNo (zrTracks zr) of
+                Just tr -> do
+                    let pFunc = trReadPacket tr
+                    case trTrackType tr of
+                        Just ZoomDouble -> do
+                            let n = flip div 8 byteLength
+                            d <- PDDouble <$> replicateM n zReadFloat64be
+                            lift $ pFunc (Packet trackNo entryTime exitTime n d)
+                        Just ZoomInt -> do
+                            let n = flip div 4 byteLength
+                            d <- PDInt <$> replicateM n zReadInt32
+                            lift $ pFunc (Packet trackNo entryTime exitTime n d)
+                        Nothing -> I.drop byteLength
+                Nothing -> I.drop byteLength
+            return zr
+        Just SummaryHeader -> do
+            trackNo <- zReadInt32
+            lvl <- zReadInt32
+            entryTime <- zReadInt32
+            exitTime <- zReadInt32
+            byteLength <- zReadInt32
+
+            case IM.lookup trackNo (zrTracks zr) of
+                Just tr -> do
+                    let sFunc = trReadSummary tr
+                    case trTrackType tr of
+                        Just ZoomDouble -> do
+                            let n = flip div 8 byteLength
+                            [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
+                            lift $ sFunc (SummaryDouble trackNo lvl entryTime exitTime en ex mn mx avg rms)
+                        Just ZoomInt -> do
+                            [en,ex,mn,mx] <- replicateM 4 zReadInt32
+                            [avg,rms] <- replicateM 2 zReadFloat64be
+                            lift $ sFunc (SummaryInt trackNo lvl entryTime exitTime en ex mn mx avg rms)
+                        Nothing -> I.drop byteLength
+                Nothing -> I.drop byteLength
+            return zr
+        Just TrackHeader -> do
+            trackNo <- zReadInt32
+            trackType <- zReadTrackType
+            return zr{ zrTracks = IM.adjust (setType trackType)
+                                            trackNo
+                                            (zrTracks zr)
+                     }
+        _ -> return zr
+    where
+        setType :: ZoomTrackType -> TrackReader m -> TrackReader m
+        setType trackType tr = tr{trTrackType = Just trackType}
+
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
-zReadInt32 = fromIntegral <$> I.endianRead4 I.MSB
+zReadInt32 = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
+    where
+        u32_to_s32 :: Word32 -> Int32
+        u32_to_s32 = fromIntegral
 
 zReadFloat64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
 zReadFloat64be = do
     n <- I.endianRead8 I.MSB
     return (unsafeCoerce n :: Double)
 
+zReadTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m ZoomTrackType
+zReadTrackType = do
+    n <- zReadInt32
+    case n of
+        0 -> return ZoomDouble
+        1 -> return ZoomInt
+        _ -> error "Bad tracktype"
