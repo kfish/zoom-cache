@@ -28,10 +28,9 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Monoid
 import qualified Data.Foldable as Fold
-import Data.Word
 import System.IO
-import Unsafe.Coerce (unsafeCoerce)
 
+import Data.ZoomCache.Binary
 import Data.ZoomCache.Common
 import Data.ZoomCache.Summary
 import Numeric.FloatMinMax
@@ -369,25 +368,3 @@ summaryToLazyByteString SummaryInt{..} =
         bsRMS = encDbl summaryRMS
         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
         l = encInt . L.length $ bs
-
-----------------------------------------------------------------------
--- Binary data helpers
-    
-buildInt16 :: Int -> L.ByteString
-buildInt16 = toLazyByteString . fromInt16be . fromIntegral
-
-buildInt32 :: Int -> L.ByteString
-buildInt32 = toLazyByteString . fromInt32be . fromIntegral
-
-buildInt64 :: Integer -> L.ByteString
-buildInt64 = toLazyByteString . fromInt64be . fromIntegral
-
-encInt :: forall a . (Integral a) => a -> L.ByteString
-encInt = toLazyByteString . fromInt32be . fromIntegral
-
-encDbl :: Double -> L.ByteString
-encDbl = toLazyByteString . fromWord64be . toWord64
-
-toWord64 :: Double -> Word64
-toWord64 = unsafeCoerce
-
