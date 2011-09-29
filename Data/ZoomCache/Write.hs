@@ -16,10 +16,6 @@ module Data.ZoomCache.Write (
     , zoomOpen1TrackW
     , zoomWithFileW
     , zoomWithFile1TrackW
-
-    -- * Data injection
-    , zoomPutInt
-    , zoomPutDouble
     
     , zoomFlush
 ) where
