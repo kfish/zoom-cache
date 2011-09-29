@@ -131,38 +131,26 @@ type Zoom = StateT ZoomState IO
 
 zoomWriteInitialHeader :: Handle -> IO ()
 zoomWriteInitialHeader h = do
-    let vMajor = buildInt16 versionMajor
-        vMinor = buildInt16 versionMinor
-        pNum = buildInt64 0 -- Presentation time numerator
-        pDen = buildInt64 0 -- Presentation time denominator
-        bNum = buildInt64 0 -- Base time numerator
-        bDen = buildInt64 0 -- Base time denominator
-        utc = LC.pack (replicate 20 '\0')
-    L.hPut h globalHeader
-    L.hPut h vMajor
-    L.hPut h vMinor
-    L.hPut h pNum
-    L.hPut h pDen
-    L.hPut h bNum
-    L.hPut h bDen
-    L.hPut h utc
-
-buildInt16 :: Int -> L.ByteString
-buildInt16 = toLazyByteString . fromInt16be . fromIntegral
-
-buildInt32 :: Int -> L.ByteString
-buildInt32 = toLazyByteString . fromInt32be . fromIntegral
-
-buildInt64 :: Integer -> L.ByteString
-buildInt64 = toLazyByteString . fromInt64be . fromIntegral
+    L.hPut h . mconcat $
+        [ globalHeader
+        , buildInt16 versionMajor
+        , buildInt16 versionMinor
+        , buildInt64 0 -- Presentation time numerator
+        , buildInt64 0 -- Presentation time denominator
+        , buildInt64 0 -- Base time numerator
+        , buildInt64 0 -- Base time denominator
+        , LC.pack (replicate 20 '\0')
+        ]
 
 zoomWriteTrackHeader :: Handle -> Int -> ZoomTrackState -> IO ()
 zoomWriteTrackHeader h trackNo ZoomTrackState{..} = do
-    L.hPut h trackHeader
-    L.hPut h (buildInt32 trackNo)
-    L.hPut h (buildInt32 (encType ztrkType))
-    L.hPut h (buildInt32 (fromIntegral . LC.length $ ztrkName))
-    L.hPut h ztrkName
+    L.hPut h . mconcat $
+        [ trackHeader
+        , (buildInt32 trackNo)
+        , (buildInt32 (encType ztrkType))
+        , (buildInt32 (fromIntegral . LC.length $ ztrkName))
+        , ztrkName
+        ]
     where
         encType ZDouble = 0
         encType ZInt = 1
@@ -381,7 +369,19 @@ summaryToLazyByteString SummaryInt{..} =
         bsRMS = encDbl summaryRMS
         bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
         l = encInt . L.length $ bs
+
+----------------------------------------------------------------------
+-- Binary data helpers
     
+buildInt16 :: Int -> L.ByteString
+buildInt16 = toLazyByteString . fromInt16be . fromIntegral
+
+buildInt32 :: Int -> L.ByteString
+buildInt32 = toLazyByteString . fromInt32be . fromIntegral
+
+buildInt64 :: Integer -> L.ByteString
+buildInt64 = toLazyByteString . fromInt64be . fromIntegral
+
 encInt :: forall a . (Integral a) => a -> L.ByteString
 encInt = toLazyByteString . fromInt32be . fromIntegral
 
