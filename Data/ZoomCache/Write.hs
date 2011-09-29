@@ -12,10 +12,9 @@ module Data.ZoomCache.Write (
     , ZoomState(..)
 
     -- * State initialisation
-    , zoomOpenW
-    , zoomOpen1TrackW
-    , zoomWithFileW
-    , zoomWithFile1TrackW
+    , oneTrack
+    , openWrite
+    , withFileWrite
     
     , zoomFlush
 ) where
@@ -161,11 +160,8 @@ zoomWriteTrackHeader h trackNo ZoomTrackState{..} = do
         encType ZoomDouble = 0
         encType ZoomInt = 1
 
-zoomOpen1TrackW :: ZoomTrackType -> FilePath -> IO ZoomState
-zoomOpen1TrackW ztype = zoomOpenW (IM.singleton 1 ztype)
-
-zoomOpenW :: IntMap ZoomTrackType -> FilePath -> IO ZoomState
-zoomOpenW ztypes path = do
+openWrite :: IntMap ZoomTrackType -> FilePath -> IO ZoomState
+openWrite ztypes path = do
     h <- openFile path WriteMode
     zoomWriteInitialHeader h
     let tracks = IM.foldWithKey addTrack IM.empty ztypes
@@ -175,12 +171,13 @@ zoomOpenW ztypes path = do
         addTrack :: ZoomTrackNo -> ZoomTrackType -> IntMap ZoomTrackState -> IntMap ZoomTrackState
         addTrack trackNo ztype = IM.insert trackNo (defTrackState ztype)
 
-zoomWithFile1TrackW :: ZoomTrackType -> FilePath -> Zoom () -> IO ()
-zoomWithFile1TrackW ztype = zoomWithFileW (IM.singleton 1 ztype)
+-- | Create a track map for a single stream of a given type, as track no. 1
+oneTrack :: ZoomTrackType -> IntMap ZoomTrackType
+oneTrack = IM.singleton 1
 
-zoomWithFileW :: IntMap ZoomTrackType -> FilePath -> Zoom () -> IO ()
-zoomWithFileW ztypes path f = do
-    z <- zoomOpenW ztypes path
+withFileWrite :: IntMap ZoomTrackType -> Zoom () -> FilePath -> IO ()
+withFileWrite ztypes f path = do
+    z <- openWrite ztypes path
     z' <- execStateT (f >> zoomFlush) z
     hClose (zoomHandle z')
 
