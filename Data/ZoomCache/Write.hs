@@ -253,8 +253,8 @@ flush :: Zoom ()
 flush = do
     h <- gets zoomHandle
     tracks <- gets zoomTracks
-    liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey zoomBuildTrack tracks
-    let ss = IM.mapWithKey zoomBuildSummary tracks
+    liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
+    let ss = IM.mapWithKey mkSummary tracks
     Fold.mapM_ pushSummary ss
     pending <- concat . IM.elems <$> gets zoomWritePending
     mapM_ zoomWriteSummary pending
@@ -297,22 +297,22 @@ deferSummary s = do
 zoomWriteSummary :: Summary -> Zoom ()
 zoomWriteSummary s = do
     h <- gets zoomHandle
-    liftIO . L.hPut h . summaryToLazyByteString $ s
+    liftIO . L.hPut h . toLazyByteString . fromSummary $ s
 
-zoomBuildTrack :: TrackNo -> ZoomTrackState -> L.ByteString
-zoomBuildTrack trackNo ZoomTrackState{..} =
-    packetHeader <> no <> entryTime <> exitTime <> l <> bs
-    where
-        no = encInt trackNo
-        entryTime = encInt ztrkEntryTime
-        exitTime = encInt ztrkExitTime
-        bs = toLazyByteString ztrkBuilder
-        l  = encInt . L.length $ bs
+bsFromTrack :: TrackNo -> ZoomTrackState -> L.ByteString
+bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
+    [ fromLazyByteString packetHeader
+    , encInt trackNo
+    , encInt ztrkEntryTime
+    , encInt ztrkExitTime
+    , encInt . L.length . toLazyByteString $ ztrkBuilder
+    , ztrkBuilder
+    ]
 
-zoomBuildSummary :: TrackNo -> ZoomTrackState -> Summary
-zoomBuildSummary trackNo ZoomTrackState{..} = build ztrkType
+mkSummary :: TrackNo -> ZoomTrackState -> Summary
+mkSummary trackNo ZoomTrackState{..} = mk ztrkType
     where
-        build ZDouble = SummaryDouble
+        mk ZDouble = SummaryDouble
             { summaryTrack = trackNo
             , summaryLevel = 1
             , summaryEntryTime = ztrkEntryTime
@@ -324,7 +324,7 @@ zoomBuildSummary trackNo ZoomTrackState{..} = build ztrkType
             , summaryAvg = ztsdSum ztrkData / (fromIntegral ztrkCount)
             , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
             }
-        build ZInt = SummaryInt
+        mk ZInt = SummaryInt
             { summaryTrack = trackNo
             , summaryLevel = 1
             , summaryEntryTime = ztrkEntryTime
@@ -336,35 +336,3 @@ zoomBuildSummary trackNo ZoomTrackState{..} = build ztrkType
             , summaryAvg = fromIntegral (ztsiSum ztrkData) / (fromIntegral ztrkCount)
             , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
             }
-
-summaryToLazyByteString :: Summary -> L.ByteString
-summaryToLazyByteString SummaryDouble{..} =
-    summaryHeader <> no <> lvl <> entryTime <> exitTime <> l <> bs
-    where
-        no = encInt summaryTrack
-        lvl = encInt summaryLevel
-        entryTime = encInt summaryEntryTime
-        exitTime = encInt summaryExitTime
-        bsEn  = encDbl summaryDoubleEntry
-        bsEx  = encDbl summaryDoubleExit
-        bsMin = encDbl summaryDoubleMin
-        bsMax = encDbl summaryDoubleMax
-        bsAvg = encDbl summaryAvg
-        bsRMS = encDbl summaryRMS
-        bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
-        l = encInt . L.length $ bs
-summaryToLazyByteString SummaryInt{..} =
-    summaryHeader <> no <> lvl <> entryTime <> exitTime <> l <> bs
-    where
-        no = encInt summaryTrack
-        lvl = encInt summaryLevel
-        entryTime = encInt summaryEntryTime
-        exitTime = encInt summaryExitTime
-        bsEn  = encInt summaryIntEntry
-        bsEx  = encInt summaryIntExit
-        bsMin = encInt summaryIntMin
-        bsMax = encInt summaryIntMax
-        bsAvg = encDbl summaryAvg
-        bsRMS = encDbl summaryRMS
-        bs = bsEn <> bsEx <> bsMin <> bsMax <> bsAvg <> bsRMS
-        l = encInt . L.length $ bs
