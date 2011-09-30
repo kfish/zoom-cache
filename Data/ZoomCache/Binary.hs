@@ -63,8 +63,8 @@ fromSummaryHeader s = mconcat
     [ fromLazyByteString summaryHeader
     , encInt . summaryTrack $ s
     , encInt . summaryLevel $ s
-    , encInt . summaryEntryTime $ s
-    , encInt . summaryExitTime $ s
+    , encInt . unTS . summaryEntryTime $ s
+    , encInt . unTS . summaryExitTime $ s
     ]
 
 ----------------------------------------------------------------------

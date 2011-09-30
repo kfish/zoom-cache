@@ -57,7 +57,7 @@ import Numeric.FloatMinMax
 --
 class ZoomWrite t where
     -- | Write a value to an open ZoomCache file.
-    write :: TrackNo -> Int -> t -> ZoomW ()
+    write :: TrackNo -> TimeStamp -> t -> ZoomW ()
 
 instance ZoomWrite Double where
     write = writeDouble
@@ -80,8 +80,8 @@ data ZoomTrackState = ZoomTrackState
     , ztrkCount     :: Int
     , ztrkPending   :: Int
     , ztrkLevels    :: IntMap (Maybe Summary)
-    , ztrkEntryTime :: Int
-    , ztrkExitTime  :: Int
+    , ztrkEntryTime :: TimeStamp
+    , ztrkExitTime  :: TimeStamp
     , ztrkData      :: ZTSData
     }
 
@@ -198,7 +198,7 @@ writeTrackHeader h trackNo ZoomTrackState{..} = do
 ----------------------------------------------------------------------
 -- Data
 
-setTime :: TrackNo -> Int -> ZoomW ()
+setTime :: TrackNo -> TimeStamp -> ZoomW ()
 setTime trackNo t = modifyTrack trackNo $ \zt -> zt
     { ztrkEntryTime = if ztrkCount zt == 1 then t else ztrkEntryTime zt
     , ztrkExitTime = t
@@ -221,7 +221,7 @@ incPending trackNo = do
         setPending :: Int -> ZoomTrackState -> ZoomTrackState
         setPending p zt = zt { ztrkPending = p }
 
-writeDouble :: TrackNo -> Int -> Double -> ZoomW ()
+writeDouble :: TrackNo -> TimeStamp -> Double -> ZoomW ()
 writeDouble trackNo t d = do
     setTime trackNo t
     incPending trackNo
@@ -242,7 +242,7 @@ updateZTSDouble count d ZTSDouble{..} = ZTSDouble
     }
 updateZTSDouble _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
 
-writeInt :: TrackNo -> Int -> Int -> ZoomW ()
+writeInt :: TrackNo -> TimeStamp -> Int -> ZoomW ()
 writeInt trackNo t i = do
     setTime trackNo t
     incPending trackNo
@@ -276,8 +276,8 @@ bsFromTrack :: TrackNo -> ZoomTrackState -> L.ByteString
 bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
     [ fromLazyByteString packetHeader
     , encInt trackNo
-    , encInt ztrkEntryTime
-    , encInt ztrkExitTime
+    , encInt . unTS $ ztrkEntryTime
+    , encInt . unTS $ ztrkExitTime
     , encInt . L.length . toLazyByteString $ ztrkBuilder
     , ztrkBuilder
     ]
@@ -290,8 +290,8 @@ defTrackState ZDouble = ZoomTrackState
     , ztrkCount = 0
     , ztrkPending = 1
     , ztrkLevels = IM.empty
-    , ztrkEntryTime = 0
-    , ztrkExitTime = 0
+    , ztrkEntryTime = TS 0
+    , ztrkExitTime = TS 0
     , ztrkData = ZTSDouble
         { ztsdEntry = 0.0
         , ztsdExit = 0.0
@@ -308,8 +308,8 @@ defTrackState ZInt = ZoomTrackState
     , ztrkCount = 0
     , ztrkPending = 1
     , ztrkLevels = IM.empty
-    , ztrkEntryTime = 0
-    , ztrkExitTime = 0
+    , ztrkEntryTime = TS 0
+    , ztrkExitTime = TS 0
     , ztrkData = ZTSInt
         { ztsiEntry = 0
         , ztsiExit = 0

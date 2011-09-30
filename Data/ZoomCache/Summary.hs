@@ -13,8 +13,8 @@ import Data.ZoomCache.Common
 data Summary = SummaryDouble
     { summaryTrack :: TrackNo
     , summaryLevel :: Int
-    , summaryEntryTime :: Int
-    , summaryExitTime :: Int
+    , summaryEntryTime :: TimeStamp
+    , summaryExitTime :: TimeStamp
     , summaryDoubleEntry :: Double
     , summaryDoubleExit :: Double
     , summaryDoubleMin :: Double
@@ -25,8 +25,8 @@ data Summary = SummaryDouble
     | SummaryInt
     { summaryTrack :: TrackNo
     , summaryLevel :: Int
-    , summaryEntryTime :: Int
-    , summaryExitTime :: Int
+    , summaryEntryTime :: TimeStamp
+    , summaryExitTime :: TimeStamp
     , summaryIntEntry :: Int
     , summaryIntExit :: Int
     , summaryIntMin :: Int
@@ -37,7 +37,7 @@ data Summary = SummaryDouble
     deriving (Show)
 
 summaryDuration :: Summary -> Int
-summaryDuration s = summaryExitTime s - summaryEntryTime s
+summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
 -- XXX: summaries are only compatible if tracks and levels are equal
 appendSummary :: Summary -> Summary -> Summary

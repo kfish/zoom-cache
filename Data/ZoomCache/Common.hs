@@ -3,6 +3,7 @@
 module Data.ZoomCache.Common (
   -- * Types
     HeaderType(..)
+  , TimeStamp(..)
   , TrackType(..)
   , TrackNo
 
@@ -192,6 +193,9 @@ Summary Data Packet header (signed 32-bit integer)
 -}
 
 type TrackNo = Int
+
+data TimeStamp = TS { unTS :: !Int }
+    deriving (Eq, Ord, Show)
 
 data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
 

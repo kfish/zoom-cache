@@ -50,8 +50,8 @@ data PacketData = PDDouble [Double] | PDInt [Int]
 
 data Packet = Packet
     { packetTrack :: TrackNo
-    , packetEntryTime :: Int
-    , packetExitTime :: Int
+    , packetEntryTime :: TimeStamp
+    , packetExitTime :: TimeStamp
     , packetLength :: Int
     , packetData :: PacketData
     }
@@ -101,12 +101,12 @@ dumpData p = case packetData p of
 dumpSummary :: Summary -> IO ()
 dumpSummary SummaryDouble{..} = do
     putStrLn $ printf "[%d - %d] lvl: %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
-        summaryEntryTime summaryExitTime summaryLevel
+        (unTS summaryEntryTime) (unTS summaryExitTime) summaryLevel
         summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
         summaryAvg summaryRMS
 dumpSummary SummaryInt{..} = do
     putStrLn $ printf "[%d - %d] lvl: %d\tentry: %d\texit: %df\tmin: %d\tmax: %d\tavg: %.3f\trms: %.3f"
-        summaryEntryTime summaryExitTime summaryLevel
+        (unTS summaryEntryTime) (unTS summaryExitTime) summaryLevel
         summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
         summaryAvg summaryRMS
 
@@ -131,8 +131,8 @@ zReadPacket zr = do
     case parseHeader (L.pack header) of
         Just PacketHeader -> do
             trackNo <- zReadInt32
-            entryTime <- zReadInt32
-            exitTime <- zReadInt32
+            entryTime <- TS <$> zReadInt32
+            exitTime <- TS <$> zReadInt32
             byteLength <- zReadInt32
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
@@ -152,8 +152,8 @@ zReadPacket zr = do
         Just SummaryHeader -> do
             trackNo <- zReadInt32
             lvl <- zReadInt32
-            entryTime <- zReadInt32
-            exitTime <- zReadInt32
+            entryTime <- TS <$> zReadInt32
+            exitTime <- TS <$> zReadInt32
             byteLength <- zReadInt32
 
             case IM.lookup trackNo (zrTracks zr) of
