@@ -29,9 +29,28 @@ zoomGen = defCmd {
 zoomGenHandler :: App () ()
 zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
 
-zoomWriteFile :: (ZoomWrite (TimeStamp, a)) => TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile :: (ZoomWrite a) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
-zoomWriteFile ztype d (path:_) = withFileWrite (oneTrackVBR ztype "gen")
+zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype 1000 "gen")
+    (mapM_ (write 1) d) path
+
+------------------------------------------------------------
+
+zoomGenVBR :: Command ()
+zoomGenVBR = defCmd {
+          cmdName = "genvbr"
+        , cmdHandler = zoomGenVBRHandler
+        , cmdCategory = "Writing"
+        , cmdShortDesc = "Generate variable-bitrate floating-point zoom-cache data"
+        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
+        }
+
+zoomGenVBRHandler :: App () ()
+zoomGenVBRHandler = liftIO . (zoomWriteFileVBR ZDouble doubles) =<< appArgs
+
+zoomWriteFileVBR :: (ZoomWrite (TimeStamp, a)) => TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFileVBR _     _ []       = return ()
+zoomWriteFileVBR ztype d (path:_) = withFileWrite (oneTrackVBR ztype "gen")
     (mapM_ (write 1) (zip (map TS [1..]) d)) path
 
 doubles :: [Double]
@@ -50,6 +69,20 @@ zoomGenI = defCmd {
 
 zoomGenIHandler :: App () ()
 zoomGenIHandler = liftIO . (zoomWriteFile ZInt ints) =<< appArgs
+
+------------------------------------------------------------
+
+zoomGenIVBR :: Command ()
+zoomGenIVBR = defCmd {
+          cmdName = "genivbr"
+        , cmdHandler = zoomGenIVBRHandler
+        , cmdCategory = "Writing"
+        , cmdShortDesc = "Generate variable-bitrate integer zoom-cache data"
+        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
+        }
+
+zoomGenIVBRHandler :: App () ()
+zoomGenIVBRHandler = liftIO . (zoomWriteFileVBR ZInt ints) =<< appArgs
 
 ints :: [Int]
 ints = map round doubles
@@ -100,7 +133,7 @@ zoom = def {
         , appCategories = ["Reading", "Writing"]
         , appSeeAlso = [""]
         , appProject = "Zoom"
-        , appCmds = [zoomGen, zoomGenI, zoomDump, zoomSummary]
+        , appCmds = [zoomGen, zoomGenI, zoomGenVBR, zoomGenIVBR, zoomDump, zoomSummary]
 	}
 
 longDesc :: String
