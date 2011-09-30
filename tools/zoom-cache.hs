@@ -27,10 +27,10 @@ zoomGen = defCmd {
 zoomGenHandler :: App () ()
 zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
 
-zoomWriteFile :: (ZoomPut a) => TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile :: (ZoomWrite a) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
 zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype "gen")
-    (mapM_ (uncurry (zPut 1)) (zip [1..] d)) path
+    (mapM_ (uncurry (write 1)) (zip [1..] d)) path
 
 doubles :: [Double]
 doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]

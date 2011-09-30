@@ -2,21 +2,35 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
+----------------------------------------------------------------------
+-- |
+-- Module      : Data.ZoomCache.Write
+-- Copyright   : Conrad Parker
+-- License     : BSD3-style (see LICENSE)
+--
+-- Maintainer  : Conrad Parker <conrad@metadecks.org>
+-- Stability   : unstable
+-- Portability : unknown
+--
+-- Writing of ZoomCache files.
+----------------------------------------------------------------------
 
 module Data.ZoomCache.Write (
-    -- Classes
-      ZoomPut(..)
+    -- * The ZoomWrite class
+      ZoomWrite(..)
 
-    -- Types
-    , Zoom
-    , ZoomState(..)
-
-    -- * State initialisation
-    , oneTrack
-    , openWrite
+    -- * The ZoomW monad
+    , ZoomW
     , withFileWrite
-    
+
+    -- * ZoomWHandle IO functions
+    , ZoomWHandle
+    , openWrite
     , flush
+
+    -- * Track specification
+    , TrackMap
+    , oneTrack
 ) where
 
 import Blaze.ByteString.Builder hiding (flush)
@@ -37,22 +51,22 @@ import Numeric.FloatMinMax
 
 ------------------------------------------------------------
 
-class ZoomPut a where
-    zPut :: TrackNo -> Int -> a -> Zoom ()
+-- | The ZoomWrite class provides 'write', a method to write a
+-- Haskell value to an open ZoomCache file.
+--
+class ZoomWrite t where
+    -- | Write a value to an open ZoomCache file.
+    write :: TrackNo -> Int -> t -> ZoomW ()
 
-instance ZoomPut Double where
-    zPut = zPutDouble
+instance ZoomWrite Double where
+    write = writeDouble
 
-instance ZoomPut Int where
-    zPut = zPutInt
+instance ZoomWrite Int where
+    write = writeInt
 
 ------------------------------------------------------------
 
-type TrackMap = IntMap (TrackType, String)
-
-type Zoom = StateT ZoomState IO
-
-data ZoomState = ZoomState
+data ZoomWHandle = ZoomWHandle
     { zoomHandle       :: Handle
     , zoomTracks       :: IntMap ZoomTrackState
     , zoomWritePending :: IntMap [Summary]
@@ -90,31 +104,21 @@ data ZTSData = ZTSDouble
 ----------------------------------------------------------------------
 -- Public API
 
-openWrite :: TrackMap -> FilePath -> IO ZoomState
-openWrite ztypes path = do
-    h <- openFile path WriteMode
-    writeGlobalHeader h
-    let tracks = IM.foldWithKey addTrack IM.empty ztypes
-    mapM_ (uncurry (writeTrackHeader h)) (IM.assocs tracks)
-    return $ ZoomState h tracks IM.empty
-    where
-        addTrack :: TrackNo -> (TrackType, String) ->
-                    IntMap ZoomTrackState -> IntMap ZoomTrackState
-        addTrack trackNo (ztype, name) = IM.insert trackNo trackState
-            where
-                trackState = (defTrackState ztype){ztrkName = LC.pack name}
+-- | A StateT IO monad for writing a ZoomCache file
+type ZoomW = StateT ZoomWHandle IO
 
--- | Create a track map for a single stream of a given type, as track no. 1
-oneTrack :: TrackType -> String -> TrackMap
-oneTrack ztype name = IM.singleton 1 (ztype, name)
-
-withFileWrite :: TrackMap  -> Zoom () -> FilePath -> IO ()
+-- | Run a @ZoomW ()@ action on a given file handle, using the specified
+-- 'TrackMap' specification
+withFileWrite :: TrackMap  -> ZoomW () -> FilePath -> IO ()
 withFileWrite ztypes f path = do
     z <- openWrite ztypes path
     z' <- execStateT (f >> flush) z
     hClose (zoomHandle z')
 
-flush :: Zoom ()
+-- | Force a flush of ZoomCache summary blocks to disk. It is not usually
+-- necessary to call this function as summary blocks are transparently written
+-- at regular intervals.
+flush :: ZoomW ()
 flush = do
     h <- gets zoomHandle
     tracks <- gets zoomTracks
@@ -130,6 +134,28 @@ flush = do
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
         flushTrack zt = (defTrackState (ztrkType zt)) {ztrkLevels = ztrkLevels zt}
+
+-- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
+openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
+openWrite ztypes path = do
+    h <- openFile path WriteMode
+    writeGlobalHeader h
+    let tracks = IM.foldWithKey addTrack IM.empty ztypes
+    mapM_ (uncurry (writeTrackHeader h)) (IM.assocs tracks)
+    return $ ZoomWHandle h tracks IM.empty
+    where
+        addTrack :: TrackNo -> (TrackType, String) ->
+                    IntMap ZoomTrackState -> IntMap ZoomTrackState
+        addTrack trackNo (ztype, name) = IM.insert trackNo trackState
+            where
+                trackState = (defTrackState ztype){ztrkName = LC.pack name}
+
+-- | A specification of the type and name of each track
+type TrackMap = IntMap (TrackType, String)
+
+-- | Create a track map for a single stream of a given type, as track no. 1
+oneTrack :: TrackType -> String -> TrackMap
+oneTrack ztype name = IM.singleton 1 (ztype, name)
 
 ----------------------------------------------------------------------
 -- Global header
@@ -167,13 +193,13 @@ writeTrackHeader h trackNo ZoomTrackState{..} = do
 ----------------------------------------------------------------------
 -- Data
 
-setTime :: TrackNo -> Int -> Zoom ()
+setTime :: TrackNo -> Int -> ZoomW ()
 setTime trackNo t = modifyTrack trackNo $ \zt -> zt
     { ztrkEntryTime = if ztrkCount zt == 1 then t else ztrkEntryTime zt
     , ztrkExitTime = t
     }
 
-incPending :: TrackNo -> Zoom ()
+incPending :: TrackNo -> ZoomW ()
 incPending trackNo = do
     zt <- IM.lookup trackNo <$> gets zoomTracks
     case zt of
@@ -190,8 +216,8 @@ incPending trackNo = do
         setPending :: Int -> ZoomTrackState -> ZoomTrackState
         setPending p zt = zt { ztrkPending = p }
 
-zPutDouble :: TrackNo -> Int -> Double -> Zoom ()
-zPutDouble trackNo t d = do
+writeDouble :: TrackNo -> Int -> Double -> ZoomW ()
+writeDouble trackNo t d = do
     setTime trackNo t
     incPending trackNo
     modifyTrack trackNo $ \z -> z
@@ -211,8 +237,8 @@ updateZTSDouble count d ZTSDouble{..} = ZTSDouble
     }
 updateZTSDouble _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
 
-zPutInt :: TrackNo -> Int -> Int -> Zoom ()
-zPutInt trackNo t i = do
+writeInt :: TrackNo -> Int -> Int -> ZoomW ()
+writeInt trackNo t i = do
     setTime trackNo t
     incPending trackNo
     modifyTrack trackNo $ \z -> z
@@ -235,10 +261,10 @@ updateZTSInt _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
 ----------------------------------------------------------------------
 -- TrackState
 
-modifyTracks :: (IntMap ZoomTrackState -> IntMap ZoomTrackState) -> Zoom ()
+modifyTracks :: (IntMap ZoomTrackState -> IntMap ZoomTrackState) -> ZoomW ()
 modifyTracks f = modify (\z -> z { zoomTracks = f (zoomTracks z) })
 
-modifyTrack :: TrackNo -> (ZoomTrackState -> ZoomTrackState) -> Zoom ()
+modifyTrack :: TrackNo -> (ZoomTrackState -> ZoomTrackState) -> ZoomW ()
 modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
 bsFromTrack :: TrackNo -> ZoomTrackState -> L.ByteString
@@ -292,13 +318,13 @@ defTrackState ZInt = ZoomTrackState
 ----------------------------------------------------------------------
 -- Summary
 
-pushSummary :: Summary -> Zoom ()
+pushSummary :: Summary -> ZoomW ()
 pushSummary s = do
     deferSummary s
     zt'm <- IM.lookup (summaryTrack s) <$> gets zoomTracks
     maybe (return ()) pushSummary' zt'm
     where
-        pushSummary' :: ZoomTrackState -> Zoom ()
+        pushSummary' :: ZoomTrackState -> ZoomW ()
         pushSummary' zt = do
             case IM.lookup (summaryLevel s) (ztrkLevels zt) of
                 Just (Just prev) -> do
@@ -308,16 +334,16 @@ pushSummary s = do
                 _                -> do
                     insert (Just s)
             where
-                insert :: Maybe Summary -> Zoom ()
+                insert :: Maybe Summary -> ZoomW ()
                 insert x = modifyTrack (summaryTrack s) (\ztt ->
                     ztt { ztrkLevels = IM.insert (summaryLevel s) x (ztrkLevels ztt) } )
 
-writeSummary :: Summary -> Zoom ()
+writeSummary :: Summary -> ZoomW ()
 writeSummary s = do
     h <- gets zoomHandle
     liftIO . L.hPut h . toLazyByteString . fromSummary $ s
 
-deferSummary :: Summary -> Zoom ()
+deferSummary :: Summary -> ZoomW ()
 deferSummary s = do
     modify $ \z -> z
         { zoomWritePending = IM.alter f (summaryLevel s) (zoomWritePending z) }
