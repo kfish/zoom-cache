@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 
@@ -29,7 +30,7 @@ zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
 
 zoomWriteFile :: (ZoomWrite a) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
-zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype "gen")
+zoomWriteFile ztype d (path:_) = withFileWrite (oneTrackVBR ztype "gen")
     (mapM_ (uncurry (write 1)) (zip (map TS [1..]) d)) path
 
 doubles :: [Double]

@@ -28,10 +28,9 @@ module Data.ZoomCache.Write (
     , openWrite
     , flush
 
-    -- * Track specification
-    , TrackMap
-    , TrackSpec
+    -- * TrackSpec helpers
     , oneTrack
+    , oneTrackVBR
 ) where
 
 import Blaze.ByteString.Builder hiding (flush)
@@ -39,10 +38,11 @@ import Control.Applicative ((<$>))
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
+import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Monoid
-import qualified Data.Foldable as Fold
+import Data.Ratio
 import System.IO
 
 import Data.ZoomCache.Binary
@@ -75,6 +75,7 @@ data ZoomWHandle = ZoomWHandle
 
 data ZoomTrackState = ZoomTrackState
     { ztrkType      :: TrackType
+    , ztrkRate      :: Rational
     , ztrkName      :: LC.ByteString
     , ztrkBuilder   :: Builder
     , ztrkCount     :: Int
@@ -134,7 +135,9 @@ flush = do
         }
     where
         flushTrack :: ZoomTrackState -> ZoomTrackState
-        flushTrack zt = (defTrackState (ztrkType zt)) {ztrkLevels = ztrkLevels zt}
+        flushTrack zt = d{ztrkLevels = ztrkLevels zt}
+            where
+                d = mkTrackState (ztrkType zt) (ztrkRate zt) (ztrkName zt)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
@@ -148,19 +151,19 @@ openWrite ztypes path = do
         addTrack :: TrackNo -> TrackSpec
                  -> IntMap ZoomTrackState
                  -> IntMap ZoomTrackState
-        addTrack trackNo (TrackSpec ztype name) = IM.insert trackNo trackState
+        addTrack trackNo (TrackSpec ztype rate name) = IM.insert trackNo trackState
             where
-                trackState = (defTrackState ztype){ztrkName = LC.pack name}
+                trackState = mkTrackState ztype rate name
 
--- | A map of all track numbers to their 'TrackSpec'
-type TrackMap = IntMap TrackSpec
+-- | Create a track map for a single constant-bitrate stream of a given type,
+-- as track no. 1
+oneTrack :: TrackType -> Rational -> L.ByteString -> TrackMap
+oneTrack ztype rate name = IM.singleton 1 (TrackSpec ztype rate name)
 
--- | A specification of the type and name of each track
-data TrackSpec = TrackSpec TrackType String
-
--- | Create a track map for a single stream of a given type, as track no. 1
-oneTrack :: TrackType -> String -> TrackMap
-oneTrack ztype name = IM.singleton 1 (TrackSpec ztype name)
+-- | Create a track map for a single variable-bitrate stream of a given type,
+-- as track no. 1
+oneTrackVBR :: TrackType -> L.ByteString -> TrackMap
+oneTrackVBR ztype name = IM.singleton 1 (TrackSpec ztype 0 name)
 
 ----------------------------------------------------------------------
 -- Global header
@@ -190,7 +193,9 @@ writeTrackHeader h trackNo ZoomTrackState{..} = do
         , toLazyByteString $ mconcat
             [ fromTrackNo trackNo
             , fromTrackType ztrkType
-            , fromInt32be (fromIntegral . LC.length $ ztrkName)
+            , fromInt64be . fromIntegral . numerator $ ztrkRate
+            , fromInt64be . fromIntegral . denominator $ ztrkRate
+            , fromInt32be . fromIntegral . LC.length $ ztrkName
             ]
         , ztrkName
         ]
@@ -282,10 +287,11 @@ bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
     , ztrkBuilder
     ]
 
-defTrackState :: TrackType -> ZoomTrackState
-defTrackState ZDouble = ZoomTrackState
+mkTrackState :: TrackType -> Rational -> L.ByteString -> ZoomTrackState
+mkTrackState ZDouble rate name = ZoomTrackState
     { ztrkType = ZDouble
-    , ztrkName = ""
+    , ztrkRate = rate
+    , ztrkName = name
     , ztrkBuilder = mempty
     , ztrkCount = 0
     , ztrkPending = 1
@@ -301,9 +307,10 @@ defTrackState ZDouble = ZoomTrackState
         , ztsSumSq = 0.0
         }
     }
-defTrackState ZInt = ZoomTrackState
+mkTrackState ZInt rate name = ZoomTrackState
     { ztrkType = ZInt
-    , ztrkName = ""
+    , ztrkRate = rate
+    , ztrkName = name
     , ztrkBuilder = mempty
     , ztrkCount = 0
     , ztrkPending = 1

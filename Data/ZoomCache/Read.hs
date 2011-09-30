@@ -25,6 +25,7 @@ import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import Data.Maybe
+import Data.Ratio
 import Data.Word
 import Text.Printf
 import Unsafe.Coerce (unsafeCoerce)
@@ -36,7 +37,7 @@ import Data.ZoomCache.Summary
 
 data ZoomReader m = ZoomReader
     { zrTracks :: IntMap (TrackReader m)
-    , zrNames :: IntMap L.ByteString
+    , zrSpecs :: IntMap TrackSpec
     }
 
 data TrackReader m = TrackReader
@@ -174,12 +175,19 @@ zReadPacket zr = do
         Just TrackHeader -> do
             trackNo <- zReadInt32
             trackType <- zReadTrackType
+
+            rateNumerator <- zReadInt64
+            rateDenominator <- zReadInt64
+            let rate = (fromIntegral rateNumerator) % (fromIntegral rateDenominator)
+
             byteLength <- zReadInt32
             name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
+            let spec = TrackSpec trackType rate name
+
             return zr{ zrTracks = IM.adjust (setType trackType)
                                             trackNo
                                             (zrTracks zr)
-                     , zrNames = IM.insert trackNo name (zrNames zr)
+                     , zrSpecs = IM.insert trackNo spec (zrSpecs zr)
                      }
         _ -> return zr
     where
@@ -191,6 +199,12 @@ zReadInt32 = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
     where
         u32_to_s32 :: Word32 -> Int32
         u32_to_s32 = fromIntegral
+
+zReadInt64 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
+zReadInt64 = fromIntegral . u64_to_s64 <$> I.endianRead8 I.MSB
+    where
+        u64_to_s64 :: Word64 -> Int64
+        u64_to_s64 = fromIntegral
 
 zReadFloat64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
 zReadFloat64be = do

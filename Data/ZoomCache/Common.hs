@@ -7,6 +7,10 @@ module Data.ZoomCache.Common (
   , TrackType(..)
   , TrackNo
 
+  -- * Track specification
+  , TrackMap
+  , TrackSpec(..)
+
   -- * Global header
   , globalHeader
   , versionMajor
@@ -24,6 +28,7 @@ module Data.ZoomCache.Common (
 
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
+import Data.IntMap (IntMap)
 
 ------------------------------------------------------------
 
@@ -82,13 +87,23 @@ Track header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Type                                                          | 12-15
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Length of name in bytes                                       | 16-19
+   | Datarate numerator                                            | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Name (UTF-8) ...                                              | 20-
+   |                                                               | 20-23
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Datarate denominator                                          | 24-27
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 28-31
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Length of name in bytes                                       | 32-35
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Name (UTF-8) ...                                              | 36-
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 Type: 0 64 bit IEEE754 floating point (Double)
-      1 32 bit signed integer (Word32)
+      1 32 bit signed integer (Int32)
+
+Datarate: numerator 0 indicates variable bitrate (all data values are timestamped)
 
 Raw Data Packet header:
 
@@ -198,6 +213,12 @@ data TimeStamp = TS { unTS :: !Int }
     deriving (Eq, Ord, Show)
 
 data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
+
+-- | A map of all track numbers to their 'TrackSpec'
+type TrackMap = IntMap TrackSpec
+
+-- | A specification of the type and name of each track
+data TrackSpec = TrackSpec TrackType Rational L.ByteString
 
 data TrackType = ZDouble | ZInt
     deriving (Eq)
