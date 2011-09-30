@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -57,13 +58,13 @@ import Numeric.FloatMinMax
 --
 class ZoomWrite t where
     -- | Write a value to an open ZoomCache file.
-    write :: TrackNo -> TimeStamp -> t -> ZoomW ()
+    write :: TrackNo -> t -> ZoomW ()
 
-instance ZoomWrite Double where
-    write = writeDouble
+instance ZoomWrite (TimeStamp, Double) where
+    write = writeDoubleVBR
 
-instance ZoomWrite Int where
-    write = writeInt
+instance ZoomWrite (TimeStamp, Int) where
+    write = writeIntVBR
 
 ------------------------------------------------------------
 
@@ -226,8 +227,8 @@ incPending trackNo = do
         setPending :: Int -> ZoomTrackState -> ZoomTrackState
         setPending p zt = zt { ztrkPending = p }
 
-writeDouble :: TrackNo -> TimeStamp -> Double -> ZoomW ()
-writeDouble trackNo t d = do
+writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
+writeDoubleVBR trackNo (t, d) = do
     setTime trackNo t
     incPending trackNo
     modifyTrack trackNo $ \z -> z
@@ -247,8 +248,8 @@ updateZTSDouble count d ZTSDouble{..} = ZTSDouble
     }
 updateZTSDouble _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
 
-writeInt :: TrackNo -> TimeStamp -> Int -> ZoomW ()
-writeInt trackNo t i = do
+writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
+writeIntVBR trackNo (t, i) = do
     setTime trackNo t
     incPending trackNo
     modifyTrack trackNo $ \z -> z

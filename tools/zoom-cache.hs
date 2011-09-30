@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
@@ -28,10 +29,10 @@ zoomGen = defCmd {
 zoomGenHandler :: App () ()
 zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
 
-zoomWriteFile :: (ZoomWrite a) => TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile :: (ZoomWrite (TimeStamp, a)) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
 zoomWriteFile ztype d (path:_) = withFileWrite (oneTrackVBR ztype "gen")
-    (mapM_ (uncurry (write 1)) (zip (map TS [1..]) d)) path
+    (mapM_ (write 1) (zip (map TS [1..]) d)) path
 
 doubles :: [Double]
 doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
