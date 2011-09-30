@@ -60,6 +60,12 @@ class ZoomWrite t where
     -- | Write a value to an open ZoomCache file.
     write :: TrackNo -> t -> ZoomW ()
 
+instance ZoomWrite Double where
+    write = writeDouble
+
+instance ZoomWrite Int where
+    write = writeInt
+
 instance ZoomWrite (TimeStamp, Double) where
     write = writeDoubleVBR
 
@@ -138,7 +144,7 @@ flush = do
         flushTrack :: ZoomTrackState -> ZoomTrackState
         flushTrack zt = d{ztrkLevels = ztrkLevels zt}
             where
-                d = mkTrackState (ztrkType zt) (ztrkRate zt) (ztrkName zt)
+                d = mkTrackState (ztrkType zt) (ztrkRate zt) (ztrkName zt) (ztrkExitTime zt)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
@@ -154,7 +160,7 @@ openWrite ztypes path = do
                  -> IntMap ZoomTrackState
         addTrack trackNo (TrackSpec ztype rate name) = IM.insert trackNo trackState
             where
-                trackState = mkTrackState ztype rate name
+                trackState = mkTrackState ztype rate name (TS 0)
 
 -- | Create a track map for a single constant-bitrate stream of a given type,
 -- as track no. 1
@@ -204,6 +210,10 @@ writeTrackHeader h trackNo ZoomTrackState{..} = do
 ----------------------------------------------------------------------
 -- Data
 
+incTime :: TrackNo -> ZoomW ()
+incTime trackNo = modifyTrack trackNo $ \zt -> zt
+    { ztrkExitTime = TS ((unTS $ ztrkExitTime zt) + 1) }
+
 setTime :: TrackNo -> TimeStamp -> ZoomW ()
 setTime trackNo t = modifyTrack trackNo $ \zt -> zt
     { ztrkEntryTime = if ztrkCount zt == 1 then t else ztrkEntryTime zt
@@ -227,6 +237,16 @@ incPending trackNo = do
         setPending :: Int -> ZoomTrackState -> ZoomTrackState
         setPending p zt = zt { ztrkPending = p }
 
+writeDouble :: TrackNo -> Double -> ZoomW ()
+writeDouble trackNo d = do
+    incTime trackNo
+    incPending trackNo
+    modifyTrack trackNo $ \z -> z
+        { ztrkBuilder = ztrkBuilder z <> (fromWord64be . toWord64) d
+        , ztrkCount = (ztrkCount z) + 1
+        , ztrkData = updateZTSDouble (ztrkCount z) d (ztrkData z)
+        }
+
 writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
 writeDoubleVBR trackNo (t, d) = do
     setTime trackNo t
@@ -247,6 +267,16 @@ updateZTSDouble count d ZTSDouble{..} = ZTSDouble
     , ztsSumSq = ztsSumSq + d*d
     }
 updateZTSDouble _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
+
+writeInt :: TrackNo -> Int -> ZoomW ()
+writeInt trackNo i = do
+    incTime trackNo
+    incPending trackNo
+    modifyTrack trackNo $ \z -> z
+        { ztrkBuilder = ztrkBuilder z <> (fromInt32be . fromIntegral) i
+        , ztrkCount = (ztrkCount z) + 1
+        , ztrkData = updateZTSInt (ztrkCount z) i (ztrkData z)
+        }
 
 writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
 writeIntVBR trackNo (t, i) = do
@@ -288,8 +318,8 @@ bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
     , ztrkBuilder
     ]
 
-mkTrackState :: TrackType -> Rational -> L.ByteString -> ZoomTrackState
-mkTrackState ZDouble rate name = ZoomTrackState
+mkTrackState :: TrackType -> Rational -> L.ByteString -> TimeStamp -> ZoomTrackState
+mkTrackState ZDouble rate name entry = ZoomTrackState
     { ztrkType = ZDouble
     , ztrkRate = rate
     , ztrkName = name
@@ -297,7 +327,7 @@ mkTrackState ZDouble rate name = ZoomTrackState
     , ztrkCount = 0
     , ztrkPending = 1
     , ztrkLevels = IM.empty
-    , ztrkEntryTime = TS 0
+    , ztrkEntryTime = entry
     , ztrkExitTime = TS 0
     , ztrkData = ZTSDouble
         { ztsdEntry = 0.0
@@ -308,7 +338,7 @@ mkTrackState ZDouble rate name = ZoomTrackState
         , ztsSumSq = 0.0
         }
     }
-mkTrackState ZInt rate name = ZoomTrackState
+mkTrackState ZInt rate name entry = ZoomTrackState
     { ztrkType = ZInt
     , ztrkRate = rate
     , ztrkName = name
@@ -316,7 +346,7 @@ mkTrackState ZInt rate name = ZoomTrackState
     , ztrkCount = 0
     , ztrkPending = 1
     , ztrkLevels = IM.empty
-    , ztrkEntryTime = TS 0
+    , ztrkEntryTime = entry
     , ztrkExitTime = TS 0
     , ztrkData = ZTSInt
         { ztsiEntry = 0
