@@ -30,6 +30,7 @@ module Data.ZoomCache.Write (
 
     -- * Track specification
     , TrackMap
+    , TrackSpec
     , oneTrack
 ) where
 
@@ -144,18 +145,22 @@ openWrite ztypes path = do
     mapM_ (uncurry (writeTrackHeader h)) (IM.assocs tracks)
     return $ ZoomWHandle h tracks IM.empty
     where
-        addTrack :: TrackNo -> (TrackType, String) ->
-                    IntMap ZoomTrackState -> IntMap ZoomTrackState
-        addTrack trackNo (ztype, name) = IM.insert trackNo trackState
+        addTrack :: TrackNo -> TrackSpec
+                 -> IntMap ZoomTrackState
+                 -> IntMap ZoomTrackState
+        addTrack trackNo (TrackSpec ztype name) = IM.insert trackNo trackState
             where
                 trackState = (defTrackState ztype){ztrkName = LC.pack name}
 
+-- | A map of all track numbers to their 'TrackSpec'
+type TrackMap = IntMap TrackSpec
+
 -- | A specification of the type and name of each track
-type TrackMap = IntMap (TrackType, String)
+data TrackSpec = TrackSpec TrackType String
 
 -- | Create a track map for a single stream of a given type, as track no. 1
 oneTrack :: TrackType -> String -> TrackMap
-oneTrack ztype name = IM.singleton 1 (ztype, name)
+oneTrack ztype name = IM.singleton 1 (TrackSpec ztype name)
 
 ----------------------------------------------------------------------
 -- Global header
