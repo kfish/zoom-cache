@@ -85,6 +85,7 @@ data ZoomTrackState = ZoomTrackState
     , ztrkRate      :: Rational
     , ztrkName      :: LC.ByteString
     , ztrkBuilder   :: Builder
+    , ztrkTSBuilder :: Builder
     , ztrkCount     :: Int
     , ztrkPending   :: Int
     , ztrkLevels    :: IntMap (Maybe Summary)
@@ -259,6 +260,8 @@ writeDataVBR builder updater trackNo (t, d) = do
     incPending trackNo
     modifyTrack trackNo $ \z -> z
         { ztrkBuilder = ztrkBuilder z <> builder d
+        , ztrkTSBuilder = ztrkTSBuilder z <>
+              (fromInt32be . fromIntegral .  unTS) t
         , ztrkCount = (ztrkCount z) + 1
         , ztrkData = updater (ztrkCount z) d (ztrkData z)
         }
@@ -314,6 +317,8 @@ bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
     , encInt . unTS $ ztrkExitTime
     , encInt . L.length . toLazyByteString $ ztrkBuilder
     , ztrkBuilder
+    , encInt . L.length . toLazyByteString $ ztrkTSBuilder
+    , ztrkTSBuilder
     ]
 
 mkTrackState :: TrackType -> Rational -> L.ByteString -> TimeStamp -> ZoomTrackState
@@ -322,6 +327,7 @@ mkTrackState ZDouble rate name entry = ZoomTrackState
     , ztrkRate = rate
     , ztrkName = name
     , ztrkBuilder = mempty
+    , ztrkTSBuilder = mempty
     , ztrkCount = 0
     , ztrkPending = 1
     , ztrkLevels = IM.empty
@@ -341,6 +347,7 @@ mkTrackState ZInt rate name entry = ZoomTrackState
     , ztrkRate = rate
     , ztrkName = name
     , ztrkBuilder = mempty
+    , ztrkTSBuilder = mempty
     , ztrkCount = 0
     , ztrkPending = 1
     , ztrkLevels = IM.empty
