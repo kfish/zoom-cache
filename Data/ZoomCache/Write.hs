@@ -237,25 +237,37 @@ incPending trackNo = do
         setPending :: Int -> ZoomTrackState -> ZoomTrackState
         setPending p zt = zt { ztrkPending = p }
 
-writeDouble :: TrackNo -> Double -> ZoomW ()
-writeDouble trackNo d = do
+writeData :: (ZoomWrite a)
+          => (a -> Builder)
+          -> (Int -> a -> ZTSData -> ZTSData)
+          -> TrackNo -> a -> ZoomW ()
+writeData builder updater trackNo d = do
     incTime trackNo
     incPending trackNo
     modifyTrack trackNo $ \z -> z
-        { ztrkBuilder = ztrkBuilder z <> (fromWord64be . toWord64) d
+        { ztrkBuilder = ztrkBuilder z <> builder d
         , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updateZTSDouble (ztrkCount z) d (ztrkData z)
+        , ztrkData = updater (ztrkCount z) d (ztrkData z)
         }
 
-writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
-writeDoubleVBR trackNo (t, d) = do
+writeDataVBR :: (ZoomWrite a)
+             => (a -> Builder)
+             -> (Int -> a -> ZTSData -> ZTSData)
+             -> TrackNo -> (TimeStamp, a) -> ZoomW ()
+writeDataVBR builder updater trackNo (t, d) = do
     setTime trackNo t
     incPending trackNo
     modifyTrack trackNo $ \z -> z
-        { ztrkBuilder = ztrkBuilder z <> (fromWord64be . toWord64) d
+        { ztrkBuilder = ztrkBuilder z <> builder d
         , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updateZTSDouble (ztrkCount z) d (ztrkData z)
+        , ztrkData = updater (ztrkCount z) d (ztrkData z)
         }
+
+writeDouble :: TrackNo -> Double -> ZoomW ()
+writeDouble = writeData (fromWord64be . toWord64) updateZTSDouble
+
+writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
+writeDoubleVBR = writeDataVBR (fromWord64be . toWord64) updateZTSDouble
 
 updateZTSDouble :: Int -> Double -> ZTSData -> ZTSData
 updateZTSDouble count d ZTSDouble{..} = ZTSDouble
@@ -269,24 +281,10 @@ updateZTSDouble count d ZTSDouble{..} = ZTSDouble
 updateZTSDouble _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
 
 writeInt :: TrackNo -> Int -> ZoomW ()
-writeInt trackNo i = do
-    incTime trackNo
-    incPending trackNo
-    modifyTrack trackNo $ \z -> z
-        { ztrkBuilder = ztrkBuilder z <> (fromInt32be . fromIntegral) i
-        , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updateZTSInt (ztrkCount z) i (ztrkData z)
-        }
+writeInt = writeData (fromInt32be . fromIntegral) updateZTSInt
 
 writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
-writeIntVBR trackNo (t, i) = do
-    setTime trackNo t
-    incPending trackNo
-    modifyTrack trackNo $ \z -> z
-        { ztrkBuilder = ztrkBuilder z <> (fromInt32be . fromIntegral) i
-        , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updateZTSInt (ztrkCount z) i (ztrkData z)
-        }
+writeIntVBR = writeDataVBR (fromInt32be . fromIntegral) updateZTSInt
 
 updateZTSInt :: Int -> Int -> ZTSData -> ZTSData
 updateZTSInt count i ZTSInt{..} = ZTSInt
