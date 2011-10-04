@@ -77,7 +77,7 @@ instance ZoomWrite (TimeStamp, Int) where
 data ZoomWHandle = ZoomWHandle
     { whHandle    :: Handle
     , whTrackWork :: IntMap TrackWork
-    , whPending   :: IntMap [Summary]
+    , whDeferred  :: IntMap [Summary]
     }
 
 data TrackWork = TrackWork
@@ -134,11 +134,11 @@ flush = do
     tracks <- gets whTrackWork
     liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
     mapM_ (uncurry flushSummary) (IM.assocs tracks)
-    pending <- concat . IM.elems <$> gets whPending
+    pending <- concat . IM.elems <$> gets whDeferred
     mapM_ writeSummary pending
     modify $ \z -> z
         { whTrackWork = IM.map flushTrack (whTrackWork z)
-        , whPending = IM.empty
+        , whDeferred = IM.empty
         }
     where
         flushTrack :: TrackWork -> TrackWork
@@ -221,22 +221,27 @@ setTime trackNo t = modifyTrack trackNo $ \zt -> zt
     , twExitTime = t
     }
 
+flushNeeded :: TrackWork -> Bool
+flushNeeded TrackWork{..} = twPending > 1024
+
+resetWatermark :: TrackNo -> ZoomW ()
+resetWatermark trackNo = modifyTrack trackNo (setPending 1)
+
+incWaterLevel :: TrackNo -> TrackWork -> ZoomW ()
+incWaterLevel trackNo TrackWork{..} = modifyTrack trackNo (setPending (twPending + 1))
+
+setPending :: Int -> TrackWork -> TrackWork
+setPending p zt = zt { twPending = p }
+
 incPending :: TrackNo -> ZoomW ()
 incPending trackNo = do
     zt <- IM.lookup trackNo <$> gets whTrackWork
     case zt of
         Just track -> do
-            let p = twPending track
-            if (p >= 1024)
-                then do
-                    flush
-                    modifyTrack trackNo (setPending 1)
-                else
-                    modifyTrack trackNo (setPending (p+1))
+            case flushNeeded track of
+                True -> flush >> resetWatermark trackNo
+                False -> incWaterLevel trackNo track
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
-    where
-        setPending :: Int -> TrackWork -> TrackWork
-        setPending p zt = zt { twPending = p }
 
 writeData :: (ZoomWrite a)
           => (a -> Builder)
@@ -415,7 +420,7 @@ pushSummary zt s = do
 deferSummary :: Summary -> ZoomW ()
 deferSummary s = do
     modify $ \z -> z
-        { whPending = IM.alter f (summaryLevel s) (whPending z) }
+        { whDeferred = IM.alter f (summaryLevel s) (whDeferred z) }
     where
         f Nothing        = Just [s]
         f (Just pending) = Just (pending ++ [s])
