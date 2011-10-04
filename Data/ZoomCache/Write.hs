@@ -29,6 +29,10 @@ module Data.ZoomCache.Write (
     , openWrite
     , flush
 
+    -- * Watermarks
+    , watermark
+    , setWatermark
+
     -- * TrackSpec helpers
     , oneTrack
     , oneTrackVariable
@@ -171,6 +175,21 @@ oneTrack ztype rate name = IM.singleton 1 (TrackSpec ztype ConstantDR rate name)
 -- as track no. 1
 oneTrackVariable :: TrackType -> L.ByteString -> TrackMap
 oneTrackVariable ztype name = IM.singleton 1 (TrackSpec ztype VariableDR 0 name)
+
+-- | Query the maximum number of data points to buffer for a given track before
+-- forcing a flush of all buffered data and summaries.
+watermark :: TrackNo -> ZoomW (Maybe Int)
+watermark trackNo =  do
+    track <- IM.lookup trackNo <$> gets whTrackWork
+    return (twWatermark <$> track)
+
+-- | Set the maximum number of data points to buffer for a given track before
+-- forcing a flush of all buffered data and summaries.
+setWatermark :: TrackNo -> Int -> ZoomW ()
+setWatermark trackNo w = modifyTrack trackNo f
+    where
+        f :: TrackWork -> TrackWork
+        f tw = tw { twWatermark = w }
 
 ----------------------------------------------------------------------
 -- Global header
@@ -323,12 +342,12 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
         len = L.length . toLazyByteString
 
 mkTrackState :: TrackSpec -> TimeStamp -> Int -> TrackWork
-mkTrackState spec entry watermark = TrackWork
+mkTrackState spec entry w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
         , twTSBuilder = mempty
         , twCount = 0
-        , twWatermark = watermark
+        , twWatermark = w
         , twLevels = IM.empty
         , twEntryTime = entry
         , twExitTime = entry
