@@ -75,21 +75,21 @@ instance ZoomWrite (TimeStamp, Int) where
 ------------------------------------------------------------
 
 data ZoomWHandle = ZoomWHandle
-    { zoomHandle       :: Handle
-    , zoomTracks       :: IntMap ZoomTrackState
-    , zoomWritePending :: IntMap [Summary]
+    { whHandle    :: Handle
+    , whTrackWork :: IntMap TrackWork
+    , whPending   :: IntMap [Summary]
     }
 
-data ZoomTrackState = ZoomTrackState
-    { ztrkSpec      :: TrackSpec
-    , ztrkBuilder   :: Builder
-    , ztrkTSBuilder :: Builder
-    , ztrkCount     :: Int
-    , ztrkPending   :: Int
-    , ztrkLevels    :: IntMap (Maybe Summary)
-    , ztrkEntryTime :: TimeStamp
-    , ztrkExitTime  :: TimeStamp
-    , ztrkData      :: ZTSData
+data TrackWork = TrackWork
+    { twSpec      :: TrackSpec
+    , twBuilder   :: Builder
+    , twTSBuilder :: Builder
+    , twCount     :: Int
+    , twPending   :: Int
+    , twLevels    :: IntMap (Maybe Summary)
+    , twEntryTime :: TimeStamp
+    , twExitTime  :: TimeStamp
+    , twData      :: ZTSData
     }
 
 data ZTSData = ZTSDouble
@@ -123,28 +123,28 @@ withFileWrite :: TrackMap  -> ZoomW () -> FilePath -> IO ()
 withFileWrite ztypes f path = do
     z <- openWrite ztypes path
     z' <- execStateT (f >> flush) z
-    hClose (zoomHandle z')
+    hClose (whHandle z')
 
 -- | Force a flush of ZoomCache summary blocks to disk. It is not usually
 -- necessary to call this function as summary blocks are transparently written
 -- at regular intervals.
 flush :: ZoomW ()
 flush = do
-    h <- gets zoomHandle
-    tracks <- gets zoomTracks
+    h <- gets whHandle
+    tracks <- gets whTrackWork
     liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
     mapM_ (uncurry flushSummary) (IM.assocs tracks)
-    pending <- concat . IM.elems <$> gets zoomWritePending
+    pending <- concat . IM.elems <$> gets whPending
     mapM_ writeSummary pending
     modify $ \z -> z
-        { zoomTracks = IM.map flushTrack (zoomTracks z)
-        , zoomWritePending = IM.empty
+        { whTrackWork = IM.map flushTrack (whTrackWork z)
+        , whPending = IM.empty
         }
     where
-        flushTrack :: ZoomTrackState -> ZoomTrackState
-        flushTrack zt = d{ztrkLevels = ztrkLevels zt}
+        flushTrack :: TrackWork -> TrackWork
+        flushTrack zt = d{twLevels = twLevels zt}
             where
-                d = mkTrackState (ztrkSpec zt) (ztrkExitTime zt)
+                d = mkTrackState (twSpec zt) (twExitTime zt)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
@@ -156,8 +156,8 @@ openWrite trackMap path = do
     return $ ZoomWHandle h tracks IM.empty
     where
         addTrack :: TrackNo -> TrackSpec
-                 -> IntMap ZoomTrackState
-                 -> IntMap ZoomTrackState
+                 -> IntMap TrackWork
+                 -> IntMap TrackWork
         addTrack trackNo spec = IM.insert trackNo trackState
             where
                 trackState = mkTrackState spec (TS 0)
@@ -213,20 +213,20 @@ writeTrackHeader h trackNo TrackSpec{..} = do
 
 incTime :: TrackNo -> ZoomW ()
 incTime trackNo = modifyTrack trackNo $ \zt -> zt
-    { ztrkExitTime = TS ((unTS $ ztrkExitTime zt) + 1) }
+    { twExitTime = TS ((unTS $ twExitTime zt) + 1) }
 
 setTime :: TrackNo -> TimeStamp -> ZoomW ()
 setTime trackNo t = modifyTrack trackNo $ \zt -> zt
-    { ztrkEntryTime = if ztrkCount zt == 1 then t else ztrkEntryTime zt
-    , ztrkExitTime = t
+    { twEntryTime = if twCount zt == 1 then t else twEntryTime zt
+    , twExitTime = t
     }
 
 incPending :: TrackNo -> ZoomW ()
 incPending trackNo = do
-    zt <- IM.lookup trackNo <$> gets zoomTracks
+    zt <- IM.lookup trackNo <$> gets whTrackWork
     case zt of
         Just track -> do
-            let p = ztrkPending track
+            let p = twPending track
             if (p >= 1024)
                 then do
                     flush
@@ -235,8 +235,8 @@ incPending trackNo = do
                     modifyTrack trackNo (setPending (p+1))
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
     where
-        setPending :: Int -> ZoomTrackState -> ZoomTrackState
-        setPending p zt = zt { ztrkPending = p }
+        setPending :: Int -> TrackWork -> TrackWork
+        setPending p zt = zt { twPending = p }
 
 writeData :: (ZoomWrite a)
           => (a -> Builder)
@@ -246,9 +246,9 @@ writeData builder updater trackNo d = do
     incTime trackNo
     incPending trackNo
     modifyTrack trackNo $ \z -> z
-        { ztrkBuilder = ztrkBuilder z <> builder d
-        , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updater (ztrkCount z) (ztrkExitTime z) d (ztrkData z)
+        { twBuilder = twBuilder z <> builder d
+        , twCount = (twCount z) + 1
+        , twData = updater (twCount z) (twExitTime z) d (twData z)
         }
 
 writeDataVBR :: (ZoomWrite a)
@@ -259,11 +259,11 @@ writeDataVBR builder updater trackNo (t, d) = do
     setTime trackNo t
     incPending trackNo
     modifyTrack trackNo $ \z -> z
-        { ztrkBuilder = ztrkBuilder z <> builder d
-        , ztrkTSBuilder = ztrkTSBuilder z <>
+        { twBuilder = twBuilder z <> builder d
+        , twTSBuilder = twTSBuilder z <>
               (fromInt32be . fromIntegral .  unTS) t
-        , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updater (ztrkCount z) t d (ztrkData z)
+        , twCount = (twCount z) + 1
+        , twData = updater (twCount z) t d (twData z)
         }
 
 writeDouble :: TrackNo -> Double -> ZoomW ()
@@ -309,37 +309,37 @@ updateZTSInt _ _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
 ----------------------------------------------------------------------
 -- TrackState
 
-modifyTracks :: (IntMap ZoomTrackState -> IntMap ZoomTrackState) -> ZoomW ()
-modifyTracks f = modify (\z -> z { zoomTracks = f (zoomTracks z) })
+modifyTracks :: (IntMap TrackWork -> IntMap TrackWork) -> ZoomW ()
+modifyTracks f = modify (\z -> z { whTrackWork = f (whTrackWork z) })
 
-modifyTrack :: TrackNo -> (ZoomTrackState -> ZoomTrackState) -> ZoomW ()
+modifyTrack :: TrackNo -> (TrackWork -> TrackWork) -> ZoomW ()
 modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
-bsFromTrack :: TrackNo -> ZoomTrackState -> L.ByteString
-bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
+bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
+bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     [ fromLazyByteString packetHeader
     , encInt trackNo
-    , encInt . unTS $ ztrkEntryTime
-    , encInt . unTS $ ztrkExitTime
-    , encInt (len ztrkBuilder + len ztrkTSBuilder)
-    , encInt ztrkCount
-    , ztrkBuilder
-    , ztrkTSBuilder
+    , encInt . unTS $ twEntryTime
+    , encInt . unTS $ twExitTime
+    , encInt (len twBuilder + len twTSBuilder)
+    , encInt twCount
+    , twBuilder
+    , twTSBuilder
     ]
     where
         len = L.length . toLazyByteString
 
-mkTrackState :: TrackSpec -> TimeStamp -> ZoomTrackState
-mkTrackState spec entry = ZoomTrackState
-        { ztrkSpec = spec
-        , ztrkBuilder = mempty
-        , ztrkTSBuilder = mempty
-        , ztrkCount = 0
-        , ztrkPending = 1
-        , ztrkLevels = IM.empty
-        , ztrkEntryTime = entry
-        , ztrkExitTime = entry
-        , ztrkData = initZTSData (specType spec)
+mkTrackState :: TrackSpec -> TimeStamp -> TrackWork
+mkTrackState spec entry = TrackWork
+        { twSpec = spec
+        , twBuilder = mempty
+        , twTSBuilder = mempty
+        , twCount = 0
+        , twPending = 1
+        , twLevels = IM.empty
+        , twEntryTime = entry
+        , twExitTime = entry
+        , twData = initZTSData (specType spec)
         }
     where
         initZTSData ZDouble = ZTSDouble
@@ -364,43 +364,43 @@ mkTrackState spec entry = ZoomTrackState
 ----------------------------------------------------------------------
 -- Summary
 
-flushSummary :: TrackNo -> ZoomTrackState -> ZoomW ()
-flushSummary trackNo trackState@ZoomTrackState{..} =
+flushSummary :: TrackNo -> TrackWork -> ZoomW ()
+flushSummary trackNo trackState@TrackWork{..} =
     pushSummary trackState (mkSummary trackNo trackState)
 
-mkSummary :: TrackNo -> ZoomTrackState -> Summary
-mkSummary trackNo ZoomTrackState{..} = mk (specType ztrkSpec)
+mkSummary :: TrackNo -> TrackWork -> Summary
+mkSummary trackNo TrackWork{..} = mk (specType twSpec)
     where
         mk ZDouble = SummaryDouble
             { summaryTrack = trackNo
             , summaryLevel = 1
-            , summaryEntryTime = ztrkEntryTime
-            , summaryExitTime = ztrkExitTime
-            , summaryDoubleEntry = ztsdEntry ztrkData
-            , summaryDoubleExit = ztsdExit ztrkData
-            , summaryDoubleMin = ztsdMin ztrkData
-            , summaryDoubleMax = ztsdMax ztrkData
-            , summaryAvg = ztsdSum ztrkData / dur
-            , summaryRMS = sqrt $ ztsSumSq  ztrkData / dur
+            , summaryEntryTime = twEntryTime
+            , summaryExitTime = twExitTime
+            , summaryDoubleEntry = ztsdEntry twData
+            , summaryDoubleExit = ztsdExit twData
+            , summaryDoubleMin = ztsdMin twData
+            , summaryDoubleMax = ztsdMax twData
+            , summaryAvg = ztsdSum twData / dur
+            , summaryRMS = sqrt $ ztsSumSq  twData / dur
             }
         mk ZInt = SummaryInt
             { summaryTrack = trackNo
             , summaryLevel = 1
-            , summaryEntryTime = ztrkEntryTime
-            , summaryExitTime = ztrkExitTime
-            , summaryIntEntry = ztsiEntry ztrkData
-            , summaryIntExit = ztsiExit ztrkData
-            , summaryIntMin = ztsiMin ztrkData
-            , summaryIntMax = ztsiMax ztrkData
-            , summaryAvg = fromIntegral (ztsiSum ztrkData) / dur
-            , summaryRMS = sqrt $ ztsSumSq  ztrkData / dur
+            , summaryEntryTime = twEntryTime
+            , summaryExitTime = twExitTime
+            , summaryIntEntry = ztsiEntry twData
+            , summaryIntExit = ztsiExit twData
+            , summaryIntMin = ztsiMin twData
+            , summaryIntMax = ztsiMax twData
+            , summaryAvg = fromIntegral (ztsiSum twData) / dur
+            , summaryRMS = sqrt $ ztsSumSq  twData / dur
             }
-        dur = fromIntegral $ (unTS ztrkExitTime) - (unTS ztrkEntryTime)
+        dur = fromIntegral $ (unTS twExitTime) - (unTS twEntryTime)
 
-pushSummary :: ZoomTrackState -> Summary -> ZoomW ()
+pushSummary :: TrackWork -> Summary -> ZoomW ()
 pushSummary zt s = do
     deferSummary s
-    case IM.lookup (summaryLevel s) (ztrkLevels zt) of
+    case IM.lookup (summaryLevel s) (twLevels zt) of
         Just (Just prev) -> do
             let new = (prev `appendSummary` s) { summaryLevel = summaryLevel s + 1 }
             insert Nothing
@@ -410,19 +410,19 @@ pushSummary zt s = do
     where
         insert :: Maybe Summary -> ZoomW ()
         insert x = modifyTrack (summaryTrack s) (\ztt ->
-            ztt { ztrkLevels = IM.insert (summaryLevel s) x (ztrkLevels ztt) } )
+            ztt { twLevels = IM.insert (summaryLevel s) x (twLevels ztt) } )
 
 deferSummary :: Summary -> ZoomW ()
 deferSummary s = do
     modify $ \z -> z
-        { zoomWritePending = IM.alter f (summaryLevel s) (zoomWritePending z) }
+        { whPending = IM.alter f (summaryLevel s) (whPending z) }
     where
         f Nothing        = Just [s]
         f (Just pending) = Just (pending ++ [s])
 
 writeSummary :: Summary -> ZoomW ()
 writeSummary s = do
-    h <- gets zoomHandle
+    h <- gets whHandle
     liftIO . L.hPut h . toLazyByteString . fromSummary $ s
 
 ------------------------------------------------------------
