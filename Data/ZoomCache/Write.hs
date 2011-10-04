@@ -85,7 +85,7 @@ data TrackWork = TrackWork
     , twBuilder   :: Builder
     , twTSBuilder :: Builder
     , twCount     :: Int
-    , twPending   :: Int
+    , twWatermark :: Int
     , twLevels    :: IntMap (Maybe Summary)
     , twEntryTime :: TimeStamp
     , twExitTime  :: TimeStamp
@@ -142,9 +142,9 @@ flush = do
         }
     where
         flushTrack :: TrackWork -> TrackWork
-        flushTrack zt = d{twLevels = twLevels zt}
+        flushTrack tw = d{twLevels = twLevels tw}
             where
-                d = mkTrackState (twSpec zt) (twExitTime zt)
+                d = mkTrackState (twSpec tw) (twExitTime tw) (twWatermark tw)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
@@ -160,7 +160,7 @@ openWrite trackMap path = do
                  -> IntMap TrackWork
         addTrack trackNo spec = IM.insert trackNo trackState
             where
-                trackState = mkTrackState spec (TS 0)
+                trackState = mkTrackState spec (TS 0) 1024
 
 -- | Create a track map for a single constant-rate stream of a given type,
 -- as track no. 1
@@ -222,25 +222,13 @@ setTime trackNo t = modifyTrack trackNo $ \zt -> zt
     }
 
 flushNeeded :: TrackWork -> Bool
-flushNeeded TrackWork{..} = twPending > 1024
-
-resetWatermark :: TrackNo -> ZoomW ()
-resetWatermark trackNo = modifyTrack trackNo (setPending 1)
-
-incWaterLevel :: TrackNo -> TrackWork -> ZoomW ()
-incWaterLevel trackNo TrackWork{..} = modifyTrack trackNo (setPending (twPending + 1))
-
-setPending :: Int -> TrackWork -> TrackWork
-setPending p zt = zt { twPending = p }
+flushNeeded TrackWork{..} = twCount > twWatermark
 
 incPending :: TrackNo -> ZoomW ()
 incPending trackNo = do
     zt <- IM.lookup trackNo <$> gets whTrackWork
     case zt of
-        Just track -> do
-            case flushNeeded track of
-                True -> flush >> resetWatermark trackNo
-                False -> incWaterLevel trackNo track
+        Just track -> when (flushNeeded track) flush
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
 
 writeData :: (ZoomWrite a)
@@ -334,13 +322,13 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     where
         len = L.length . toLazyByteString
 
-mkTrackState :: TrackSpec -> TimeStamp -> TrackWork
-mkTrackState spec entry = TrackWork
+mkTrackState :: TrackSpec -> TimeStamp -> Int -> TrackWork
+mkTrackState spec entry watermark = TrackWork
         { twSpec = spec
         , twBuilder = mempty
         , twTSBuilder = mempty
         , twCount = 0
-        , twPending = 1
+        , twWatermark = watermark
         , twLevels = IM.empty
         , twEntryTime = entry
         , twExitTime = entry
