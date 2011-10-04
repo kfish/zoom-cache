@@ -131,8 +131,7 @@ flush = do
     h <- gets zoomHandle
     tracks <- gets zoomTracks
     liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
-    let ss = IM.mapWithKey mkSummary tracks
-    Fold.mapM_ pushSummary ss
+    mapM_ (uncurry flushSummary) (IM.assocs tracks)
     pending <- concat . IM.elems <$> gets zoomWritePending
     mapM_ writeSummary pending
     modify $ \z -> z
@@ -355,38 +354,9 @@ mkTrackState spec entry = ZoomTrackState
 ----------------------------------------------------------------------
 -- Summary
 
-pushSummary :: Summary -> ZoomW ()
-pushSummary s = do
-    deferSummary s
-    zt'm <- IM.lookup (summaryTrack s) <$> gets zoomTracks
-    maybe (return ()) pushSummary' zt'm
-    where
-        pushSummary' :: ZoomTrackState -> ZoomW ()
-        pushSummary' zt = do
-            case IM.lookup (summaryLevel s) (ztrkLevels zt) of
-                Just (Just prev) -> do
-                    let new = (prev `appendSummary` s) { summaryLevel = summaryLevel s + 1 }
-                    insert Nothing
-                    pushSummary new
-                _                -> do
-                    insert (Just s)
-            where
-                insert :: Maybe Summary -> ZoomW ()
-                insert x = modifyTrack (summaryTrack s) (\ztt ->
-                    ztt { ztrkLevels = IM.insert (summaryLevel s) x (ztrkLevels ztt) } )
-
-writeSummary :: Summary -> ZoomW ()
-writeSummary s = do
-    h <- gets zoomHandle
-    liftIO . L.hPut h . toLazyByteString . fromSummary $ s
-
-deferSummary :: Summary -> ZoomW ()
-deferSummary s = do
-    modify $ \z -> z
-        { zoomWritePending = IM.alter f (summaryLevel s) (zoomWritePending z) }
-    where
-        f Nothing        = Just [s]
-        f (Just pending) = Just (pending ++ [s])
+flushSummary :: TrackNo -> ZoomTrackState -> ZoomW ()
+flushSummary trackNo trackState@ZoomTrackState{..} =
+    pushSummary trackState (mkSummary trackNo trackState)
 
 mkSummary :: TrackNo -> ZoomTrackState -> Summary
 mkSummary trackNo ZoomTrackState{..} = mk (specType ztrkSpec)
@@ -415,6 +385,34 @@ mkSummary trackNo ZoomTrackState{..} = mk (specType ztrkSpec)
             , summaryAvg = fromIntegral (ztsiSum ztrkData) / (fromIntegral ztrkCount)
             , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
             }
+
+pushSummary :: ZoomTrackState -> Summary -> ZoomW ()
+pushSummary zt s = do
+    deferSummary s
+    case IM.lookup (summaryLevel s) (ztrkLevels zt) of
+        Just (Just prev) -> do
+            let new = (prev `appendSummary` s) { summaryLevel = summaryLevel s + 1 }
+            insert Nothing
+            pushSummary zt new
+        _                -> do
+            insert (Just s)
+    where
+        insert :: Maybe Summary -> ZoomW ()
+        insert x = modifyTrack (summaryTrack s) (\ztt ->
+            ztt { ztrkLevels = IM.insert (summaryLevel s) x (ztrkLevels ztt) } )
+
+deferSummary :: Summary -> ZoomW ()
+deferSummary s = do
+    modify $ \z -> z
+        { zoomWritePending = IM.alter f (summaryLevel s) (zoomWritePending z) }
+    where
+        f Nothing        = Just [s]
+        f (Just pending) = Just (pending ++ [s])
+
+writeSummary :: Summary -> ZoomW ()
+writeSummary s = do
+    h <- gets zoomHandle
+    liftIO . L.hPut h . toLazyByteString . fromSummary $ s
 
 ------------------------------------------------------------
 
