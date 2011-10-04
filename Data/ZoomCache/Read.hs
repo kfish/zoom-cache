@@ -42,7 +42,6 @@ data ZoomReader m = ZoomReader
 
 data TrackReader m = TrackReader
     { _trTrack      :: TrackNo
-    , trType        :: Maybe TrackType
     , trReadPacket  :: Packet -> m ()
     , trReadSummary :: Summary -> m ()
     }
@@ -67,7 +66,7 @@ addTrack :: (Monad m) => TrackNo
          -> ZoomReader m -> ZoomReader m
 addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTracks zr)) }
     where
-        tr = TrackReader trackNo Nothing pFunc sFunc
+        tr = TrackReader trackNo pFunc sFunc
 
 zoomDumpFile :: [FilePath] -> IO ()
 zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
@@ -138,15 +137,17 @@ zReadPacket zr = do
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let pFunc = trReadPacket tr
-                    case trType tr of
-                        Just ZDouble -> do
-                            let n = flip div 8 byteLength
-                            d <- PDDouble <$> replicateM n zReadFloat64be
-                            lift $ pFunc (Packet trackNo entryTime exitTime n d)
-                        Just ZInt -> do
-                            let n = flip div 4 byteLength
-                            d <- PDInt <$> replicateM n zReadInt32
-                            lift $ pFunc (Packet trackNo entryTime exitTime n d)
+                    case IM.lookup trackNo (zrSpecs zr) of
+                        Just TrackSpec{..} -> do
+                            case specType of
+                                ZDouble -> do
+                                    let n = flip div 8 byteLength
+                                    d <- PDDouble <$> replicateM n zReadFloat64be
+                                    lift $ pFunc (Packet trackNo entryTime exitTime n d)
+                                ZInt -> do
+                                    let n = flip div 4 byteLength
+                                    d <- PDInt <$> replicateM n zReadInt32
+                                    lift $ pFunc (Packet trackNo entryTime exitTime n d)
                         Nothing -> I.drop byteLength
                 Nothing -> I.drop byteLength
             return zr
@@ -160,15 +161,17 @@ zReadPacket zr = do
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let sFunc = trReadSummary tr
-                    case trType tr of
-                        Just ZDouble -> do
-                            let n = flip div 8 byteLength
-                            [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-                            lift $ sFunc (SummaryDouble trackNo lvl entryTime exitTime en ex mn mx avg rms)
-                        Just ZInt -> do
-                            [en,ex,mn,mx] <- replicateM 4 zReadInt32
-                            [avg,rms] <- replicateM 2 zReadFloat64be
-                            lift $ sFunc (SummaryInt trackNo lvl entryTime exitTime en ex mn mx avg rms)
+                    case IM.lookup trackNo (zrSpecs zr) of
+                        Just TrackSpec{..} -> do
+                            case specType of
+                                ZDouble -> do
+                                    let n = flip div 8 byteLength
+                                    [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
+                                    lift $ sFunc (SummaryDouble trackNo lvl entryTime exitTime en ex mn mx avg rms)
+                                ZInt -> do
+                                    [en,ex,mn,mx] <- replicateM 4 zReadInt32
+                                    [avg,rms] <- replicateM 2 zReadFloat64be
+                                    lift $ sFunc (SummaryInt trackNo lvl entryTime exitTime en ex mn mx avg rms)
                         Nothing -> I.drop byteLength
                 Nothing -> I.drop byteLength
             return zr
@@ -184,15 +187,8 @@ zReadPacket zr = do
             name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
             let spec = TrackSpec trackType rate name
 
-            return zr{ zrTracks = IM.adjust (setType trackType)
-                                            trackNo
-                                            (zrTracks zr)
-                     , zrSpecs = IM.insert trackNo spec (zrSpecs zr)
-                     }
+            return zr{ zrSpecs = IM.insert trackNo spec (zrSpecs zr) }
         _ -> return zr
-    where
-        setType :: TrackType -> TrackReader m -> TrackReader m
-        setType trackType tr = tr { trType = Just trackType }
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB

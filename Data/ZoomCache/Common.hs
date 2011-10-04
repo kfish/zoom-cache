@@ -218,7 +218,11 @@ data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
 type TrackMap = IntMap TrackSpec
 
 -- | A specification of the type and name of each track
-data TrackSpec = TrackSpec TrackType Rational L.ByteString
+data TrackSpec = TrackSpec
+    { specType :: TrackType
+    , specRate :: Rational
+    , specName :: L.ByteString
+    }
 
 data TrackType = ZDouble | ZInt
     deriving (Eq)
