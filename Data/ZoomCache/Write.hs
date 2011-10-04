@@ -82,6 +82,7 @@ data ZoomWHandle = ZoomWHandle
     { whHandle    :: Handle
     , whTrackWork :: IntMap TrackWork
     , whDeferred  :: IntMap [Summary]
+    , whWriteData :: Bool
     }
 
 data TrackWork = TrackWork
@@ -123,9 +124,14 @@ type ZoomW = StateT ZoomWHandle IO
 
 -- | Run a @ZoomW ()@ action on a given file handle, using the specified
 -- 'TrackMap' specification
-withFileWrite :: TrackMap  -> ZoomW () -> FilePath -> IO ()
-withFileWrite ztypes f path = do
-    z <- openWrite ztypes path
+withFileWrite :: TrackMap
+              -> Bool          -- ^ Whether or not to write raw data packets.
+                               -- If False, only summary blocks are written.
+              -> ZoomW ()
+              -> FilePath
+              -> IO ()
+withFileWrite ztypes doRaw f path = do
+    z <- openWrite ztypes doRaw path
     z' <- execStateT (f >> flush) z
     hClose (whHandle z')
 
@@ -136,7 +142,9 @@ flush :: ZoomW ()
 flush = do
     h <- gets whHandle
     tracks <- gets whTrackWork
-    liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
+    doRaw <- gets whWriteData
+    when doRaw $
+        liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
     mapM_ (uncurry flushSummary) (IM.assocs tracks)
     pending <- concat . IM.elems <$> gets whDeferred
     mapM_ writeSummary pending
@@ -151,13 +159,17 @@ flush = do
                 d = mkTrackState (twSpec tw) (twExitTime tw) (twWatermark tw)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
-openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
-openWrite trackMap path = do
+openWrite :: TrackMap
+          -> Bool              -- ^ Whether or not to write raw data packets.
+                               -- If False, only summary blocks are written.
+          -> FilePath
+          -> IO ZoomWHandle
+openWrite trackMap doRaw path = do
     h <- openFile path WriteMode
     writeGlobalHeader h
     let tracks = IM.foldWithKey addTrack IM.empty trackMap
     mapM_ (uncurry (writeTrackHeader h)) (IM.assocs trackMap)
-    return $ ZoomWHandle h tracks IM.empty
+    return $ ZoomWHandle h tracks IM.empty doRaw
     where
         addTrack :: TrackNo -> TrackSpec
                  -> IntMap TrackWork

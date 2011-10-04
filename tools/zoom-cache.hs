@@ -32,7 +32,7 @@ zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
 zoomWriteFile :: (ZoomWrite a) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _     _ []       = return ()
 zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype 1000 "gen")
-    (mapM_ (write 1) d) path
+    True (mapM_ (write 1) d) path
 
 ------------------------------------------------------------
 
@@ -51,7 +51,7 @@ zoomGenVariableHandler = liftIO . (zoomWriteFileVariable ZDouble doubles) =<< ap
 zoomWriteFileVariable :: (ZoomWrite (TimeStamp, a)) => TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFileVariable _     _ []       = return ()
 zoomWriteFileVariable ztype d (path:_) = withFileWrite (oneTrackVariable ztype "gen")
-    (mapM_ (write 1) (zip (map TS [1,3..]) d)) path
+    True (mapM_ (write 1) (zip (map TS [1,3..]) d)) path
 
 doubles :: [Double]
 doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
