@@ -81,10 +81,7 @@ data ZoomWHandle = ZoomWHandle
     }
 
 data ZoomTrackState = ZoomTrackState
-    { ztrkType      :: TrackType
-    , ztrkDRType    :: DataRateType
-    , ztrkRate      :: Rational
-    , ztrkName      :: LC.ByteString
+    { ztrkSpec      :: TrackSpec
     , ztrkBuilder   :: Builder
     , ztrkTSBuilder :: Builder
     , ztrkCount     :: Int
@@ -146,23 +143,23 @@ flush = do
         flushTrack :: ZoomTrackState -> ZoomTrackState
         flushTrack zt = d{ztrkLevels = ztrkLevels zt}
             where
-                d = mkTrackState (ztrkType zt) (ztrkDRType zt) (ztrkRate zt) (ztrkName zt) (ztrkExitTime zt)
+                d = mkTrackState (ztrkSpec zt) (ztrkExitTime zt)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
-openWrite ztypes path = do
+openWrite trackMap path = do
     h <- openFile path WriteMode
     writeGlobalHeader h
-    let tracks = IM.foldWithKey addTrack IM.empty ztypes
-    mapM_ (uncurry (writeTrackHeader h)) (IM.assocs tracks)
+    let tracks = IM.foldWithKey addTrack IM.empty trackMap
+    mapM_ (uncurry (writeTrackHeader h)) (IM.assocs trackMap)
     return $ ZoomWHandle h tracks IM.empty
     where
         addTrack :: TrackNo -> TrackSpec
                  -> IntMap ZoomTrackState
                  -> IntMap ZoomTrackState
-        addTrack trackNo (TrackSpec ztype drType rate name) = IM.insert trackNo trackState
+        addTrack trackNo spec = IM.insert trackNo trackState
             where
-                trackState = mkTrackState ztype drType rate name (TS 0)
+                trackState = mkTrackState spec (TS 0)
 
 -- | Create a track map for a single constant-rate stream of a given type,
 -- as track no. 1
@@ -195,19 +192,19 @@ writeGlobalHeader h = do
 ----------------------------------------------------------------------
 -- Track header
 
-writeTrackHeader :: Handle -> Int -> ZoomTrackState -> IO ()
-writeTrackHeader h trackNo ZoomTrackState{..} = do
+writeTrackHeader :: Handle -> Int -> TrackSpec -> IO ()
+writeTrackHeader h trackNo TrackSpec{..} = do
     L.hPut h . mconcat $
         [ trackHeader
         , toLazyByteString $ mconcat
             [ fromTrackNo trackNo
-            , fromTrackType ztrkType
-            , fromDataRateType ztrkDRType
-            , fromInt64be . fromIntegral . numerator $ ztrkRate
-            , fromInt64be . fromIntegral . denominator $ ztrkRate
-            , fromInt32be . fromIntegral . LC.length $ ztrkName
+            , fromTrackType specType
+            , fromDataRateType specDRType
+            , fromInt64be . fromIntegral . numerator $ specRate
+            , fromInt64be . fromIntegral . denominator $ specRate
+            , fromInt32be . fromIntegral . LC.length $ specName
             ]
-        , ztrkName
+        , specName
         ]
 
 ----------------------------------------------------------------------
@@ -325,50 +322,35 @@ bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
     where
         len = L.length . toLazyByteString
 
-mkTrackState :: TrackType -> DataRateType -> Rational -> L.ByteString -> TimeStamp
-             -> ZoomTrackState
-mkTrackState ZDouble drType rate name entry = ZoomTrackState
-    { ztrkType = ZDouble
-    , ztrkDRType = drType
-    , ztrkRate = rate
-    , ztrkName = name
-    , ztrkBuilder = mempty
-    , ztrkTSBuilder = mempty
-    , ztrkCount = 0
-    , ztrkPending = 1
-    , ztrkLevels = IM.empty
-    , ztrkEntryTime = entry
-    , ztrkExitTime = entry
-    , ztrkData = ZTSDouble
-        { ztsdEntry = 0.0
-        , ztsdExit = 0.0
-        , ztsdMin = floatMax
-        , ztsdMax = floatMin
-        , ztsdSum = 0.0
-        , ztsSumSq = 0.0
+mkTrackState :: TrackSpec -> TimeStamp -> ZoomTrackState
+mkTrackState spec entry = ZoomTrackState
+        { ztrkSpec = spec
+        , ztrkBuilder = mempty
+        , ztrkTSBuilder = mempty
+        , ztrkCount = 0
+        , ztrkPending = 1
+        , ztrkLevels = IM.empty
+        , ztrkEntryTime = entry
+        , ztrkExitTime = entry
+        , ztrkData = initZTSData (specType spec)
         }
-    }
-mkTrackState ZInt drType rate name entry = ZoomTrackState
-    { ztrkType = ZInt
-    , ztrkDRType = drType
-    , ztrkRate = rate
-    , ztrkName = name
-    , ztrkBuilder = mempty
-    , ztrkTSBuilder = mempty
-    , ztrkCount = 0
-    , ztrkPending = 1
-    , ztrkLevels = IM.empty
-    , ztrkEntryTime = entry
-    , ztrkExitTime = entry
-    , ztrkData = ZTSInt
-        { ztsiEntry = 0
-        , ztsiExit = 0
-        , ztsiMin = maxBound
-        , ztsiMax = minBound
-        , ztsiSum = 0
-        , ztsSumSq = 0
-        }
-    }
+    where
+        initZTSData ZDouble = ZTSDouble
+            { ztsdEntry = 0.0
+            , ztsdExit = 0.0
+            , ztsdMin = floatMax
+            , ztsdMax = floatMin
+            , ztsdSum = 0.0
+            , ztsSumSq = 0.0
+            }
+        initZTSData ZInt = ZTSInt
+            { ztsiEntry = 0
+            , ztsiExit = 0
+            , ztsiMin = maxBound
+            , ztsiMax = minBound
+            , ztsiSum = 0
+            , ztsSumSq = 0
+            }
 
 ----------------------------------------------------------------------
 -- Summary
@@ -407,7 +389,7 @@ deferSummary s = do
         f (Just pending) = Just (pending ++ [s])
 
 mkSummary :: TrackNo -> ZoomTrackState -> Summary
-mkSummary trackNo ZoomTrackState{..} = mk ztrkType
+mkSummary trackNo ZoomTrackState{..} = mk (specType ztrkSpec)
     where
         mk ZDouble = SummaryDouble
             { summaryTrack = trackNo
