@@ -5,6 +5,7 @@ module Data.ZoomCache.Common (
     HeaderType(..)
   , TimeStamp(..)
   , TrackType(..)
+  , DataRateType(..)
   , TrackNo
 
   -- * Track specification
@@ -85,7 +86,7 @@ Track header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Track no.                                                     | 8-11
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Type                                                          | 12-15
+   | Type                          | Flag: 0=CBR, 1=VBR            | 12-15
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Datarate numerator                                            | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -120,10 +121,23 @@ Raw Data Packet header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Exit Timestamp                                                | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Data length in bytes                                          | 20-23
+   | Payload length in bytes (remainder of packet)                 | 20-23
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Data ...                                                      | 24-
+   | Count of data points COUNT                                    | 24-27
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Data ...                                                      | 28-
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | ...                                                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Timestamps ...                                                | TS-
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | ...                                                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Timestamps block is only present if VBR (datarate numerator is 0)
+
+TS = 28 + (COUNT * sizeof(Type))
+
 
 Summary Data Packet header (IEEE754 floating point):
 
@@ -219,13 +233,20 @@ type TrackMap = IntMap TrackSpec
 
 -- | A specification of the type and name of each track
 data TrackSpec = TrackSpec
-    { specType :: TrackType
-    , specRate :: Rational
-    , specName :: L.ByteString
+    { specType   :: TrackType
+    , specDRType :: DataRateType
+    , specRate   :: Rational
+    , specName   :: L.ByteString
     }
 
 data TrackType = ZDouble | ZInt
     deriving (Eq)
+
+-- | Constant or Variable datarate.
+-- For constant datarate, timestamps are implied as incrementing by 1/datarate
+-- For variable datarate, explicit timestamps are attached to each datum, encoded
+-- as a separate block of timestamps in the Raw Data packet.
+data DataRateType = ConstantDR | VariableDR
 
 globalHeader :: L.ByteString
 globalHeader = LC.pack "\xe5ZXhe4d\0"
@@ -234,7 +255,7 @@ versionMajor :: Int
 versionMajor = 0
 
 versionMinor :: Int
-versionMinor = 1
+versionMinor = 2
 
 trackHeader :: L.ByteString
 trackHeader = LC.pack "\xe5ZXtRcK\0"

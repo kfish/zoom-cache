@@ -31,7 +31,7 @@ module Data.ZoomCache.Write (
 
     -- * TrackSpec helpers
     , oneTrack
-    , oneTrackVBR
+    , oneTrackVariable
 ) where
 
 import Blaze.ByteString.Builder hiding (flush)
@@ -82,6 +82,7 @@ data ZoomWHandle = ZoomWHandle
 
 data ZoomTrackState = ZoomTrackState
     { ztrkType      :: TrackType
+    , ztrkDRType    :: DataRateType
     , ztrkRate      :: Rational
     , ztrkName      :: LC.ByteString
     , ztrkBuilder   :: Builder
@@ -145,7 +146,7 @@ flush = do
         flushTrack :: ZoomTrackState -> ZoomTrackState
         flushTrack zt = d{ztrkLevels = ztrkLevels zt}
             where
-                d = mkTrackState (ztrkType zt) (ztrkRate zt) (ztrkName zt) (ztrkExitTime zt)
+                d = mkTrackState (ztrkType zt) (ztrkDRType zt) (ztrkRate zt) (ztrkName zt) (ztrkExitTime zt)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap -> FilePath -> IO ZoomWHandle
@@ -159,19 +160,19 @@ openWrite ztypes path = do
         addTrack :: TrackNo -> TrackSpec
                  -> IntMap ZoomTrackState
                  -> IntMap ZoomTrackState
-        addTrack trackNo (TrackSpec ztype rate name) = IM.insert trackNo trackState
+        addTrack trackNo (TrackSpec ztype drType rate name) = IM.insert trackNo trackState
             where
-                trackState = mkTrackState ztype rate name (TS 0)
+                trackState = mkTrackState ztype drType rate name (TS 0)
 
--- | Create a track map for a single constant-bitrate stream of a given type,
+-- | Create a track map for a single constant-rate stream of a given type,
 -- as track no. 1
 oneTrack :: TrackType -> Rational -> L.ByteString -> TrackMap
-oneTrack ztype rate name = IM.singleton 1 (TrackSpec ztype rate name)
+oneTrack ztype rate name = IM.singleton 1 (TrackSpec ztype ConstantDR rate name)
 
--- | Create a track map for a single variable-bitrate stream of a given type,
+-- | Create a track map for a single variable-rate stream of a given type,
 -- as track no. 1
-oneTrackVBR :: TrackType -> L.ByteString -> TrackMap
-oneTrackVBR ztype name = IM.singleton 1 (TrackSpec ztype 0 name)
+oneTrackVariable :: TrackType -> L.ByteString -> TrackMap
+oneTrackVariable ztype name = IM.singleton 1 (TrackSpec ztype VariableDR 0 name)
 
 ----------------------------------------------------------------------
 -- Global header
@@ -201,6 +202,7 @@ writeTrackHeader h trackNo ZoomTrackState{..} = do
         , toLazyByteString $ mconcat
             [ fromTrackNo trackNo
             , fromTrackType ztrkType
+            , fromDataRateType ztrkDRType
             , fromInt64be . fromIntegral . numerator $ ztrkRate
             , fromInt64be . fromIntegral . denominator $ ztrkRate
             , fromInt32be . fromIntegral . LC.length $ ztrkName
@@ -315,15 +317,19 @@ bsFromTrack trackNo ZoomTrackState{..} = toLazyByteString $ mconcat
     , encInt trackNo
     , encInt . unTS $ ztrkEntryTime
     , encInt . unTS $ ztrkExitTime
-    , encInt . L.length . toLazyByteString $ ztrkBuilder
+    , encInt (len ztrkBuilder + len ztrkTSBuilder)
+    , encInt ztrkCount
     , ztrkBuilder
-    , encInt . L.length . toLazyByteString $ ztrkTSBuilder
     , ztrkTSBuilder
     ]
+    where
+        len = L.length . toLazyByteString
 
-mkTrackState :: TrackType -> Rational -> L.ByteString -> TimeStamp -> ZoomTrackState
-mkTrackState ZDouble rate name entry = ZoomTrackState
+mkTrackState :: TrackType -> DataRateType -> Rational -> L.ByteString -> TimeStamp
+             -> ZoomTrackState
+mkTrackState ZDouble drType rate name entry = ZoomTrackState
     { ztrkType = ZDouble
+    , ztrkDRType = drType
     , ztrkRate = rate
     , ztrkName = name
     , ztrkBuilder = mempty
@@ -332,7 +338,7 @@ mkTrackState ZDouble rate name entry = ZoomTrackState
     , ztrkPending = 1
     , ztrkLevels = IM.empty
     , ztrkEntryTime = entry
-    , ztrkExitTime = TS 0
+    , ztrkExitTime = entry
     , ztrkData = ZTSDouble
         { ztsdEntry = 0.0
         , ztsdExit = 0.0
@@ -342,8 +348,9 @@ mkTrackState ZDouble rate name entry = ZoomTrackState
         , ztsSumSq = 0.0
         }
     }
-mkTrackState ZInt rate name entry = ZoomTrackState
+mkTrackState ZInt drType rate name entry = ZoomTrackState
     { ztrkType = ZInt
+    , ztrkDRType = drType
     , ztrkRate = rate
     , ztrkName = name
     , ztrkBuilder = mempty
@@ -352,7 +359,7 @@ mkTrackState ZInt rate name entry = ZoomTrackState
     , ztrkPending = 1
     , ztrkLevels = IM.empty
     , ztrkEntryTime = entry
-    , ztrkExitTime = TS 0
+    , ztrkExitTime = entry
     , ztrkData = ZTSInt
         { ztsiEntry = 0
         , ztsiExit = 0

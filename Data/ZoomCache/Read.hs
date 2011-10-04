@@ -52,8 +52,9 @@ data Packet = Packet
     { packetTrack :: TrackNo
     , packetEntryTime :: TimeStamp
     , packetExitTime :: TimeStamp
-    , packetLength :: Int
+    , packetCount :: Int
     , packetData :: PacketData
+    , packetTimeStamps :: [TimeStamp]
     }
 
 instance Default (ZoomReader m) where
@@ -94,9 +95,12 @@ zReader zr = do
         zReader zr'
 
 dumpData :: Packet -> IO ()
-dumpData p = case packetData p of
-    PDDouble ds -> mapM_ print ds
-    PDInt is    -> mapM_ print is
+dumpData p = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
+    where
+        tds = zip (map (show . unTS) $ packetTimeStamps p) vals
+        vals = case packetData p of
+            PDDouble ds -> map show ds
+            PDInt is    -> map show is
 
 dumpSummary :: Summary -> IO ()
 dumpSummary SummaryDouble{..} = do
@@ -134,20 +138,23 @@ zReadPacket zr = do
             entryTime <- TS <$> zReadInt32
             exitTime <- TS <$> zReadInt32
             byteLength <- zReadInt32
+            count <- zReadInt32
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let pFunc = trReadPacket tr
                     case IM.lookup trackNo (zrSpecs zr) of
                         Just TrackSpec{..} -> do
-                            case specType of
+                            d <- case specType of
                                 ZDouble -> do
-                                    let n = flip div 8 byteLength
-                                    d <- PDDouble <$> replicateM n zReadFloat64be
-                                    lift $ pFunc (Packet trackNo entryTime exitTime n d)
+                                    PDDouble <$> replicateM count zReadFloat64be
                                 ZInt -> do
-                                    let n = flip div 4 byteLength
-                                    d <- PDInt <$> replicateM n zReadInt32
-                                    lift $ pFunc (Packet trackNo entryTime exitTime n d)
+                                    PDInt <$> replicateM count zReadInt32
+                            ts <- map TS <$> case specDRType of
+                                ConstantDR -> do
+                                    return $ take count [unTS entryTime ..]
+                                VariableDR -> do
+                                    replicateM count zReadInt32
+                            lift $ pFunc (Packet trackNo entryTime exitTime count d ts)
                         Nothing -> I.drop byteLength
                 Nothing -> I.drop byteLength
             return zr
@@ -178,6 +185,7 @@ zReadPacket zr = do
         Just TrackHeader -> do
             trackNo <- zReadInt32
             trackType <- zReadTrackType
+            drType <- zReadDataRateType
 
             rateNumerator <- zReadInt64
             rateDenominator <- zReadInt64
@@ -185,10 +193,16 @@ zReadPacket zr = do
 
             byteLength <- zReadInt32
             name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
-            let spec = TrackSpec trackType rate name
+            let spec = TrackSpec trackType drType rate name
 
             return zr{ zrSpecs = IM.insert trackNo spec (zrSpecs zr) }
         _ -> return zr
+
+zReadInt16 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
+zReadInt16 = fromIntegral . u16_to_s16 <$> I.endianRead2 I.MSB
+    where
+        u16_to_s16 :: Word16 -> Int16
+        u16_to_s16 = fromIntegral
 
 zReadInt32 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt32 = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
@@ -209,8 +223,16 @@ zReadFloat64be = do
 
 zReadTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
 zReadTrackType = do
-    n <- zReadInt32
+    n <- zReadInt16
     case n of
         0 -> return ZDouble
         1 -> return ZInt
         _ -> error "Bad tracktype"
+
+zReadDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
+zReadDataRateType = do
+    n <- zReadInt16
+    case n of
+        0 -> return ConstantDR
+        1 -> return VariableDR
+        _ -> error "Bad data rate type"

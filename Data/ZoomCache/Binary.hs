@@ -7,6 +7,7 @@ module Data.ZoomCache.Binary (
       encInt
     , encDbl
     , fromTrackType
+    , fromDataRateType
     , fromTrackNo
     , fromSummary
 
@@ -27,8 +28,12 @@ import Data.ZoomCache.Summary
 --
 
 fromTrackType :: TrackType -> Builder
-fromTrackType ZDouble = fromInt32be 0
-fromTrackType ZInt    = fromInt32be 1
+fromTrackType ZDouble = fromInt16be 0
+fromTrackType ZInt    = fromInt16be 1
+
+fromDataRateType :: DataRateType -> Builder
+fromDataRateType ConstantDR = fromInt16be 0
+fromDataRateType VariableDR = fromInt16be 1
 
 fromTrackNo :: TrackNo -> Builder
 fromTrackNo = fromInt32be . fromIntegral
