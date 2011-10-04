@@ -93,7 +93,8 @@ data ZoomTrackState = ZoomTrackState
     }
 
 data ZTSData = ZTSDouble
-    { ztsdEntry :: Double
+    { ztsTime  :: TimeStamp
+    , ztsdEntry :: Double
     , ztsdExit  :: Double
     , ztsdMin   :: Double
     , ztsdMax   :: Double
@@ -101,7 +102,8 @@ data ZTSData = ZTSDouble
     , ztsSumSq  :: Double
     }
     | ZTSInt
-    { ztsiEntry :: Int
+    { ztsTime  :: TimeStamp
+    , ztsiEntry :: Int
     , ztsiExit  :: Int
     , ztsiMin   :: Int
     , ztsiMax   :: Int
@@ -238,7 +240,7 @@ incPending trackNo = do
 
 writeData :: (ZoomWrite a)
           => (a -> Builder)
-          -> (Int -> a -> ZTSData -> ZTSData)
+          -> (Int -> TimeStamp -> a -> ZTSData -> ZTSData)
           -> TrackNo -> a -> ZoomW ()
 writeData builder updater trackNo d = do
     incTime trackNo
@@ -246,12 +248,12 @@ writeData builder updater trackNo d = do
     modifyTrack trackNo $ \z -> z
         { ztrkBuilder = ztrkBuilder z <> builder d
         , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updater (ztrkCount z) d (ztrkData z)
+        , ztrkData = updater (ztrkCount z) (ztrkExitTime z) d (ztrkData z)
         }
 
 writeDataVBR :: (ZoomWrite a)
              => (a -> Builder)
-             -> (Int -> a -> ZTSData -> ZTSData)
+             -> (Int -> TimeStamp -> a -> ZTSData -> ZTSData)
              -> TrackNo -> (TimeStamp, a) -> ZoomW ()
 writeDataVBR builder updater trackNo (t, d) = do
     setTime trackNo t
@@ -261,7 +263,7 @@ writeDataVBR builder updater trackNo (t, d) = do
         , ztrkTSBuilder = ztrkTSBuilder z <>
               (fromInt32be . fromIntegral .  unTS) t
         , ztrkCount = (ztrkCount z) + 1
-        , ztrkData = updater (ztrkCount z) d (ztrkData z)
+        , ztrkData = updater (ztrkCount z) t d (ztrkData z)
         }
 
 writeDouble :: TrackNo -> Double -> ZoomW ()
@@ -270,16 +272,19 @@ writeDouble = writeData (fromWord64be . toWord64) updateZTSDouble
 writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
 writeDoubleVBR = writeDataVBR (fromWord64be . toWord64) updateZTSDouble
 
-updateZTSDouble :: Int -> Double -> ZTSData -> ZTSData
-updateZTSDouble count d ZTSDouble{..} = ZTSDouble
-    { ztsdEntry = if count == 0 then d else ztsdEntry
+updateZTSDouble :: Int -> TimeStamp -> Double -> ZTSData -> ZTSData
+updateZTSDouble count t d ZTSDouble{..} = ZTSDouble
+    { ztsTime = t
+    , ztsdEntry = if count == 0 then d else ztsdEntry
     , ztsdExit = d
     , ztsdMin = min ztsdMin d
     , ztsdMax = max ztsdMax d
-    , ztsdSum = ztsdSum + d
-    , ztsSumSq = ztsSumSq + d*d
+    , ztsdSum = ztsdSum + (d * dur)
+    , ztsSumSq = ztsSumSq + (d*d * dur)
     }
-updateZTSDouble _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
+    where
+        dur = fromIntegral $ (unTS t) - (unTS ztsTime)
+updateZTSDouble _ _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
 
 writeInt :: TrackNo -> Int -> ZoomW ()
 writeInt = writeData (fromInt32be . fromIntegral) updateZTSInt
@@ -287,16 +292,19 @@ writeInt = writeData (fromInt32be . fromIntegral) updateZTSInt
 writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
 writeIntVBR = writeDataVBR (fromInt32be . fromIntegral) updateZTSInt
 
-updateZTSInt :: Int -> Int -> ZTSData -> ZTSData
-updateZTSInt count i ZTSInt{..} = ZTSInt
-    { ztsiEntry = if count == 0 then i else ztsiEntry
+updateZTSInt :: Int -> TimeStamp  -> Int -> ZTSData -> ZTSData
+updateZTSInt count t i ZTSInt{..} = ZTSInt
+    { ztsTime = t
+    , ztsiEntry = if count == 0 then i else ztsiEntry
     , ztsiExit = i
     , ztsiMin = min ztsiMin i
     , ztsiMax = max ztsiMax i
-    , ztsiSum = ztsiSum + i
-    , ztsSumSq = ztsSumSq + fromIntegral (i*i)
+    , ztsiSum = ztsiSum + (i * dur)
+    , ztsSumSq = ztsSumSq + fromIntegral (i*i * dur)
     }
-updateZTSInt _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
+    where
+        dur = fromIntegral $ (unTS t) - (unTS ztsTime)
+updateZTSInt _ _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
 
 ----------------------------------------------------------------------
 -- TrackState
@@ -335,7 +343,8 @@ mkTrackState spec entry = ZoomTrackState
         }
     where
         initZTSData ZDouble = ZTSDouble
-            { ztsdEntry = 0.0
+            { ztsTime = entry
+            , ztsdEntry = 0.0
             , ztsdExit = 0.0
             , ztsdMin = floatMax
             , ztsdMax = floatMin
@@ -343,7 +352,8 @@ mkTrackState spec entry = ZoomTrackState
             , ztsSumSq = 0.0
             }
         initZTSData ZInt = ZTSInt
-            { ztsiEntry = 0
+            { ztsTime = entry
+            , ztsiEntry = 0
             , ztsiExit = 0
             , ztsiMin = maxBound
             , ztsiMax = minBound
@@ -370,8 +380,8 @@ mkSummary trackNo ZoomTrackState{..} = mk (specType ztrkSpec)
             , summaryDoubleExit = ztsdExit ztrkData
             , summaryDoubleMin = ztsdMin ztrkData
             , summaryDoubleMax = ztsdMax ztrkData
-            , summaryAvg = ztsdSum ztrkData / (fromIntegral ztrkCount)
-            , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
+            , summaryAvg = ztsdSum ztrkData / dur
+            , summaryRMS = sqrt $ ztsSumSq  ztrkData / dur
             }
         mk ZInt = SummaryInt
             { summaryTrack = trackNo
@@ -382,9 +392,10 @@ mkSummary trackNo ZoomTrackState{..} = mk (specType ztrkSpec)
             , summaryIntExit = ztsiExit ztrkData
             , summaryIntMin = ztsiMin ztrkData
             , summaryIntMax = ztsiMax ztrkData
-            , summaryAvg = fromIntegral (ztsiSum ztrkData) / (fromIntegral ztrkCount)
-            , summaryRMS = sqrt $ ztsSumSq  ztrkData / (fromIntegral ztrkCount)
+            , summaryAvg = fromIntegral (ztsiSum ztrkData) / dur
+            , summaryRMS = sqrt $ ztsSumSq  ztrkData / dur
             }
+        dur = fromIntegral $ (unTS ztrkExitTime) - (unTS ztrkEntryTime)
 
 pushSummary :: ZoomTrackState -> Summary -> ZoomW ()
 pushSummary zt s = do
