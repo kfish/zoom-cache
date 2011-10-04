@@ -230,25 +230,32 @@ writeTrackHeader h trackNo TrackSpec{..} = do
 ----------------------------------------------------------------------
 -- Data
 
+incTimeStamp :: TimeStamp -> TimeStamp
+incTimeStamp (TS t) = TS (t+1)
+
 incTime :: TrackNo -> ZoomW ()
-incTime trackNo = modifyTrack trackNo $ \zt -> zt
-    { twExitTime = TS ((unTS $ twExitTime zt) + 1) }
+incTime trackNo = modifyTrack trackNo $ \tw -> tw
+    { twEntryTime = if twCount tw == 0
+                        then (incTimeStamp (twEntryTime tw))
+                        else twEntryTime tw
+    , twExitTime = incTimeStamp (twExitTime tw)
+    }
 
 setTime :: TrackNo -> TimeStamp -> ZoomW ()
-setTime trackNo t = modifyTrack trackNo $ \zt -> zt
-    { twEntryTime = if twCount zt == 1 then t else twEntryTime zt
+setTime trackNo t = modifyTrack trackNo $ \tw -> tw
+    { twEntryTime = if twCount tw == 0 then t else twEntryTime tw
     , twExitTime = t
     }
 
-flushNeeded :: TrackWork -> Bool
-flushNeeded TrackWork{..} = twCount > twWatermark
-
-incPending :: TrackNo -> ZoomW ()
-incPending trackNo = do
+flushIfNeeded :: TrackNo -> ZoomW ()
+flushIfNeeded trackNo = do
     zt <- IM.lookup trackNo <$> gets whTrackWork
     case zt of
         Just track -> when (flushNeeded track) flush
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
+    where
+        flushNeeded :: TrackWork -> Bool
+        flushNeeded TrackWork{..} = twCount >= twWatermark
 
 writeData :: (ZoomWrite a)
           => (a -> Builder)
@@ -256,12 +263,12 @@ writeData :: (ZoomWrite a)
           -> TrackNo -> a -> ZoomW ()
 writeData builder updater trackNo d = do
     incTime trackNo
-    incPending trackNo
     modifyTrack trackNo $ \z -> z
         { twBuilder = twBuilder z <> builder d
-        , twCount = (twCount z) + 1
+        , twCount = twCount z + 1
         , twData = updater (twCount z) (twExitTime z) d (twData z)
         }
+    flushIfNeeded trackNo
 
 writeDataVBR :: (ZoomWrite a)
              => (a -> Builder)
@@ -269,14 +276,14 @@ writeDataVBR :: (ZoomWrite a)
              -> TrackNo -> (TimeStamp, a) -> ZoomW ()
 writeDataVBR builder updater trackNo (t, d) = do
     setTime trackNo t
-    incPending trackNo
     modifyTrack trackNo $ \z -> z
         { twBuilder = twBuilder z <> builder d
         , twTSBuilder = twTSBuilder z <>
               (fromInt32be . fromIntegral .  unTS) t
-        , twCount = (twCount z) + 1
+        , twCount = twCount z + 1
         , twData = updater (twCount z) t d (twData z)
         }
+    flushIfNeeded trackNo
 
 writeDouble :: TrackNo -> Double -> ZoomW ()
 writeDouble = writeData (fromWord64be . toWord64) updateZTSDouble
