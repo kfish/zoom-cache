@@ -26,6 +26,7 @@ data Config = Config
     , variable :: Bool
     , intData  :: Bool
     , label    :: L.ByteString
+    , rate     :: Integer
     }
 
 instance Default Config where
@@ -37,12 +38,14 @@ defConfig = Config
     , variable = False
     , intData  = False
     , label    = "gen"
+    , rate     = 1000
     }
 
 data Option = NoRaw
             | Variable
             | IntData
             | Label String
+            | Rate String
     deriving (Eq)
 
 options :: [OptDescr Option]
@@ -58,6 +61,8 @@ genOptions =
              "Generate ingeger data"
     , Option ['l'] ["label"] (ReqArg Label "label")
              "Set track label"
+    , Option ['r'] ["rate"] (ReqArg Rate "data-rate")
+             "Set track rate"
     ]
 
 processArgs :: [String] -> IO (Config, [String])
@@ -79,6 +84,8 @@ processConfig = foldM processOneOption
             return $ config {intData = True}
         processOneOption config (Label s) = do
             return $ config {label = LC.pack s}
+        processOneOption config (Rate s) = do
+            return $ config {rate = read s}
 
 ------------------------------------------------------------
 
@@ -108,9 +115,10 @@ zoomWriteFile Config{..} (path:_)
         | variable  = withFileWrite (oneTrackVariable ztype label)
                           (not noRaw)
                           (mapM_ (write 1) (zip (map TS [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack ztype 1000 label)
+        | otherwise = withFileWrite (oneTrack ztype rate' label)
                           (not noRaw)
                           (mapM_ (write 1) d)
+    rate' = fromInteger rate
 
 ------------------------------------------------------------
 
