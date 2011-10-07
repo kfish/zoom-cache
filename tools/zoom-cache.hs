@@ -7,13 +7,54 @@ module Main (
     main
 ) where
 
+import Control.Monad (foldM)
 import Control.Monad.Trans (liftIO)
 import Data.Default
+import System.Console.GetOpt
 import UI.Command
 
 import Data.ZoomCache.Common
 import Data.ZoomCache.Read
 import Data.ZoomCache.Write
+
+------------------------------------------------------------
+
+data Config = Config
+    { noRaw :: Bool
+    }
+
+instance Default Config where
+    def = defConfig
+
+defConfig :: Config
+defConfig = Config
+    { noRaw = False
+    }
+
+data Option = NoRaw
+    deriving (Eq)
+
+options :: [OptDescr Option]
+options = genOptions
+
+genOptions :: [OptDescr Option]
+genOptions = [
+    Option ['z'] ["no-raw"] (NoArg NoRaw)
+           "Do NOT include raw data in the output" ]
+
+processArgs :: [String] -> IO (Config, [String])
+processArgs args = do
+    case getOpt RequireOrder options args of
+        (opts, args', [] ) -> do
+            config <- processConfig def opts
+            return (config, args')
+        (_,    _,     _:_) -> return (def, args)
+
+processConfig :: Config -> [Option] -> IO Config
+processConfig = foldM processOneOption
+    where
+        processOneOption config NoRaw = do
+            return $ config {noRaw = True}
 
 ------------------------------------------------------------
 
@@ -27,12 +68,15 @@ zoomGen = defCmd {
         }
 
 zoomGenHandler :: App () ()
-zoomGenHandler = liftIO . (zoomWriteFile ZDouble doubles) =<< appArgs
+zoomGenHandler = do
+    (config, filenames) <- liftIO . processArgs =<< appArgs
+    liftIO $ (zoomWriteFile config ZDouble doubles) filenames
 
-zoomWriteFile :: (ZoomWrite a) => TrackType -> [a] -> [FilePath] -> IO ()
-zoomWriteFile _     _ []       = return ()
-zoomWriteFile ztype d (path:_) = withFileWrite (oneTrack ztype 1000 "gen")
-    True (mapM_ (write 1) d) path
+zoomWriteFile :: (ZoomWrite a) => Config -> TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile _ _     _ []       = return ()
+zoomWriteFile Config{..} ztype d (path:_) =
+    withFileWrite (oneTrack ztype 1000 "gen")
+        (not noRaw) (mapM_ (write 1) d) path
 
 ------------------------------------------------------------
 
@@ -46,12 +90,16 @@ zoomGenVariable = defCmd {
         }
 
 zoomGenVariableHandler :: App () ()
-zoomGenVariableHandler = liftIO . (zoomWriteFileVariable ZDouble doubles) =<< appArgs
+zoomGenVariableHandler = do
+    (config, filenames) <- liftIO . processArgs =<< appArgs
+    liftIO $ (zoomWriteFileVariable config ZDouble doubles) filenames
 
-zoomWriteFileVariable :: (ZoomWrite (TimeStamp, a)) => TrackType -> [a] -> [FilePath] -> IO ()
-zoomWriteFileVariable _     _ []       = return ()
-zoomWriteFileVariable ztype d (path:_) = withFileWrite (oneTrackVariable ztype "gen")
-    True (mapM_ (write 1) (zip (map TS [1,3..]) d)) path
+zoomWriteFileVariable :: (ZoomWrite (TimeStamp, a))
+                      => Config -> TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFileVariable _          _     _ []       = return ()
+zoomWriteFileVariable Config{..} ztype d (path:_) =
+    withFileWrite (oneTrackVariable ztype "gen")
+        (not noRaw) (mapM_ (write 1) (zip (map TS [1,3..]) d)) path
 
 doubles :: [Double]
 doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
@@ -68,7 +116,9 @@ zoomGenI = defCmd {
         }
 
 zoomGenIHandler :: App () ()
-zoomGenIHandler = liftIO . (zoomWriteFile ZInt ints) =<< appArgs
+zoomGenIHandler = do
+    (config, filenames) <- liftIO . processArgs =<< appArgs
+    liftIO $ (zoomWriteFile config ZInt ints) filenames
 
 ------------------------------------------------------------
 
@@ -82,7 +132,9 @@ zoomGenIVariable = defCmd {
         }
 
 zoomGenIVariableHandler :: App () ()
-zoomGenIVariableHandler = liftIO . (zoomWriteFileVariable ZInt ints) =<< appArgs
+zoomGenIVariableHandler = do
+    (config, filenames) <- liftIO . processArgs =<< appArgs
+    liftIO $ (zoomWriteFileVariable config ZInt	ints) filenames
 
 ints :: [Int]
 ints = map round doubles
