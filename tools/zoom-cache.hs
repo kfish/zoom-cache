@@ -9,6 +9,8 @@ module Main (
 
 import Control.Monad (foldM)
 import Control.Monad.Trans (liftIO)
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Default
 import System.Console.GetOpt
 import UI.Command
@@ -23,6 +25,7 @@ data Config = Config
     { noRaw    :: Bool
     , variable :: Bool
     , intData  :: Bool
+    , label    :: L.ByteString
     }
 
 instance Default Config where
@@ -33,11 +36,13 @@ defConfig = Config
     { noRaw    = False
     , variable = False
     , intData  = False
+    , label    = "gen"
     }
 
 data Option = NoRaw
             | Variable
             | IntData
+            | Label String
     deriving (Eq)
 
 options :: [OptDescr Option]
@@ -51,6 +56,8 @@ genOptions =
              "Generate variable-rate data"
     , Option ['i'] ["integer"] (NoArg IntData)
              "Generate ingeger data"
+    , Option ['l'] ["label"] (ReqArg Label "label")
+             "Set track label"
     ]
 
 processArgs :: [String] -> IO (Config, [String])
@@ -70,6 +77,8 @@ processConfig = foldM processOneOption
             return $ config {variable = True}
         processOneOption config IntData = do
             return $ config {intData = True}
+        processOneOption config (Label s) = do
+            return $ config {label = LC.pack s}
 
 ------------------------------------------------------------
 
@@ -96,10 +105,10 @@ zoomWriteFile Config{..} (path:_)
     w :: (ZoomWrite a, ZoomWrite (TimeStamp, a))
       => TrackType -> [a] -> FilePath -> IO ()
     w ztype d
-        | variable  = withFileWrite (oneTrackVariable ztype "gen")
+        | variable  = withFileWrite (oneTrackVariable ztype label)
                           (not noRaw)
                           (mapM_ (write 1) (zip (map TS [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack ztype 1000 "gen")
+        | otherwise = withFileWrite (oneTrack ztype 1000 label)
                           (not noRaw)
                           (mapM_ (write 1) d)
 
