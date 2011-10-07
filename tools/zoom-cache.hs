@@ -20,7 +20,8 @@ import Data.ZoomCache.Write
 ------------------------------------------------------------
 
 data Config = Config
-    { noRaw :: Bool
+    { noRaw    :: Bool
+    , variable :: Bool
     }
 
 instance Default Config where
@@ -29,18 +30,23 @@ instance Default Config where
 defConfig :: Config
 defConfig = Config
     { noRaw = False
+    , variable = False
     }
 
 data Option = NoRaw
+            | Variable
     deriving (Eq)
 
 options :: [OptDescr Option]
 options = genOptions
 
 genOptions :: [OptDescr Option]
-genOptions = [
-    Option ['z'] ["no-raw"] (NoArg NoRaw)
-           "Do NOT include raw data in the output" ]
+genOptions =
+    [ Option ['z'] ["no-raw"] (NoArg NoRaw)
+             "Do NOT include raw data in the output"
+    , Option ['b'] ["variable"] (NoArg Variable)
+             "Generate variable-rate data"
+    ]
 
 processArgs :: [String] -> IO (Config, [String])
 processArgs args = do
@@ -55,6 +61,8 @@ processConfig = foldM processOneOption
     where
         processOneOption config NoRaw = do
             return $ config {noRaw = True}
+        processOneOption config Variable = do
+            return $ config {variable = True}
 
 ------------------------------------------------------------
 
@@ -72,34 +80,16 @@ zoomGenHandler = do
     (config, filenames) <- liftIO . processArgs =<< appArgs
     liftIO $ (zoomWriteFile config ZDouble doubles) filenames
 
-zoomWriteFile :: (ZoomWrite a) => Config -> TrackType -> [a] -> [FilePath] -> IO ()
+zoomWriteFile :: (ZoomWrite a, ZoomWrite (TimeStamp, a))
+              => Config -> TrackType -> [a] -> [FilePath] -> IO ()
 zoomWriteFile _ _     _ []       = return ()
-zoomWriteFile Config{..} ztype d (path:_) =
-    withFileWrite (oneTrack ztype 1000 "gen")
-        (not noRaw) (mapM_ (write 1) d) path
+zoomWriteFile Config{..} ztype d (path:_)
+    | variable  = withFileWrite (oneTrackVariable ztype "gen")
+                      (not noRaw) (mapM_ (write 1) (zip (map TS [1,3..]) d)) path
+    | otherwise = withFileWrite (oneTrack ztype 1000 "gen")
+                      (not noRaw) (mapM_ (write 1) d) path
 
 ------------------------------------------------------------
-
-zoomGenVariable :: Command ()
-zoomGenVariable = defCmd {
-          cmdName = "genvbr"
-        , cmdHandler = zoomGenVariableHandler
-        , cmdCategory = "Writing"
-        , cmdShortDesc = "Generate variable-bitrate floating-point zoom-cache data"
-        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
-        }
-
-zoomGenVariableHandler :: App () ()
-zoomGenVariableHandler = do
-    (config, filenames) <- liftIO . processArgs =<< appArgs
-    liftIO $ (zoomWriteFileVariable config ZDouble doubles) filenames
-
-zoomWriteFileVariable :: (ZoomWrite (TimeStamp, a))
-                      => Config -> TrackType -> [a] -> [FilePath] -> IO ()
-zoomWriteFileVariable _          _     _ []       = return ()
-zoomWriteFileVariable Config{..} ztype d (path:_) =
-    withFileWrite (oneTrackVariable ztype "gen")
-        (not noRaw) (mapM_ (write 1) (zip (map TS [1,3..]) d)) path
 
 doubles :: [Double]
 doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
@@ -121,20 +111,6 @@ zoomGenIHandler = do
     liftIO $ (zoomWriteFile config ZInt ints) filenames
 
 ------------------------------------------------------------
-
-zoomGenIVariable :: Command ()
-zoomGenIVariable = defCmd {
-          cmdName = "genivbr"
-        , cmdHandler = zoomGenIVariableHandler
-        , cmdCategory = "Writing"
-        , cmdShortDesc = "Generate variable-bitrate integer zoom-cache data"
-        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
-        }
-
-zoomGenIVariableHandler :: App () ()
-zoomGenIVariableHandler = do
-    (config, filenames) <- liftIO . processArgs =<< appArgs
-    liftIO $ (zoomWriteFileVariable config ZInt	ints) filenames
 
 ints :: [Int]
 ints = map round doubles
@@ -187,8 +163,6 @@ zoom = def {
         , appProject = "Zoom"
         , appCmds = [ zoomGen
                     , zoomGenI
-                    , zoomGenVariable
-                    , zoomGenIVariable
                     , zoomDump
                     , zoomSummary
                     ]
