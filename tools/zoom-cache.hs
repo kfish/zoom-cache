@@ -27,6 +27,7 @@ data Config = Config
     , intData  :: Bool
     , label    :: L.ByteString
     , rate     :: Integer
+    , wmLevel  :: Int
     }
 
 instance Default Config where
@@ -39,6 +40,7 @@ defConfig = Config
     , intData  = False
     , label    = "gen"
     , rate     = 1000
+    , wmLevel  = 1024
     }
 
 data Option = NoRaw
@@ -46,6 +48,7 @@ data Option = NoRaw
             | IntData
             | Label String
             | Rate String
+            | Watermark String
     deriving (Eq)
 
 options :: [OptDescr Option]
@@ -63,6 +66,8 @@ genOptions =
              "Set track label"
     , Option ['r'] ["rate"] (ReqArg Rate "data-rate")
              "Set track rate"
+    , Option ['w'] ["watermark"] (ReqArg Rate "watermark")
+             "Set high-watermark level"
     ]
 
 processArgs :: [String] -> IO (Config, [String])
@@ -86,6 +91,8 @@ processConfig = foldM processOneOption
             return $ config {label = LC.pack s}
         processOneOption config (Rate s) = do
             return $ config {rate = read s}
+        processOneOption config (Watermark s) = do
+            return $ config {wmLevel = read s}
 
 ------------------------------------------------------------
 
@@ -114,11 +121,12 @@ zoomWriteFile Config{..} (path:_)
     w ztype d
         | variable  = withFileWrite (oneTrackVariable ztype label)
                           (not noRaw)
-                          (mapM_ (write 1) (zip (map TS [1,3..]) d))
+                          (sW >> mapM_ (write 1) (zip (map TS [1,3..]) d))
         | otherwise = withFileWrite (oneTrack ztype rate' label)
                           (not noRaw)
-                          (mapM_ (write 1) d)
+                          (sW >> mapM_ (write 1) d)
     rate' = fromInteger rate
+    sW = setWatermark 1 wmLevel
 
 ------------------------------------------------------------
 
