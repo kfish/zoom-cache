@@ -19,6 +19,7 @@ import Control.Monad (replicateM, when)
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans (lift, MonadIO)
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Default
 import Data.Int
 import Data.IntMap (IntMap)
@@ -61,6 +62,8 @@ data Packet = Packet
 
 instance (Monad m) => Default (ZoomReader m) where
     def = ZoomReader (const (return ())) IM.empty def
+
+------------------------------------------------------------
 
 data FileInfo = FileInfo
     { fiGlobal :: Maybe Global
@@ -113,8 +116,36 @@ zReader zr = do
 
 info :: FileInfo -> IO ()
 info FileInfo{..} = do
-    print fiGlobal
-    print fiSpecs
+    maybe (return ()) (putStrLn . prettyGlobal) fiGlobal
+    mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ fiSpecs
+
+prettyGlobal :: Global -> String
+prettyGlobal Global{..} = unlines
+    [ "Version:\t\t" ++ show vMaj ++ "." ++ show vMin
+    , "No. tracks:\t\t" ++ show noTracks
+    , "Presentation-time:\t" ++ ratShow presentationTime
+    , "Base-time:\t\t" ++ ratShow baseTime
+    , "UTC baseTime:\t\t" ++ maybe "undefined" show baseUTC
+    ]
+    where
+        Version vMaj vMin = version
+
+prettyTrackSpec :: TrackNo -> TrackSpec -> String
+prettyTrackSpec trackNo TrackSpec{..} = unlines
+    [ "Track " ++ show trackNo ++ ":"
+    , "\tName:\t" ++ LC.unpack specName
+    , "\tType:\t" ++ show specType
+    , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
+    ]
+
+ratShow :: Rational -> String
+ratShow r
+    | d == 0 = "0"
+    | d == 1 = show n
+    | otherwise = show n ++ "/" ++ show d
+    where
+        n = numerator r
+        d = denominator r
 
 dumpData :: Packet -> IO ()
 dumpData p = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
