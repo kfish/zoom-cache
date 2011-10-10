@@ -190,8 +190,8 @@ zReadPacket zr = do
 readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
 readTrackHeader = do
     trackNo <- zReadInt32
-    trackType <- zReadTrackType
-    drType <- zReadDataRateType
+    trackType <- readTrackType
+    drType <- readDataRateType
 
     rateNumerator <- zReadInt64
     rateDenominator <- zReadInt64
@@ -203,6 +203,24 @@ readTrackHeader = do
     let spec = TrackSpec trackType drType rate name
 
     return (trackNo, spec)
+
+readTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
+readTrackType = do
+    n <- zReadInt16
+    case n of
+        0 -> return ZDouble
+        1 -> return ZInt
+        _ -> error "Bad tracktype"
+
+readDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
+readDataRateType = do
+    n <- zReadInt16
+    case n of
+        0 -> return ConstantDR
+        1 -> return VariableDR
+        _ -> error "Bad data rate type"
+
+----------------------------------------------------------------------
 
 zReadInt16 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt16 = fromIntegral . u16_to_s16 <$> I.endianRead2 I.MSB
@@ -227,18 +245,3 @@ zReadFloat64be = do
     n <- I.endianRead8 I.MSB
     return (unsafeCoerce n :: Double)
 
-zReadTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
-zReadTrackType = do
-    n <- zReadInt16
-    case n of
-        0 -> return ZDouble
-        1 -> return ZInt
-        _ -> error "Bad tracktype"
-
-zReadDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
-zReadDataRateType = do
-    n <- zReadInt16
-    case n of
-        0 -> return ConstantDR
-        1 -> return VariableDR
-        _ -> error "Bad data rate type"
