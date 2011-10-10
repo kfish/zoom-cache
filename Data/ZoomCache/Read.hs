@@ -213,29 +213,10 @@ zReadPacket zr = do
     header <- I.joinI $ I.takeUpTo 8 I.stream2list
     case parseHeader (L.pack header) of
         Just PacketHeader -> do
-            trackNo <- zReadInt32
-            entryTime <- TS <$> zReadInt32
-            exitTime <- TS <$> zReadInt32
-            byteLength <- zReadInt32
-            count <- zReadInt32
-            case IM.lookup trackNo (zrTracks zr) of
-                Just tr -> do
-                    let pFunc = trReadPacket tr
-                    case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
-                        Just TrackSpec{..} -> do
-                            d <- case specType of
-                                ZDouble -> do
-                                    PDDouble <$> replicateM count zReadFloat64be
-                                ZInt -> do
-                                    PDInt <$> replicateM count zReadInt32
-                            ts <- map TS <$> case specDRType of
-                                ConstantDR -> do
-                                    return $ take count [unTS entryTime ..]
-                                VariableDR -> do
-                                    replicateM count zReadInt32
-                            lift $ pFunc (Packet trackNo entryTime exitTime count d ts)
-                        Nothing -> I.drop byteLength
-                Nothing -> I.drop byteLength
+            (trackNo, packet) <- readPacket zr
+            case (packet, IM.lookup trackNo (zrTracks zr)) of
+                (Just p, Just tr) -> lift $ (trReadPacket tr) p
+                _                 -> return ()
             return zr
         Just SummaryHeader -> do
             (trackNo, summary) <- readSummary zr
@@ -244,6 +225,33 @@ zReadPacket zr = do
                 _                 -> return ()
             return zr
         _ -> return zr
+
+readPacket :: (Functor m, MonadIO m)
+           => ZoomReader m
+           -> Iteratee [Word8] m (TrackNo, Maybe Packet)
+readPacket zr = do
+    trackNo <- zReadInt32
+    entryTime <- TS <$> zReadInt32
+    exitTime <- TS <$> zReadInt32
+    byteLength <- zReadInt32
+    count <- zReadInt32
+    packet <- case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
+        Just TrackSpec{..} -> do
+            d <- case specType of
+                ZDouble -> do
+                    PDDouble <$> replicateM count zReadFloat64be
+                ZInt -> do
+                    PDInt <$> replicateM count zReadInt32
+            ts <- map TS <$> case specDRType of
+                ConstantDR -> do
+                    return $ take count [unTS entryTime ..]
+                VariableDR -> do
+                    replicateM count zReadInt32
+            return $ Just (Packet trackNo entryTime exitTime count d ts)
+        Nothing -> do
+            I.drop byteLength
+            return Nothing
+    return (trackNo, packet)
 
 readSummary :: (Functor m, MonadIO m)
             => ZoomReader m
