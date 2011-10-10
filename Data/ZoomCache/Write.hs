@@ -207,17 +207,7 @@ setWatermark trackNo w = modifyTrack trackNo f
 -- Global header
 
 writeGlobalHeader :: Handle -> Global -> IO ()
-writeGlobalHeader h Global{..} = do
-    L.hPut h . mconcat $
-        [ globalHeader
-        , toLazyByteString . mconcat $
-            [ fromVersion version
-            , encInt noTracks
-            , fromRational64 presentationTime
-            , fromRational64 baseTime
-            ]
-        , LC.pack (replicate 20 '\0') -- UTCTime
-        ]
+writeGlobalHeader h = L.hPut h . toLazyByteString . fromGlobal
 
 ----------------------------------------------------------------------
 -- Track header

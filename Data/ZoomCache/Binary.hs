@@ -7,7 +7,7 @@ module Data.ZoomCache.Binary (
       encInt
     , encDbl
     , fromRational64
-    , fromVersion
+    , fromGlobal
     , fromTrackType
     , fromDataRateType
     , fromTrackNo
@@ -19,6 +19,7 @@ module Data.ZoomCache.Binary (
 
 import Blaze.ByteString.Builder hiding (flush)
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Monoid
 import Data.Ratio
 import Data.Word
@@ -29,6 +30,18 @@ import Data.ZoomCache.Summary
 
 ----------------------------------------------------------------------
 --
+
+fromGlobal :: Global -> Builder
+fromGlobal Global{..} = mconcat
+    [ fromLazyByteString globalHeader
+    , mconcat $
+        [ fromVersion version
+        , encInt noTracks
+        , fromRational64 presentationTime
+        , fromRational64 baseTime
+        ]
+    , fromLazyByteString $ LC.pack (replicate 20 '\0') -- UTCTime
+    ]
 
 fromVersion :: Version -> Builder
 fromVersion (Version vMaj vMin) = mconcat
