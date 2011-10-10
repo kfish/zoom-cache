@@ -15,7 +15,7 @@ module Data.ZoomCache.Read (
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad (replicateM, when)
+import Control.Monad (replicateM)
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans (lift, MonadIO)
 import qualified Data.ByteString.Lazy as L
@@ -108,11 +108,35 @@ zoomReadFile reader (path:_) = I.fileDriverRandom (zReader reader) path
 zReader :: (Functor m, MonadIO m)
         => ZoomReader m
         -> Iteratee [Word8] m ()
-zReader zr = do
+zReader zr = readHeaders zr >>= readPackets >> return ()
+
+readHeaders :: (Functor m, MonadIO m)
+            => ZoomReader m
+            -> Iteratee [Word8] m (ZoomReader m)
+readHeaders zr = do
     e <- I.isStreamFinished
-    when (isNothing e) $ do
-        zr' <- zReadPacket zr
-        zReader zr'
+    case e of
+        Just _  -> return zr
+        Nothing -> do
+            zr' <- zReadHeader zr
+            let fi = zrFileInfo zr'
+            if (fiFull fi)
+                then do
+                    let fiFunc = zrReadFileInfo zr
+                    lift $ fiFunc fi
+                    return zr'
+                else readHeaders zr'
+
+readPackets :: (Functor m, MonadIO m)
+            => ZoomReader m
+            -> Iteratee [Word8] m (ZoomReader m)
+readPackets zr = do
+    e <- I.isStreamFinished
+    case e of
+        Just _  -> return zr
+        Nothing -> do
+            zr' <- zReadPacket zr
+            readPackets zr'
 
 info :: FileInfo -> IO ()
 info FileInfo{..} = do
@@ -171,6 +195,8 @@ dumpSummaryLevel :: Int -> Summary -> IO ()
 dumpSummaryLevel level s
     | level == summaryLevel s = dumpSummary s
     | otherwise               = return ()
+
+------------------------------------------------------------
 
 parseHeader :: L.ByteString -> Maybe HeaderType
 parseHeader h
@@ -235,12 +261,18 @@ zReadPacket zr = do
                         Nothing -> I.drop byteLength
                 Nothing -> I.drop byteLength
             return zr
+        _ -> return zr
+
+zReadHeader :: (Functor m, MonadIO m)
+            => ZoomReader m
+            -> Iteratee [Word8] m (ZoomReader m)
+zReadHeader zr = do
+    header <- I.joinI $ I.takeUpTo 8 I.stream2list
+    case parseHeader (L.pack header) of
         Just TrackHeader -> do
             (trackNo, spec) <- readTrackHeader
             let fi = zrFileInfo zr
                 fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
-            let fiFunc = zrReadFileInfo zr
-            when (fiFull fi') $ lift $ fiFunc fi'
             return zr{ zrFileInfo = fi' }
         Just GlobalHeader -> do
             g <- readGlobalHeader
