@@ -110,6 +110,19 @@ zReader :: (Functor m, MonadIO m)
         -> Iteratee [Word8] m ()
 zReader zr = readHeaders zr >>= readPackets >> return ()
 
+------------------------------------------------------------
+
+parseHeader :: L.ByteString -> Maybe HeaderType
+parseHeader h
+    | h == globalHeader  = Just GlobalHeader
+    | h == trackHeader   = Just TrackHeader
+    | h == packetHeader  = Just PacketHeader
+    | h == summaryHeader = Just SummaryHeader
+    | otherwise              = Nothing
+
+------------------------------------------------------------
+-- Global, track headers
+
 readHeaders :: (Functor m, MonadIO m)
             => ZoomReader m
             -> Iteratee [Word8] m (ZoomReader m)
@@ -127,6 +140,51 @@ readHeaders zr = do
                     return zr'
                 else readHeaders zr'
 
+zReadHeader :: (Functor m, MonadIO m)
+            => ZoomReader m
+            -> Iteratee [Word8] m (ZoomReader m)
+zReadHeader zr = do
+    header <- I.joinI $ I.takeUpTo 8 I.stream2list
+    case parseHeader (L.pack header) of
+        Just TrackHeader -> do
+            (trackNo, spec) <- readTrackHeader
+            let fi = zrFileInfo zr
+                fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
+            return zr{ zrFileInfo = fi' }
+        Just GlobalHeader -> do
+            g <- readGlobalHeader
+            let fi = zrFileInfo zr
+                fi' = fi{fiGlobal = Just g}
+            return zr{ zrFileInfo = fi' }
+        _ -> return zr
+
+readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
+readGlobalHeader = do
+    v <- readVersion
+    n <- zReadInt32
+    p <- readRational64
+    b <- readRational64
+    _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
+    return $ Global v n p b Nothing
+
+readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
+readTrackHeader = do
+    trackNo <- zReadInt32
+    trackType <- readTrackType
+    drType <- readDataRateType
+
+    rate <- readRational64
+
+    byteLength <- zReadInt32
+    name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
+
+    let spec = TrackSpec trackType drType rate name
+
+    return (trackNo, spec)
+
+------------------------------------------------------------
+-- Packet, Summary reading
+
 readPackets :: (Functor m, MonadIO m)
             => ZoomReader m
             -> Iteratee [Word8] m (ZoomReader m)
@@ -137,74 +195,6 @@ readPackets zr = do
         Nothing -> do
             zr' <- zReadPacket zr
             readPackets zr'
-
-info :: FileInfo -> IO ()
-info FileInfo{..} = do
-    maybe (return ()) (putStrLn . prettyGlobal) fiGlobal
-    mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ fiSpecs
-
-prettyGlobal :: Global -> String
-prettyGlobal Global{..} = unlines
-    [ "Version:\t\t" ++ show vMaj ++ "." ++ show vMin
-    , "No. tracks:\t\t" ++ show noTracks
-    , "Presentation-time:\t" ++ ratShow presentationTime
-    , "Base-time:\t\t" ++ ratShow baseTime
-    , "UTC baseTime:\t\t" ++ maybe "undefined" show baseUTC
-    ]
-    where
-        Version vMaj vMin = version
-
-prettyTrackSpec :: TrackNo -> TrackSpec -> String
-prettyTrackSpec trackNo TrackSpec{..} = unlines
-    [ "Track " ++ show trackNo ++ ":"
-    , "\tName:\t" ++ LC.unpack specName
-    , "\tType:\t" ++ show specType
-    , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
-    ]
-
-ratShow :: Rational -> String
-ratShow r
-    | d == 0 = "0"
-    | d == 1 = show n
-    | otherwise = show n ++ "/" ++ show d
-    where
-        n = numerator r
-        d = denominator r
-
-dumpData :: Packet -> IO ()
-dumpData p = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
-    where
-        tds = zip (map (show . unTS) $ packetTimeStamps p) vals
-        vals = case packetData p of
-            PDDouble ds -> map show ds
-            PDInt is    -> map show is
-
-dumpSummary :: Summary -> IO ()
-dumpSummary SummaryDouble{..} = do
-    putStrLn $ printf "[%d - %d] lvl: %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
-        (unTS summaryEntryTime) (unTS summaryExitTime) summaryLevel
-        summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
-        summaryAvg summaryRMS
-dumpSummary SummaryInt{..} = do
-    putStrLn $ printf "[%d - %d] lvl: %d\tentry: %d\texit: %df\tmin: %d\tmax: %d\tavg: %.3f\trms: %.3f"
-        (unTS summaryEntryTime) (unTS summaryExitTime) summaryLevel
-        summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
-        summaryAvg summaryRMS
-
-dumpSummaryLevel :: Int -> Summary -> IO ()
-dumpSummaryLevel level s
-    | level == summaryLevel s = dumpSummary s
-    | otherwise               = return ()
-
-------------------------------------------------------------
-
-parseHeader :: L.ByteString -> Maybe HeaderType
-parseHeader h
-    | h == globalHeader  = Just GlobalHeader
-    | h == trackHeader   = Just TrackHeader
-    | h == packetHeader  = Just PacketHeader
-    | h == summaryHeader = Just SummaryHeader
-    | otherwise              = Nothing
 
 zReadPacket :: (Functor m, MonadIO m)
             => ZoomReader m
@@ -281,53 +271,14 @@ readSummary zr = do
             return Nothing
     return (trackNo, summary)
 
-zReadHeader :: (Functor m, MonadIO m)
-            => ZoomReader m
-            -> Iteratee [Word8] m (ZoomReader m)
-zReadHeader zr = do
-    header <- I.joinI $ I.takeUpTo 8 I.stream2list
-    case parseHeader (L.pack header) of
-        Just TrackHeader -> do
-            (trackNo, spec) <- readTrackHeader
-            let fi = zrFileInfo zr
-                fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
-            return zr{ zrFileInfo = fi' }
-        Just GlobalHeader -> do
-            g <- readGlobalHeader
-            let fi = zrFileInfo zr
-                fi' = fi{fiGlobal = Just g}
-            return zr{ zrFileInfo = fi' }
-        _ -> return zr
-
-readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
-readGlobalHeader = do
-    v <- readVersion
-    n <- zReadInt32
-    p <- readRational64
-    b <- readRational64
-    _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
-    return $ Global v n p b Nothing
+----------------------------------------------------------------------
+-- zoom-cache datatype parsers
 
 readVersion :: (Functor m, MonadIO m) => Iteratee [Word8] m Version
 readVersion = do
     vMaj <- zReadInt16
     vMin <- zReadInt16
     return $ Version vMaj vMin
-
-readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
-readTrackHeader = do
-    trackNo <- zReadInt32
-    trackType <- readTrackType
-    drType <- readDataRateType
-
-    rate <- readRational64
-
-    byteLength <- zReadInt32
-    name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
-
-    let spec = TrackSpec trackType drType rate name
-
-    return (trackNo, spec)
 
 readTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
 readTrackType = do
@@ -377,3 +328,64 @@ readRational64 = do
     if (den == 0)
         then return 0
         else return $ (fromIntegral num) % (fromIntegral den)
+
+----------------------------------------------------------------------
+
+info :: FileInfo -> IO ()
+info FileInfo{..} = do
+    maybe (return ()) (putStrLn . prettyGlobal) fiGlobal
+    mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ fiSpecs
+
+prettyGlobal :: Global -> String
+prettyGlobal Global{..} = unlines
+    [ "Version:\t\t" ++ show vMaj ++ "." ++ show vMin
+    , "No. tracks:\t\t" ++ show noTracks
+    , "Presentation-time:\t" ++ ratShow presentationTime
+    , "Base-time:\t\t" ++ ratShow baseTime
+    , "UTC baseTime:\t\t" ++ maybe "undefined" show baseUTC
+    ]
+    where
+        Version vMaj vMin = version
+
+prettyTrackSpec :: TrackNo -> TrackSpec -> String
+prettyTrackSpec trackNo TrackSpec{..} = unlines
+    [ "Track " ++ show trackNo ++ ":"
+    , "\tName:\t" ++ LC.unpack specName
+    , "\tType:\t" ++ show specType
+    , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
+    ]
+
+ratShow :: Rational -> String
+ratShow r
+    | d == 0 = "0"
+    | d == 1 = show n
+    | otherwise = show n ++ "/" ++ show d
+    where
+        n = numerator r
+        d = denominator r
+
+dumpData :: Packet -> IO ()
+dumpData p = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
+    where
+        tds = zip (map (show . unTS) $ packetTimeStamps p) vals
+        vals = case packetData p of
+            PDDouble ds -> map show ds
+            PDInt is    -> map show is
+
+dumpSummary :: Summary -> IO ()
+dumpSummary SummaryDouble{..} = do
+    putStrLn $ printf "[%d - %d] lvl: %d\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\tavg: %.3f\trms: %.3f"
+        (unTS summaryEntryTime) (unTS summaryExitTime) summaryLevel
+        summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
+        summaryAvg summaryRMS
+dumpSummary SummaryInt{..} = do
+    putStrLn $ printf "[%d - %d] lvl: %d\tentry: %d\texit: %df\tmin: %d\tmax: %d\tavg: %.3f\trms: %.3f"
+        (unTS summaryEntryTime) (unTS summaryExitTime) summaryLevel
+        summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
+        summaryAvg summaryRMS
+
+dumpSummaryLevel :: Int -> Summary -> IO ()
+dumpSummaryLevel level s
+    | level == summaryLevel s = dumpSummary s
+    | otherwise               = return ()
+
