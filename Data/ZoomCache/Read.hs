@@ -203,13 +203,13 @@ zReadPacket zr = do
     header <- I.joinI $ I.takeUpTo 8 I.stream2list
     case parseHeader (L.pack header) of
         Just PacketHeader -> do
-            (trackNo, packet) <- readPacket zr
+            (trackNo, packet) <- readPacket (fiSpecs . zrFileInfo $ zr)
             case (packet, IM.lookup trackNo (zrTracks zr)) of
                 (Just p, Just tr) -> lift $ (trReadPacket tr) p
                 _                 -> return ()
             return zr
         Just SummaryHeader -> do
-            (trackNo, summary) <- readSummary zr
+            (trackNo, summary) <- readSummary (fiSpecs . zrFileInfo $ zr)
             case (summary, IM.lookup trackNo (zrTracks zr)) of
                 (Just s, Just tr) -> lift $ (trReadSummary tr) s
                 _                 -> return ()
@@ -217,15 +217,15 @@ zReadPacket zr = do
         _ -> return zr
 
 readPacket :: (Functor m, MonadIO m)
-           => ZoomReader m
+           => IntMap TrackSpec
            -> Iteratee [Word8] m (TrackNo, Maybe Packet)
-readPacket zr = do
+readPacket specs = do
     trackNo <- zReadInt32
     entryTime <- TS <$> zReadInt32
     exitTime <- TS <$> zReadInt32
     byteLength <- zReadInt32
     count <- zReadInt32
-    packet <- case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
+    packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             d <- case specType of
                 ZDouble -> do
@@ -244,16 +244,16 @@ readPacket zr = do
     return (trackNo, packet)
 
 readSummary :: (Functor m, MonadIO m)
-            => ZoomReader m
+            => IntMap TrackSpec
             -> Iteratee [Word8] m (TrackNo, Maybe Summary)
-readSummary zr = do
+readSummary specs = do
     trackNo <- zReadInt32
     lvl <- zReadInt32
     entryTime <- TS <$> zReadInt32
     exitTime <- TS <$> zReadInt32
     byteLength <- zReadInt32
 
-    summary <- case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
+    summary <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             case specType of
                 ZDouble -> do
