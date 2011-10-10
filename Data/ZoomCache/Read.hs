@@ -37,9 +37,9 @@ import Data.ZoomCache.Summary
 ------------------------------------------------------------
 
 data ZoomReader m = ZoomReader
-    { zrReadGlobal :: Global -> m ()
-    , zrTracks     :: IntMap (TrackReader m)
-    , zrSpecs      :: IntMap TrackSpec
+    { zrReadFileInfo :: FileInfo -> m ()
+    , zrTracks       :: IntMap (TrackReader m)
+    , zrFileInfo     :: FileInfo
     }
 
 data TrackReader m = TrackReader
@@ -60,7 +60,15 @@ data Packet = Packet
     }
 
 instance (Monad m) => Default (ZoomReader m) where
-    def = ZoomReader (const (return ())) IM.empty IM.empty
+    def = ZoomReader (const (return ())) IM.empty def
+
+data FileInfo = FileInfo
+    { fiGlobal :: Maybe Global
+    , fiSpecs  :: IntMap TrackSpec
+    }
+
+instance Default FileInfo where
+    def = FileInfo Nothing IM.empty
 
 ------------------------------------------------------------
 
@@ -72,7 +80,7 @@ addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTrac
         tr = TrackReader trackNo pFunc sFunc
 
 zoomInfoFile :: [FilePath] -> IO ()
-zoomInfoFile = zoomReadFile def{zrReadGlobal = info}
+zoomInfoFile = zoomReadFile def{zrReadFileInfo = info}
 
 zoomDumpFile :: [FilePath] -> IO ()
 zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
@@ -99,9 +107,10 @@ zReader zr = do
         zr' <- zReadPacket zr
         zReader zr'
 
-info :: Global -> IO ()
-info g = do
-    print g
+info :: FileInfo -> IO ()
+info FileInfo{..} = do
+    print fiGlobal
+    print fiSpecs
 
 dumpData :: Packet -> IO ()
 dumpData p = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
@@ -151,7 +160,7 @@ zReadPacket zr = do
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let pFunc = trReadPacket tr
-                    case IM.lookup trackNo (zrSpecs zr) of
+                    case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
                         Just TrackSpec{..} -> do
                             d <- case specType of
                                 ZDouble -> do
@@ -177,7 +186,7 @@ zReadPacket zr = do
             case IM.lookup trackNo (zrTracks zr) of
                 Just tr -> do
                     let sFunc = trReadSummary tr
-                    case IM.lookup trackNo (zrSpecs zr) of
+                    case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
                         Just TrackSpec{..} -> do
                             case specType of
                                 ZDouble -> do
@@ -193,12 +202,16 @@ zReadPacket zr = do
             return zr
         Just TrackHeader -> do
             (trackNo, spec) <- readTrackHeader
-            return zr{ zrSpecs = IM.insert trackNo spec (zrSpecs zr) }
+            let fi = zrFileInfo zr
+                fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
+            let fiFunc = zrReadFileInfo zr
+            lift $ fiFunc fi'
+            return zr{ zrFileInfo = fi' }
         Just GlobalHeader -> do
             g <- readGlobalHeader
-            let gFunc = zrReadGlobal zr
-            lift $ gFunc g
-            return zr
+            let fi = zrFileInfo zr
+                fi' = fi{fiGlobal = Just g}
+            return zr{ zrFileInfo = fi' }
         _ -> return zr
 
 readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
