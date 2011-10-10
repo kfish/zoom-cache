@@ -1,0 +1,6 @@
+# Magic local data for file(1) command.
+
+# zoom-cache data
+0	string		\xe5ZXhe4d	zoom-cache data
+>8	beshort		x		(Version %d
+>>10	beshort		x		\b.%d)
