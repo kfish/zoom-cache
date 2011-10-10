@@ -193,9 +193,7 @@ readTrackHeader = do
     trackType <- readTrackType
     drType <- readDataRateType
 
-    rateNumerator <- zReadInt64
-    rateDenominator <- zReadInt64
-    let rate = (fromIntegral rateNumerator) % (fromIntegral rateDenominator)
+    rate <- readRational64
 
     byteLength <- zReadInt32
     name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
@@ -245,3 +243,8 @@ zReadFloat64be = do
     n <- I.endianRead8 I.MSB
     return (unsafeCoerce n :: Double)
 
+readRational64 :: (Functor m, MonadIO m) => Iteratee [Word8] m Rational
+readRational64 = do
+    num <- zReadInt64
+    den <- zReadInt64
+    return $ (fromIntegral num) % (fromIntegral den)
