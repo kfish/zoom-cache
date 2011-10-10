@@ -238,30 +238,40 @@ zReadPacket zr = do
                 Nothing -> I.drop byteLength
             return zr
         Just SummaryHeader -> do
-            trackNo <- zReadInt32
-            lvl <- zReadInt32
-            entryTime <- TS <$> zReadInt32
-            exitTime <- TS <$> zReadInt32
-            byteLength <- zReadInt32
-
-            case IM.lookup trackNo (zrTracks zr) of
-                Just tr -> do
-                    let sFunc = trReadSummary tr
-                    case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
-                        Just TrackSpec{..} -> do
-                            case specType of
-                                ZDouble -> do
-                                    let n = flip div 8 byteLength
-                                    [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-                                    lift $ sFunc (SummaryDouble trackNo lvl entryTime exitTime en ex mn mx avg rms)
-                                ZInt -> do
-                                    [en,ex,mn,mx] <- replicateM 4 zReadInt32
-                                    [avg,rms] <- replicateM 2 zReadFloat64be
-                                    lift $ sFunc (SummaryInt trackNo lvl entryTime exitTime en ex mn mx avg rms)
-                        Nothing -> I.drop byteLength
-                Nothing -> I.drop byteLength
+            (trackNo, summary) <- readSummary zr
+            case (summary, IM.lookup trackNo (zrTracks zr)) of
+                (Just s, Just tr) -> lift $ (trReadSummary tr) s
+                _                 -> return ()
             return zr
         _ -> return zr
+
+readSummary :: (Functor m, MonadIO m)
+            => ZoomReader m
+            -> Iteratee [Word8] m (TrackNo, Maybe Summary)
+readSummary zr = do
+    trackNo <- zReadInt32
+    lvl <- zReadInt32
+    entryTime <- TS <$> zReadInt32
+    exitTime <- TS <$> zReadInt32
+    byteLength <- zReadInt32
+
+    summary <- case IM.lookup trackNo (fiSpecs . zrFileInfo $ zr) of
+        Just TrackSpec{..} -> do
+            case specType of
+                ZDouble -> do
+                    let n = flip div 8 byteLength
+                    [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
+                    return $ Just (SummaryDouble trackNo lvl entryTime exitTime
+                                       en ex mn mx avg rms)
+                ZInt -> do
+                    [en,ex,mn,mx] <- replicateM 4 zReadInt32
+                    [avg,rms] <- replicateM 2 zReadFloat64be
+                    return $ Just (SummaryInt trackNo lvl entryTime exitTime
+                                       en ex mn mx avg rms)
+        Nothing -> do
+            I.drop byteLength
+            return Nothing
+    return (trackNo, summary)
 
 zReadHeader :: (Functor m, MonadIO m)
             => ZoomReader m
