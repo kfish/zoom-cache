@@ -6,6 +6,8 @@ module Data.ZoomCache.Binary (
     -- * Builders
       encInt
     , encDbl
+    , fromRational64
+    , fromVersion
     , fromTrackType
     , fromDataRateType
     , fromTrackNo
@@ -18,6 +20,7 @@ module Data.ZoomCache.Binary (
 import Blaze.ByteString.Builder hiding (flush)
 import qualified Data.ByteString.Lazy as L
 import Data.Monoid
+import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -26,6 +29,12 @@ import Data.ZoomCache.Summary
 
 ----------------------------------------------------------------------
 --
+
+fromVersion :: Version -> Builder
+fromVersion (Version vMaj vMin) = mconcat
+    [ fromInt16be . fromIntegral $ vMaj
+    , fromInt16be . fromIntegral $ vMin
+    ]
 
 fromTrackType :: TrackType -> Builder
 fromTrackType ZDouble = fromInt16be 0
@@ -75,6 +84,12 @@ fromSummaryHeader s = mconcat
 ----------------------------------------------------------------------
 -- Binary data helpers
     
+fromRational64 :: Rational -> Builder
+fromRational64 r = mconcat
+    [ fromInt64be . fromIntegral . numerator $ r
+    , fromInt64be . fromIntegral . denominator $ r
+    ]
+
 encInt :: forall a . (Integral a) => a -> Builder
 encInt = fromInt32be . fromIntegral
 

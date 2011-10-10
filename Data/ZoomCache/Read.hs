@@ -70,6 +70,10 @@ data FileInfo = FileInfo
 instance Default FileInfo where
     def = FileInfo Nothing IM.empty
 
+fiFull :: FileInfo -> Bool
+fiFull (FileInfo (Just g) specs) = IM.size specs == noTracks g
+fiFull _                         = False
+
 ------------------------------------------------------------
 
 addTrack :: (Monad m) => TrackNo
@@ -205,7 +209,7 @@ zReadPacket zr = do
             let fi = zrFileInfo zr
                 fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
             let fiFunc = zrReadFileInfo zr
-            lift $ fiFunc fi'
+            when (fiFull fi') $ lift $ fiFunc fi'
             return zr{ zrFileInfo = fi' }
         Just GlobalHeader -> do
             g <- readGlobalHeader
@@ -217,10 +221,11 @@ zReadPacket zr = do
 readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
 readGlobalHeader = do
     v <- readVersion
+    n <- zReadInt32
     p <- readRational64
     b <- readRational64
     _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
-    return $ Global v p b Nothing
+    return $ Global v n p b Nothing
 
 readVersion :: (Functor m, MonadIO m) => Iteratee [Word8] m Version
 readVersion = do

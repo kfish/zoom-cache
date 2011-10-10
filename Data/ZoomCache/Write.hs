@@ -47,7 +47,6 @@ import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Monoid
-import Data.Ratio
 import System.IO
 
 import Data.ZoomCache.Binary
@@ -166,7 +165,8 @@ openWrite :: TrackMap
           -> IO ZoomWHandle
 openWrite trackMap doRaw path = do
     h <- openFile path WriteMode
-    writeGlobalHeader h
+    let global = mkGlobal (IM.size trackMap)
+    writeGlobalHeader h global
     let tracks = IM.foldWithKey addTrack IM.empty trackMap
     mapM_ (uncurry (writeTrackHeader h)) (IM.assocs trackMap)
     return $ ZoomWHandle h tracks IM.empty doRaw
@@ -206,19 +206,17 @@ setWatermark trackNo w = modifyTrack trackNo f
 ----------------------------------------------------------------------
 -- Global header
 
-writeGlobalHeader :: Handle -> IO ()
-writeGlobalHeader h = do
+writeGlobalHeader :: Handle -> Global -> IO ()
+writeGlobalHeader h Global{..} = do
     L.hPut h . mconcat $
         [ globalHeader
         , toLazyByteString . mconcat $
-            [ fromInt16be . fromIntegral $ versionMajor
-            , fromInt16be . fromIntegral $ versionMinor
-            , fromInt64be 0 -- Presentation time numerator
-            , fromInt64be 0 -- Presentation time denominator
-            , fromInt64be 0 -- Base time numerator
-            , fromInt64be 0  -- Base time denominator
+            [ fromVersion version
+            , encInt noTracks
+            , fromRational64 presentationTime
+            , fromRational64 baseTime
             ]
-        , LC.pack (replicate 20 '\0')
+        , LC.pack (replicate 20 '\0') -- UTCTime
         ]
 
 ----------------------------------------------------------------------
@@ -232,9 +230,8 @@ writeTrackHeader h trackNo TrackSpec{..} = do
             [ fromTrackNo trackNo
             , fromTrackType specType
             , fromDataRateType specDRType
-            , fromInt64be . fromIntegral . numerator $ specRate
-            , fromInt64be . fromIntegral . denominator $ specRate
-            , fromInt32be . fromIntegral . LC.length $ specName
+            , fromRational64 specRate
+            , encInt . LC.length $ specName
             ]
         , specName
         ]
@@ -298,7 +295,7 @@ writeDataVBR builder updater trackNo (t, d) = do
         modifyTrack trackNo $ \z -> z
             { twBuilder = twBuilder z <> builder d
             , twTSBuilder = twTSBuilder z <>
-                  (fromInt32be . fromIntegral .  unTS) t
+                  (encInt .  unTS) t
             }
 
     modifyTrack trackNo $ \z -> z
@@ -328,10 +325,10 @@ updateZTSDouble count t d ZTSDouble{..} = ZTSDouble
 updateZTSDouble _ _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
 
 writeInt :: TrackNo -> Int -> ZoomW ()
-writeInt = writeData (fromInt32be . fromIntegral) updateZTSInt
+writeInt = writeData encInt updateZTSInt
 
 writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
-writeIntVBR = writeDataVBR (fromInt32be . fromIntegral) updateZTSInt
+writeIntVBR = writeDataVBR encInt updateZTSInt
 
 updateZTSInt :: Int -> TimeStamp  -> Int -> ZTSData -> ZTSData
 updateZTSInt count t i ZTSInt{..} = ZTSInt
@@ -346,6 +343,18 @@ updateZTSInt count t i ZTSInt{..} = ZTSInt
     where
         dur = fromIntegral $ (unTS t) - (unTS ztsTime)
 updateZTSInt _ _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
+
+----------------------------------------------------------------------
+-- Global
+
+mkGlobal :: Int -> Global
+mkGlobal n = Global
+    { version = Version versionMajor versionMinor
+    , noTracks = n
+    , presentationTime = 0
+    , baseTime = 0
+    , baseUTC = Nothing
+    }
 
 ----------------------------------------------------------------------
 -- TrackState
