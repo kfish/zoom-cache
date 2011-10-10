@@ -183,20 +183,26 @@ zReadPacket zr = do
                 Nothing -> I.drop byteLength
             return zr
         Just TrackHeader -> do
-            trackNo <- zReadInt32
-            trackType <- zReadTrackType
-            drType <- zReadDataRateType
-
-            rateNumerator <- zReadInt64
-            rateDenominator <- zReadInt64
-            let rate = (fromIntegral rateNumerator) % (fromIntegral rateDenominator)
-
-            byteLength <- zReadInt32
-            name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
-            let spec = TrackSpec trackType drType rate name
-
+            (trackNo, spec) <- readTrackHeader
             return zr{ zrSpecs = IM.insert trackNo spec (zrSpecs zr) }
         _ -> return zr
+
+readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
+readTrackHeader = do
+    trackNo <- zReadInt32
+    trackType <- zReadTrackType
+    drType <- zReadDataRateType
+
+    rateNumerator <- zReadInt64
+    rateDenominator <- zReadInt64
+    let rate = (fromIntegral rateNumerator) % (fromIntegral rateDenominator)
+
+    byteLength <- zReadInt32
+    name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
+
+    let spec = TrackSpec trackType drType rate name
+
+    return (trackNo, spec)
 
 zReadInt16 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
 zReadInt16 = fromIntegral . u16_to_s16 <$> I.endianRead2 I.MSB
