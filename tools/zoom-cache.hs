@@ -138,6 +138,20 @@ ints = map round doubles
 
 ------------------------------------------------------------
 
+zoomInfo :: Command ()
+zoomInfo = defCmd {
+          cmdName = "info"
+        , cmdHandler = zoomInfoHandler
+        , cmdCategory = "Reading"
+        , cmdShortDesc = "Display basic info about a zoom-cache file"
+        , cmdExamples = [("Display info about foo.zxd", "foo.zxd")]
+        }
+
+zoomInfoHandler :: App () ()
+zoomInfoHandler = liftIO . zoomInfoFile =<< appArgs
+
+------------------------------------------------------------
+
 zoomDump :: Command ()
 zoomDump = defCmd {
           cmdName = "dump"
@@ -183,6 +197,7 @@ zoom = def {
         , appSeeAlso = [""]
         , appProject = "Zoom"
         , appCmds = [ zoomGen
+                    , zoomInfo
                     , zoomDump
                     , zoomSummary
                     ]

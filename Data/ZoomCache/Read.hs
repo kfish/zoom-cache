@@ -10,6 +10,7 @@ module Data.ZoomCache.Read (
     , zoomDumpFile
     , zoomDumpSummary
     , zoomDumpSummaryLevel
+    , zoomInfoFile
     , zoomReadFile
 ) where
 
@@ -36,8 +37,9 @@ import Data.ZoomCache.Summary
 ------------------------------------------------------------
 
 data ZoomReader m = ZoomReader
-    { zrTracks :: IntMap (TrackReader m)
-    , zrSpecs :: IntMap TrackSpec
+    { zrReadGlobal :: Global -> m ()
+    , zrTracks     :: IntMap (TrackReader m)
+    , zrSpecs      :: IntMap TrackSpec
     }
 
 data TrackReader m = TrackReader
@@ -57,8 +59,8 @@ data Packet = Packet
     , packetTimeStamps :: [TimeStamp]
     }
 
-instance Default (ZoomReader m) where
-    def = ZoomReader IM.empty IM.empty
+instance (Monad m) => Default (ZoomReader m) where
+    def = ZoomReader (const (return ())) IM.empty IM.empty
 
 ------------------------------------------------------------
 
@@ -68,6 +70,9 @@ addTrack :: (Monad m) => TrackNo
 addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTracks zr)) }
     where
         tr = TrackReader trackNo pFunc sFunc
+
+zoomInfoFile :: [FilePath] -> IO ()
+zoomInfoFile = zoomReadFile def{zrReadGlobal = info}
 
 zoomDumpFile :: [FilePath] -> IO ()
 zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
@@ -93,6 +98,10 @@ zReader zr = do
     when (isNothing e) $ do
         zr' <- zReadPacket zr
         zReader zr'
+
+info :: Global -> IO ()
+info g = do
+    print g
 
 dumpData :: Packet -> IO ()
 dumpData p = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
@@ -185,7 +194,26 @@ zReadPacket zr = do
         Just TrackHeader -> do
             (trackNo, spec) <- readTrackHeader
             return zr{ zrSpecs = IM.insert trackNo spec (zrSpecs zr) }
+        Just GlobalHeader -> do
+            g <- readGlobalHeader
+            let gFunc = zrReadGlobal zr
+            lift $ gFunc g
+            return zr
         _ -> return zr
+
+readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
+readGlobalHeader = do
+    v <- readVersion
+    p <- readRational64
+    b <- readRational64
+    _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
+    return $ Global v p b Nothing
+
+readVersion :: (Functor m, MonadIO m) => Iteratee [Word8] m Version
+readVersion = do
+    vMaj <- zReadInt16
+    vMin <- zReadInt16
+    return $ Version vMaj vMin
 
 readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
 readTrackHeader = do
@@ -247,4 +275,6 @@ readRational64 :: (Functor m, MonadIO m) => Iteratee [Word8] m Rational
 readRational64 = do
     num <- zReadInt64
     den <- zReadInt64
-    return $ (fromIntegral num) % (fromIntegral den)
+    if (den == 0)
+        then return 0
+        else return $ (fromIntegral num) % (fromIntegral den)
