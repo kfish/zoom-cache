@@ -8,14 +8,18 @@ module Data.ZoomCache.Common (
   , DataRateType(..)
   , TrackNo
 
+  -- * Global header
+  , Global(..)
+  , globalHeader
+
+  -- * Version
+  , Version(..)
+  , versionMajor -- ^ Written by this library
+  , versionMinor
+
   -- * Track specification
   , TrackMap
   , TrackSpec(..)
-
-  -- * Global header
-  , globalHeader
-  , versionMajor
-  , versionMinor
 
   -- * Track header
   , trackHeader
@@ -228,6 +232,17 @@ data TimeStamp = TS { unTS :: !Int }
 
 data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
 
+data Version = Version Int Int
+    deriving (Eq, Show)
+
+data Global = Global
+    { version          :: Version
+    , presentationTime :: Rational
+    , baseTime         :: Rational
+    , baseUTC          :: Maybe Int -- UTCTime
+    }
+    deriving (Show)
+
 -- | A map of all track numbers to their 'TrackSpec'
 type TrackMap = IntMap TrackSpec
 
@@ -238,15 +253,17 @@ data TrackSpec = TrackSpec
     , specRate   :: Rational
     , specName   :: L.ByteString
     }
+    deriving (Show)
 
 data TrackType = ZDouble | ZInt
-    deriving (Eq)
+    deriving (Eq, Show)
 
 -- | Constant or Variable datarate.
 -- For constant datarate, timestamps are implied as incrementing by 1/datarate
 -- For variable datarate, explicit timestamps are attached to each datum, encoded
 -- as a separate block of timestamps in the Raw Data packet.
 data DataRateType = ConstantDR | VariableDR
+    deriving (Show)
 
 globalHeader :: L.ByteString
 globalHeader = LC.pack "\xe5ZXhe4d\0"
