@@ -11,16 +11,13 @@ module Data.ZoomCache.Read (
     , zoomDumpSummary
     , zoomDumpSummaryLevel
     , zoomInfoFile
-    , zoomReadFile
 ) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (replicateM)
-import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans (MonadIO)
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
-import Data.Default
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
@@ -38,16 +35,6 @@ import Data.ZoomCache.Summary
 
 ------------------------------------------------------------
 
-data ZoomReader m = ZoomReader
-    { zrTracks       :: IntMap (TrackReader m)
-    }
-
-data TrackReader m = TrackReader
-    { _trTrack      :: TrackNo
-    , trReadPacket  :: Packet -> m ()
-    , trReadSummary :: Summary -> m ()
-    }
-
 data PacketData = PDDouble [Double] | PDInt [Int]
 
 data Packet = Packet
@@ -58,9 +45,6 @@ data Packet = Packet
     , packetData :: PacketData
     , packetTimeStamps :: [TimeStamp]
     }
-
-instance (Monad m) => Default (ZoomReader m) where
-    def = ZoomReader IM.empty
 
 ------------------------------------------------------------
 
@@ -77,13 +61,6 @@ fiFull (FileInfo g specs) = IM.size specs == noTracks g
 
 ------------------------------------------------------------
 
-addTrack :: (Monad m) => TrackNo
-         -> (Packet -> m ()) -> (Summary -> m ())
-         -> ZoomReader m -> ZoomReader m
-addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTracks zr)) }
-    where
-        tr = TrackReader trackNo pFunc sFunc
-
 zoomInfoFile :: FilePath -> IO ()
 zoomInfoFile path = I.fileDriverRandom iterHeaders path >>= info
 
@@ -95,12 +72,6 @@ zoomDumpSummary = I.fileDriverRandom (mapSummaries dumpSummary)
 
 zoomDumpSummaryLevel :: Int -> FilePath -> IO ()
 zoomDumpSummaryLevel lvl = I.fileDriverRandom (mapSummaries (dumpSummaryLevel lvl))
-
-zoomReadFile :: (Functor m, MonadCatchIO m)
-             => ZoomReader m
-             -> FilePath
-             -> m ()
-zoomReadFile reader path = I.fileDriverRandom (zReader reader) path
 
 ----------------------------------------------------------------------
 
@@ -121,26 +92,6 @@ instance LL.Nullable ZoomStream where
 
 instance LL.NullPoint ZoomStream where
     empty = StreamNull
-
-----------------------------------------------------------------------
-
-zReader :: (Functor m, MonadIO m)
-        => ZoomReader m
-        -> Iteratee [Word8] m ()
-zReader = mapStream . process
-    where
-        process :: (Functor m, MonadIO m)
-                => ZoomReader m
-                -> ZoomStream -> m ()
-        process zr (StreamPacket trackNo p) =
-            case IM.lookup trackNo (zrTracks zr) of
-                Just tr -> (trReadPacket tr) p
-                _       -> return ()
-        process zr (StreamSummary trackNo s) =
-            case IM.lookup trackNo (zrTracks zr) of
-                Just tr -> (trReadSummary tr) s
-                _       -> return ()
-        process _  StreamNull = return ()
 
 ----------------------------------------------------------------------
 
