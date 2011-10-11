@@ -39,8 +39,7 @@ import Data.ZoomCache.Summary
 ------------------------------------------------------------
 
 data ZoomReader m = ZoomReader
-    { zrReadFileInfo :: FileInfo -> m ()
-    , zrTracks       :: IntMap (TrackReader m)
+    { zrTracks       :: IntMap (TrackReader m)
     }
 
 data TrackReader m = TrackReader
@@ -61,7 +60,7 @@ data Packet = Packet
     }
 
 instance (Monad m) => Default (ZoomReader m) where
-    def = ZoomReader (const (return ())) IM.empty
+    def = ZoomReader IM.empty
 
 ------------------------------------------------------------
 
@@ -86,7 +85,8 @@ addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTrac
         tr = TrackReader trackNo pFunc sFunc
 
 zoomInfoFile :: [FilePath] -> IO ()
-zoomInfoFile = zoomReadFile def{zrReadFileInfo = info}
+zoomInfoFile (path:_) = I.fileDriverRandom iterHeaders path >>= info
+zoomInfoFile []       = return ()
 
 zoomDumpFile :: [FilePath] -> IO ()
 zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
