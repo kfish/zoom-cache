@@ -17,7 +17,7 @@ module Data.ZoomCache.Read (
 import Control.Applicative ((<$>))
 import Control.Monad (replicateM)
 import Control.Monad.CatchIO (MonadCatchIO)
-import Control.Monad.Trans (lift, MonadIO)
+import Control.Monad.Trans (MonadIO)
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Default
@@ -41,7 +41,6 @@ import Data.ZoomCache.Summary
 data ZoomReader m = ZoomReader
     { zrReadFileInfo :: FileInfo -> m ()
     , zrTracks       :: IntMap (TrackReader m)
-    , zrFileInfo     :: FileInfo
     }
 
 data TrackReader m = TrackReader
@@ -62,21 +61,20 @@ data Packet = Packet
     }
 
 instance (Monad m) => Default (ZoomReader m) where
-    def = ZoomReader (const (return ())) IM.empty def
+    def = ZoomReader (const (return ())) IM.empty
 
 ------------------------------------------------------------
 
 data FileInfo = FileInfo
-    { fiGlobal :: Maybe Global
+    { fiGlobal :: Global
     , fiSpecs  :: IntMap TrackSpec
     }
 
-instance Default FileInfo where
-    def = FileInfo Nothing IM.empty
+mkFileInfo :: Global -> FileInfo
+mkFileInfo g = FileInfo g IM.empty
 
 fiFull :: FileInfo -> Bool
-fiFull (FileInfo (Just g) specs) = IM.size specs == noTracks g
-fiFull _                         = False
+fiFull (FileInfo g specs) = IM.size specs == noTracks g
 
 ------------------------------------------------------------
 
@@ -132,8 +130,8 @@ zReader :: (Functor m, MonadIO m)
         => ZoomReader m
         -> Iteratee [Word8] m ()
 zReader zr = do
-    zr' <- readHeaders zr
-    I.joinI . enumStream (zrFileInfo zr') . I.mapChunksM_ $ (process zr')
+    fi <- iterHeaders
+    I.joinI . enumStream fi . I.mapChunksM_ $ (process zr)
     return ()
 
 enumStream :: (Functor m, MonadIO m)
@@ -181,40 +179,31 @@ parseHeader h
 ------------------------------------------------------------
 -- Global, track headers
 
-readHeaders :: (Functor m, MonadIO m)
-            => ZoomReader m
-            -> Iteratee [Word8] m (ZoomReader m)
-readHeaders zr = do
-    e <- I.isStreamFinished
-    case e of
-        Just _  -> return zr
-        Nothing -> do
-            zr' <- zReadHeader zr
-            let fi = zrFileInfo zr'
-            if (fiFull fi)
-                then do
-                    let fiFunc = zrReadFileInfo zr
-                    lift $ fiFunc fi
-                    return zr'
-                else readHeaders zr'
+iterHeaders :: (Functor m, MonadIO m)
+            => I.Iteratee [Word8] m FileInfo
+iterHeaders = iterGlobal >>= go
+    where
+        iterGlobal :: (Functor m, MonadIO m)
+                   => Iteratee [Word8] m FileInfo
+        iterGlobal = do
+            header <- I.joinI $ I.takeUpTo 8 I.stream2list
+            case parseHeader (L.pack header) of
+                Just GlobalHeader -> mkFileInfo <$> readGlobalHeader
+                _                 -> error "No global header"
 
-zReadHeader :: (Functor m, MonadIO m)
-            => ZoomReader m
-            -> Iteratee [Word8] m (ZoomReader m)
-zReadHeader zr = do
-    header <- I.joinI $ I.takeUpTo 8 I.stream2list
-    case parseHeader (L.pack header) of
-        Just TrackHeader -> do
-            (trackNo, spec) <- readTrackHeader
-            let fi = zrFileInfo zr
-                fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
-            return zr{ zrFileInfo = fi' }
-        Just GlobalHeader -> do
-            g <- readGlobalHeader
-            let fi = zrFileInfo zr
-                fi' = fi{fiGlobal = Just g}
-            return zr{ zrFileInfo = fi' }
-        _ -> return zr
+        go :: (Functor m, MonadIO m)
+           => FileInfo
+           -> Iteratee [Word8] m FileInfo
+        go fi = do
+            header <- I.joinI $ I.takeUpTo 8 I.stream2list
+            case parseHeader (L.pack header) of
+                Just TrackHeader -> do
+                    (trackNo, spec) <- readTrackHeader
+                    let fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
+                    if (fiFull fi')
+                        then return fi'
+                        else go fi'
+                _ -> return fi
 
 readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
 readGlobalHeader = do
@@ -360,7 +349,7 @@ readRational64 = do
 
 info :: FileInfo -> IO ()
 info FileInfo{..} = do
-    maybe (return ()) (putStrLn . prettyGlobal) fiGlobal
+    putStrLn . prettyGlobal $ fiGlobal
     mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ fiSpecs
 
 prettyGlobal :: Global -> String
