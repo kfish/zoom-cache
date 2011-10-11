@@ -14,7 +14,7 @@ module Data.ZoomCache.Common (
 
   -- * Version
   , Version(..)
-  , versionMajor -- ^ Written by this library
+  , versionMajor
   , versionMinor
 
   -- * Track specification

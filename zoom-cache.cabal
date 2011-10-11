@@ -49,9 +49,11 @@ Cabal-version:       >=1.2
 Library
   -- Modules exported by the library.
   Exposed-modules:     Data.ZoomCache.Common
+                       Data.ZoomCache.Packet
                        Data.ZoomCache.Read
                        Data.ZoomCache.Summary
                        Data.ZoomCache.Write
+                       Data.Iteratee.ZoomCache
   
   -- Packages needed in order to build this package.
   -- Build-depends:       
