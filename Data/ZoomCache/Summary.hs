@@ -22,6 +22,9 @@ module Data.ZoomCache.Summary (
 
 import Data.ZoomCache.Common
 
+----------------------------------------------------------------------
+
+-- | A recorded block of summary data
 data Summary = SummaryDouble
     { summaryTrack :: TrackNo
     , summaryLevel :: Int
@@ -48,9 +51,11 @@ data Summary = SummaryDouble
     }
     deriving (Show)
 
+-- | The duration covered by a summary, in units of 1 / the track's datarate
 summaryDuration :: Summary -> Int
 summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
+-- | Append two Summaries, merging statistical summary data.
 -- XXX: summaries are only compatible if tracks and levels are equal
 appendSummary :: Summary -> Summary -> Summary
 appendSummary s1@SummaryDouble{} s2@SummaryDouble{} = SummaryDouble

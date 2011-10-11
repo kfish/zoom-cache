@@ -41,7 +41,7 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Summary
 
 ----------------------------------------------------------------------
---
+-- Builders for local types
 
 fromGlobal :: Global -> Builder
 fromGlobal Global{..} = mconcat
