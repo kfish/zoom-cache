@@ -129,9 +129,29 @@ instance LL.NullPoint ZoomStream where
 zReader :: (Functor m, MonadIO m)
         => ZoomReader m
         -> Iteratee [Word8] m ()
-zReader zr = do
+zReader = mapStream . process
+    where
+        process :: (Functor m, MonadIO m)
+                => ZoomReader m
+                -> ZoomStream -> m ()
+        process zr (StreamPacket trackNo p) =
+            case IM.lookup trackNo (zrTracks zr) of
+                Just tr -> (trReadPacket tr) p
+                _       -> return ()
+        process zr (StreamSummary trackNo s) =
+            case IM.lookup trackNo (zrTracks zr) of
+                Just tr -> (trReadSummary tr) s
+                _       -> return ()
+        process _  StreamNull = return ()
+
+----------------------------------------------------------------------
+
+mapStream :: (Functor m, MonadIO m)
+          => (ZoomStream -> m ())
+          -> Iteratee [Word8] m ()
+mapStream f = do
     fi <- iterHeaders
-    I.joinI . enumStream fi . I.mapChunksM_ $ (process zr)
+    I.joinI . enumStream fi . I.mapChunksM_ $ f
     return ()
 
 enumStream :: (Functor m, MonadIO m)
@@ -153,19 +173,6 @@ enumStream = I.unfoldConvStream go
                     return (fi, StreamSummary trackNo (fromJust summary))
                 _ -> return (fi, StreamNull)
 
-process :: (Functor m, MonadIO m)
-        => ZoomReader m
-        -> ZoomStream -> m ()
-process zr (StreamPacket trackNo p) = 
-    case IM.lookup trackNo (zrTracks zr) of
-        Just tr -> (trReadPacket tr) p
-        _       -> return ()
-process zr (StreamSummary trackNo s) = 
-    case IM.lookup trackNo (zrTracks zr) of
-        Just tr -> (trReadSummary tr) s
-        _       -> return ()
-process _  StreamNull = return ()
-
 ------------------------------------------------------------
 
 parseHeader :: L.ByteString -> Maybe HeaderType
@@ -174,7 +181,7 @@ parseHeader h
     | h == trackHeader   = Just TrackHeader
     | h == packetHeader  = Just PacketHeader
     | h == summaryHeader = Just SummaryHeader
-    | otherwise              = Nothing
+    | otherwise          = Nothing
 
 ------------------------------------------------------------
 -- Global, track headers
