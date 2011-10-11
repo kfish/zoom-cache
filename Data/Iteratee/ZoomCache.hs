@@ -50,19 +50,6 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Packet
 import Data.ZoomCache.Summary
 
-------------------------------------------------------------
-
-data FileInfo = FileInfo
-    { fiGlobal :: Global
-    , fiSpecs  :: IntMap TrackSpec
-    }
-
-mkFileInfo :: Global -> FileInfo
-mkFileInfo g = FileInfo g IM.empty
-
-fiFull :: FileInfo -> Bool
-fiFull (FileInfo g specs) = IM.size specs == noTracks g
-
 ----------------------------------------------------------------------
 
 data ZoomStream =

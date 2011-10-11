@@ -24,6 +24,11 @@ module Data.ZoomCache.Common (
   , Global(..)
   , globalHeader
 
+  -- * FileInfo
+  , FileInfo(..)
+  , mkFileInfo
+  , fiFull
+
   -- * Version
   , Version(..)
   , versionMajor
@@ -46,6 +51,7 @@ module Data.ZoomCache.Common (
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.IntMap (IntMap)
+import qualified Data.IntMap as IM
 
 ------------------------------------------------------------
 
@@ -280,21 +286,46 @@ data TrackType = ZDouble | ZInt
 data DataRateType = ConstantDR | VariableDR
     deriving (Show)
 
+------------------------------------------------------------
+
+-- | Data for a global and track headers
+data FileInfo = FileInfo
+    { fiGlobal :: Global
+    , fiSpecs  :: IntMap TrackSpec
+    }
+
+-- | Create an empty 'FileInfo' using the given 'Global'
+mkFileInfo :: Global -> FileInfo
+mkFileInfo g = FileInfo g IM.empty
+
+-- | Determine whether all tracks of a 'FileInfo' are specified
+fiFull :: FileInfo -> Bool
+fiFull (FileInfo g specs) = IM.size specs == noTracks g
+
+------------------------------------------------------------
+-- Magic
+
+-- | Magic identifier at the beginning of a zoom-cache file.
 globalHeader :: L.ByteString
 globalHeader = LC.pack "\xe5ZXhe4d\0"
 
+-- | The major version encoded by this library
 versionMajor :: Int
 versionMajor = 0
 
+-- | The minor version encoded by this library
 versionMinor :: Int
 versionMinor = 3
 
+-- | Identifier for track headers
 trackHeader :: L.ByteString
 trackHeader = LC.pack "\xe5ZXtRcK\0"
 
+-- | Identifier for packet headers
 packetHeader :: L.ByteString
 packetHeader = LC.pack "\xe5ZXp4ck\0"
 
+-- | Identifier for summary headers
 summaryHeader :: L.ByteString
 summaryHeader = LC.pack "\xe5ZX5umm\0"
 
