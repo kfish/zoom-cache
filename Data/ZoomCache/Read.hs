@@ -84,25 +84,23 @@ addTrack trackNo pFunc sFunc zr = zr { zrTracks =  (IM.insert trackNo tr (zrTrac
     where
         tr = TrackReader trackNo pFunc sFunc
 
-zoomInfoFile :: [FilePath] -> IO ()
-zoomInfoFile (path:_) = I.fileDriverRandom iterHeaders path >>= info
-zoomInfoFile []       = return ()
+zoomInfoFile :: FilePath -> IO ()
+zoomInfoFile path = I.fileDriverRandom iterHeaders path >>= info
 
-zoomDumpFile :: [FilePath] -> IO ()
-zoomDumpFile = zoomReadFile (addTrack 1 dumpData (const (return ())) def)
+zoomDumpFile :: FilePath -> IO ()
+zoomDumpFile = I.fileDriverRandom (mapPackets dumpData)
 
-zoomDumpSummary :: [FilePath] -> IO ()
-zoomDumpSummary = zoomReadFile (addTrack 1 (const (return ())) dumpSummary def)
+zoomDumpSummary :: FilePath -> IO ()
+zoomDumpSummary = I.fileDriverRandom (mapSummaries dumpSummary)
 
-zoomDumpSummaryLevel :: Int -> [FilePath] -> IO ()
-zoomDumpSummaryLevel lvl = zoomReadFile (addTrack 1 (const (return ())) (dumpSummaryLevel lvl) def)
+zoomDumpSummaryLevel :: Int -> FilePath -> IO ()
+zoomDumpSummaryLevel lvl = I.fileDriverRandom (mapSummaries (dumpSummaryLevel lvl))
 
 zoomReadFile :: (Functor m, MonadCatchIO m)
              => ZoomReader m
-             -> [FilePath]
+             -> FilePath
              -> m ()
-zoomReadFile _      []       = return ()
-zoomReadFile reader (path:_) = I.fileDriverRandom (zReader reader) path
+zoomReadFile reader path = I.fileDriverRandom (zReader reader) path
 
 ----------------------------------------------------------------------
 
@@ -153,6 +151,22 @@ mapStream f = do
     fi <- iterHeaders
     I.joinI . enumStream fi . I.mapChunksM_ $ f
     return ()
+
+mapPackets :: (Functor m, MonadIO m)
+           => (Packet -> m ())
+           -> Iteratee [Word8] m ()
+mapPackets f = mapStream process
+    where
+        process (StreamPacket _ p) = f p
+        process _                  = return ()
+
+mapSummaries :: (Functor m, MonadIO m)
+             => (Summary -> m ())
+             -> Iteratee [Word8] m ()
+mapSummaries f = mapStream process
+    where
+        process (StreamSummary _ s) = f s
+        process _                   = return ()
 
 enumStream :: (Functor m, MonadIO m)
             => FileInfo

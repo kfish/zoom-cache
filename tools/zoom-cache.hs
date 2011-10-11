@@ -148,7 +148,7 @@ zoomInfo = defCmd {
         }
 
 zoomInfoHandler :: App () ()
-zoomInfoHandler = liftIO . zoomInfoFile =<< appArgs
+zoomInfoHandler = mapM_ (liftIO . zoomInfoFile) =<< appArgs
 
 ------------------------------------------------------------
 
@@ -162,7 +162,7 @@ zoomDump = defCmd {
         }
 
 zoomDumpHandler :: App () ()
-zoomDumpHandler = liftIO . zoomDumpFile =<< appArgs
+zoomDumpHandler = mapM_ (liftIO . zoomDumpFile) =<< appArgs
 
 ------------------------------------------------------------
 
@@ -178,7 +178,7 @@ zoomSummary = defCmd {
 zoomSummaryHandler :: App () ()
 zoomSummaryHandler = liftIO . f =<< appArgs
     where
-        f (lvl:paths) = zoomDumpSummaryLevel (read lvl) paths
+        f (lvl:paths) = mapM_ (zoomDumpSummaryLevel (read lvl)) paths
         f _ = putStrLn "Usage: zoom-cache summary n file.zxd"
 
 ------------------------------------------------------------
