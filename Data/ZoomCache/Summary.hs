@@ -1,5 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
+----------------------------------------------------------------------
+-- |
+-- Module      : Data.ZoomCache.Write
+-- Copyright   : Conrad Parker
+-- License     : BSD3-style (see LICENSE)
+--
+-- Maintainer  : Conrad Parker <conrad@metadecks.org>
+-- Stability   : unstable
+-- Portability : unknown
+--
+-- ZoomCache Summary definition
+----------------------------------------------------------------------
 
 module Data.ZoomCache.Summary (
   -- * Types

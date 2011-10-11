@@ -1,4 +1,16 @@
 {-# OPTIONS -Wall #-}
+----------------------------------------------------------------------
+-- |
+-- Module      : Data.ZoomCache.Write
+-- Copyright   : Conrad Parker
+-- License     : BSD3-style (see LICENSE)
+--
+-- Maintainer  : Conrad Parker <conrad@metadecks.org>
+-- Stability   : unstable
+-- Portability : unknown
+--
+-- ZoomCache packet definition
+----------------------------------------------------------------------
 
 module Data.ZoomCache.Packet (
     -- * Types

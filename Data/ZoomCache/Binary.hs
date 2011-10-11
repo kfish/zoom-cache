@@ -1,6 +1,18 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
+----------------------------------------------------------------------
+-- |
+-- Module      : Data.ZoomCache.Write
+-- Copyright   : Conrad Parker
+-- License     : BSD3-style (see LICENSE)
+--
+-- Maintainer  : Conrad Parker <conrad@metadecks.org>
+-- Stability   : unstable
+-- Portability : unknown
+--
+-- Blaze-builder utility functions for writing ZoomCache files.
+----------------------------------------------------------------------
 
 module Data.ZoomCache.Binary (
     -- * Builders
