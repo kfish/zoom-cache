@@ -26,6 +26,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
+import qualified Data.Iteratee.ListLike as LL
 import Data.Maybe
 import Data.Ratio
 import Data.Word
@@ -105,10 +106,67 @@ zoomReadFile :: (Functor m, MonadCatchIO m)
 zoomReadFile _      []       = return ()
 zoomReadFile reader (path:_) = I.fileDriverRandom (zReader reader) path
 
+----------------------------------------------------------------------
+
+data ZoomStream =
+    StreamPacket
+        { _strmTrack   :: TrackNo
+        , _strmPacket  :: Packet
+        }
+    | StreamSummary
+        { _strmTrack   :: TrackNo
+        , _strmSummary :: Summary
+        }
+    | StreamNull
+
+instance LL.Nullable ZoomStream where
+    nullC StreamNull = True
+    nullC _          = False
+
+instance LL.NullPoint ZoomStream where
+    empty = StreamNull
+
+----------------------------------------------------------------------
+
 zReader :: (Functor m, MonadIO m)
         => ZoomReader m
         -> Iteratee [Word8] m ()
-zReader zr = readHeaders zr >>= readPackets >> return ()
+zReader zr = do
+    zr' <- readHeaders zr
+    I.joinI . enumStream (zrFileInfo zr') . I.mapChunksM_ $ (process zr')
+    return ()
+
+enumStream :: (Functor m, MonadIO m)
+            => FileInfo
+            -> I.Enumeratee [Word8] ZoomStream m a
+enumStream = I.unfoldConvStream go
+    where
+        go :: (Functor m, MonadIO m)
+           => FileInfo
+           -> Iteratee [Word8] m (FileInfo, ZoomStream)
+        go fi = do
+            header <- I.joinI $ I.takeUpTo 8 I.stream2list
+            case parseHeader (L.pack header) of
+                Just PacketHeader -> do
+                    (trackNo, packet) <- readPacket (fiSpecs fi)
+                    return (fi, StreamPacket trackNo (fromJust packet))
+                Just SummaryHeader -> do
+                    (trackNo, summary) <- readSummary (fiSpecs fi)
+                    return (fi, StreamSummary trackNo (fromJust summary))
+                _ -> return (fi, StreamNull)
+
+process :: (Functor m, MonadIO m)
+        => ZoomReader m
+        -> ZoomStream -> m ()
+process zr (StreamPacket trackNo p) = 
+    case IM.lookup trackNo (zrTracks zr) of
+        Just tr -> (trReadPacket tr) p
+        _       -> return ()
+process zr (StreamSummary trackNo s) = 
+    case IM.lookup trackNo (zrTracks zr) of
+        Just tr -> (trReadSummary tr) s
+        _       -> return ()
+process _  StreamNull = return ()
 
 ------------------------------------------------------------
 
@@ -184,37 +242,6 @@ readTrackHeader = do
 
 ------------------------------------------------------------
 -- Packet, Summary reading
-
-readPackets :: (Functor m, MonadIO m)
-            => ZoomReader m
-            -> Iteratee [Word8] m (ZoomReader m)
-readPackets zr = do
-    e <- I.isStreamFinished
-    case e of
-        Just _  -> return zr
-        Nothing -> do
-            zr' <- zReadPacket zr
-            readPackets zr'
-
-zReadPacket :: (Functor m, MonadIO m)
-            => ZoomReader m
-            -> Iteratee [Word8] m (ZoomReader m)
-zReadPacket zr = do
-    header <- I.joinI $ I.takeUpTo 8 I.stream2list
-    case parseHeader (L.pack header) of
-        Just PacketHeader -> do
-            (trackNo, packet) <- readPacket (fiSpecs . zrFileInfo $ zr)
-            case (packet, IM.lookup trackNo (zrTracks zr)) of
-                (Just p, Just tr) -> lift $ (trReadPacket tr) p
-                _                 -> return ()
-            return zr
-        Just SummaryHeader -> do
-            (trackNo, summary) <- readSummary (fiSpecs . zrFileInfo $ zr)
-            case (summary, IM.lookup trackNo (zrTracks zr)) of
-                (Just s, Just tr) -> lift $ (trReadSummary tr) s
-                _                 -> return ()
-            return zr
-        _ -> return zr
 
 readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
