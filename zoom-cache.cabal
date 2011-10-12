@@ -13,7 +13,8 @@ Version:             0.1.0.0
 Synopsis:            A streamable, seekable, zoomable cache file format
 
 -- A longer description of the package.
--- Description:         
+Description:         This library provides a monadic writing and iteratee reading
+                     interface for zoom-cache files.
 
 -- The license under which the package is released.
 License:             BSD3
