@@ -119,10 +119,10 @@ zoomWriteFile Config{..} (path:_)
     w :: (ZoomWrite a, ZoomWrite (TimeStamp, a))
       => TrackType -> [a] -> FilePath -> IO ()
     w ztype d
-        | variable  = withFileWrite (oneTrackVariable ztype label)
+        | variable  = withFileWrite (oneTrack ztype VariableDR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write 1) (zip (map TS [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack ztype rate' label)
+        | otherwise = withFileWrite (oneTrack ztype ConstantDR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write 1) d)
     rate' = fromInteger rate

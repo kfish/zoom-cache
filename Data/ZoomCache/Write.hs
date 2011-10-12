@@ -35,7 +35,6 @@ module Data.ZoomCache.Write (
 
     -- * TrackSpec helpers
     , oneTrack
-    , oneTrackVariable
 ) where
 
 import Blaze.ByteString.Builder hiding (flush)
@@ -178,15 +177,9 @@ openWrite trackMap doRaw path = do
             where
                 trackState = mkTrackState spec (TS 0) 1024
 
--- | Create a track map for a single constant-rate stream of a given type,
--- as track no. 1
-oneTrack :: TrackType -> Rational -> L.ByteString -> TrackMap
-oneTrack ztype rate name = IM.singleton 1 (TrackSpec ztype ConstantDR rate name)
-
--- | Create a track map for a single variable-rate stream of a given type,
--- as track no. 1
-oneTrackVariable :: TrackType -> L.ByteString -> TrackMap
-oneTrackVariable ztype name = IM.singleton 1 (TrackSpec ztype VariableDR 0 name)
+-- | Create a track map for a stream of a given type, as track no. 1
+oneTrack :: TrackType -> DataRateType -> Rational -> L.ByteString -> TrackMap
+oneTrack zType drType rate name = IM.singleton 1 (TrackSpec zType drType rate name)
 
 -- | Query the maximum number of data points to buffer for a given track before
 -- forcing a flush of all buffered data and summaries.
