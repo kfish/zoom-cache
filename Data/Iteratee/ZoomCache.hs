@@ -177,8 +177,8 @@ readPacket :: (Functor m, MonadIO m)
            -> Iteratee [Word8] m (TrackNo, Maybe Packet)
 readPacket specs = do
     trackNo <- zReadInt32
-    entryTime <- TS <$> zReadInt32
-    exitTime <- TS <$> zReadInt32
+    entryTime <- TS <$> zReadInt64
+    exitTime <- TS <$> zReadInt64
     byteLength <- zReadInt32
     count <- zReadInt32
     packet <- case IM.lookup trackNo specs of
@@ -192,7 +192,7 @@ readPacket specs = do
                 ConstantDR -> do
                     return $ take count [unTS entryTime ..]
                 VariableDR -> do
-                    replicateM count zReadInt32
+                    replicateM count zReadInt64
             return $ Just (Packet trackNo entryTime exitTime count d ts)
         Nothing -> do
             I.drop byteLength
@@ -205,8 +205,8 @@ readSummary :: (Functor m, MonadIO m)
 readSummary specs = do
     trackNo <- zReadInt32
     lvl <- zReadInt32
-    entryTime <- TS <$> zReadInt32
-    exitTime <- TS <$> zReadInt32
+    entryTime <- TS <$> zReadInt64
+    exitTime <- TS <$> zReadInt64
     byteLength <- zReadInt32
 
     summary <- case IM.lookup trackNo specs of
@@ -293,7 +293,7 @@ zReadInt32 = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
         u32_to_s32 :: Word32 -> Int32
         u32_to_s32 = fromIntegral
 
-zReadInt64 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int
+zReadInt64 :: (Functor m, MonadIO m) => Iteratee [Word8] m Integer
 zReadInt64 = fromIntegral . u64_to_s64 <$> I.endianRead8 I.MSB
     where
         u64_to_s64 :: Word64 -> Int64

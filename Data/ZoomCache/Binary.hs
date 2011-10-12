@@ -17,6 +17,7 @@
 module Data.ZoomCache.Binary (
     -- * Builders
       encInt
+    , encInt64
     , encDbl
     , fromRational64
     , fromGlobal
@@ -102,8 +103,8 @@ fromSummaryHeader s = mconcat
     [ fromLazyByteString summaryHeader
     , encInt . summaryTrack $ s
     , encInt . summaryLevel $ s
-    , encInt . unTS . summaryEntryTime $ s
-    , encInt . unTS . summaryExitTime $ s
+    , encInt64 . unTS . summaryEntryTime $ s
+    , encInt64 . unTS . summaryExitTime $ s
     ]
 
 ----------------------------------------------------------------------
@@ -117,6 +118,9 @@ fromRational64 r = mconcat
 
 encInt :: forall a . (Integral a) => a -> Builder
 encInt = fromInt32be . fromIntegral
+
+encInt64 :: forall a . (Integral a) => a -> Builder
+encInt64 = fromInt64be . fromIntegral
 
 encDbl :: Double -> Builder
 encDbl = fromWord64be . toWord64

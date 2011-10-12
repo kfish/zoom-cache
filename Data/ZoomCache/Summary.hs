@@ -52,7 +52,7 @@ data Summary = SummaryDouble
     deriving (Show)
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
-summaryDuration :: Summary -> Int
+summaryDuration :: Summary -> Integer
 summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
 -- | Append two Summaries, merging statistical summary data.
