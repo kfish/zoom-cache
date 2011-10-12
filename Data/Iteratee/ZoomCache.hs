@@ -22,6 +22,7 @@ module Data.Iteratee.ZoomCache (
     , iterHeaders
 
     -- * Enumeratee
+    , enumCacheFile
     , enumStream
 
     -- * Iteratee maps
@@ -74,10 +75,7 @@ instance LL.NullPoint Stream where
 mapStream :: (Functor m, MonadIO m)
           => (Stream -> m ())
           -> Iteratee [Word8] m ()
-mapStream f = do
-    fi <- iterHeaders
-    I.joinI . enumStream fi . I.mapChunksM_ $ f
-    return ()
+mapStream = I.joinI . enumCacheFile . I.mapChunksM_
 
 mapPackets :: (Functor m, MonadIO m)
            => (Packet -> m ())
@@ -94,6 +92,12 @@ mapSummaries f = mapStream process
     where
         process (StreamSummary _ s) = f s
         process _                   = return ()
+
+enumCacheFile :: (Functor m, MonadIO m)
+              => I.Enumeratee [Word8] Stream m a
+enumCacheFile iter = do
+    fi <- iterHeaders
+    enumStream fi iter
 
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
