@@ -43,7 +43,7 @@ Build-type:          Simple
 -- Extra-source-files:  
 
 -- Constraint on the version of Cabal needed to build this package.
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 
 
 Library
@@ -77,4 +77,11 @@ Executable zoom-cache
                        MonadCatchIO-transformers,
                        mtl >= 2.0.0.0 && < 3,
                        ui-command
+
+------------------------------------------------------------------------
+-- Git repo
+--
+source-repository head
+  type: git
+  location: git://github.com/kfish/zoom-cache.git
 
