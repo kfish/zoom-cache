@@ -24,9 +24,9 @@ module Data.ZoomCache.Common (
   , Global(..)
   , globalHeader
 
-  -- * FileInfo
-  , FileInfo(..)
-  , mkFileInfo
+  -- * CacheFile
+  , CacheFile(..)
+  , mkCacheFile
   , fiFull
 
   -- * Version
@@ -288,19 +288,19 @@ data DataRateType = ConstantDR | VariableDR
 
 ------------------------------------------------------------
 
--- | Data for a global and track headers
-data FileInfo = FileInfo
-    { fiGlobal :: Global
-    , fiSpecs  :: IntMap TrackSpec
+-- | Global and track headers for a zoom-cache file
+data CacheFile = CacheFile
+    { cfGlobal :: Global
+    , cfSpecs  :: IntMap TrackSpec
     }
 
--- | Create an empty 'FileInfo' using the given 'Global'
-mkFileInfo :: Global -> FileInfo
-mkFileInfo g = FileInfo g IM.empty
+-- | Create an empty 'CacheFile' using the given 'Global'
+mkCacheFile :: Global -> CacheFile
+mkCacheFile g = CacheFile g IM.empty
 
--- | Determine whether all tracks of a 'FileInfo' are specified
-fiFull :: FileInfo -> Bool
-fiFull (FileInfo g specs) = IM.size specs == noTracks g
+-- | Determine whether all tracks of a 'CacheFile' are specified
+fiFull :: CacheFile -> Bool
+fiFull (CacheFile g specs) = IM.size specs == noTracks g
 
 ------------------------------------------------------------
 -- Magic

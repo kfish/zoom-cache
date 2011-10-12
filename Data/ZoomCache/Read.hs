@@ -51,10 +51,10 @@ zoomDumpSummaryLevel lvl = I.fileDriverRandom (mapSummaries (dumpSummaryLevel lv
 
 ----------------------------------------------------------------------
 
-info :: FileInfo -> IO ()
-info FileInfo{..} = do
-    putStrLn . prettyGlobal $ fiGlobal
-    mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ fiSpecs
+info :: CacheFile -> IO ()
+info CacheFile{..} = do
+    putStrLn . prettyGlobal $ cfGlobal
+    mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ cfSpecs
 
 prettyGlobal :: Global -> String
 prettyGlobal Global{..} = unlines

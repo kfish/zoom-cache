@@ -96,21 +96,21 @@ mapSummaries f = mapStream process
         process _                   = return ()
 
 enumStream :: (Functor m, MonadIO m)
-            => FileInfo
+            => CacheFile
             -> I.Enumeratee [Word8] Stream m a
 enumStream = I.unfoldConvStream go
     where
         go :: (Functor m, MonadIO m)
-           => FileInfo
-           -> Iteratee [Word8] m (FileInfo, Stream)
+           => CacheFile
+           -> Iteratee [Word8] m (CacheFile, Stream)
         go fi = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
                 Just PacketHeader -> do
-                    (trackNo, packet) <- readPacket (fiSpecs fi)
+                    (trackNo, packet) <- readPacket (cfSpecs fi)
                     return (fi, StreamPacket trackNo (fromJust packet))
                 Just SummaryHeader -> do
-                    (trackNo, summary) <- readSummary (fiSpecs fi)
+                    (trackNo, summary) <- readSummary (cfSpecs fi)
                     return (fi, StreamSummary trackNo (fromJust summary))
                 _ -> return (fi, StreamNull)
 
@@ -128,26 +128,26 @@ parseHeader h
 -- Global, track headers
 
 iterHeaders :: (Functor m, MonadIO m)
-            => I.Iteratee [Word8] m FileInfo
+            => I.Iteratee [Word8] m CacheFile
 iterHeaders = iterGlobal >>= go
     where
         iterGlobal :: (Functor m, MonadIO m)
-                   => Iteratee [Word8] m FileInfo
+                   => Iteratee [Word8] m CacheFile
         iterGlobal = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
-                Just GlobalHeader -> mkFileInfo <$> readGlobalHeader
+                Just GlobalHeader -> mkCacheFile <$> readGlobalHeader
                 _                 -> error "No global header"
 
         go :: (Functor m, MonadIO m)
-           => FileInfo
-           -> Iteratee [Word8] m FileInfo
+           => CacheFile
+           -> Iteratee [Word8] m CacheFile
         go fi = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
                 Just TrackHeader -> do
                     (trackNo, spec) <- readTrackHeader
-                    let fi' = fi{fiSpecs = IM.insert trackNo spec (fiSpecs fi)}
+                    let fi' = fi{cfSpecs = IM.insert trackNo spec (cfSpecs fi)}
                     if (fiFull fi')
                         then return fi'
                         else go fi'
