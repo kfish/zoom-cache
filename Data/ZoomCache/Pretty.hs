@@ -16,6 +16,7 @@
 module Data.ZoomCache.Pretty (
       prettyGlobal
     , prettyTrackSpec
+    , prettyTimeStamp
     , prettySummary
 ) where
 
@@ -48,6 +49,20 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
     , "\tType:\t" ++ show specType
     , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
     ]
+
+-- | Pretty-print a 'TimeStamp', given a datarate
+prettyTimeStamp :: Rational -> TimeStamp -> String
+prettyTimeStamp r (TS t)
+    | d == 0    = "00:00:00.000"
+    | d < 100   = printf "%02d:%02d:%02d::%02d" hrs minN secN framesN
+    | otherwise = printf "%02d:%02d:%02d.%03d" hrs minN secN msN
+    where
+          d = denominator r
+          n = numerator r
+          msN = quot (1000 * framesN) n
+          (secT, framesN) = quotRem (fromIntegral t*d) n
+          (minT, secN) = quotRem secT 60
+          (hrs, minN) = quotRem minT 60
 
 -- | Pretty-print a 'Summary'
 prettySummary :: Summary -> String
