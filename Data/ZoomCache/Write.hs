@@ -23,11 +23,11 @@ module Data.ZoomCache.Write (
     -- * The ZoomW monad
     , ZoomW
     , withFileWrite
+    , flush
 
     -- * ZoomWHandle IO functions
     , ZoomWHandle
     , openWrite
-    , flush
 
     -- * Watermarks
     , watermark
