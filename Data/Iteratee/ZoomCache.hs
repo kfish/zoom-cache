@@ -54,12 +54,14 @@ import Data.ZoomCache.Summary
 
 data Stream =
     StreamPacket
-        { _strmTrack   :: TrackNo
-        , _strmPacket  :: Packet
+        { _strmFile    :: CacheFile
+        , _strmTrack   :: TrackNo
+        , strmPacket  :: Packet
         }
     | StreamSummary
-        { _strmTrack   :: TrackNo
-        , _strmSummary :: Summary
+        { _strmFile    :: CacheFile
+        , _strmTrack   :: TrackNo
+        , strmSummary :: Summary
         }
     | StreamNull
 
@@ -82,16 +84,16 @@ mapPackets :: (Functor m, MonadIO m)
            -> Iteratee [Word8] m ()
 mapPackets f = mapStream process
     where
-        process (StreamPacket _ p) = f p
-        process _                  = return ()
+        process StreamPacket{..} = f strmPacket
+        process _                = return ()
 
 mapSummaries :: (Functor m, MonadIO m)
              => (Summary -> m ())
              -> Iteratee [Word8] m ()
 mapSummaries f = mapStream process
     where
-        process (StreamSummary _ s) = f s
-        process _                   = return ()
+        process StreamSummary{..} = f strmSummary
+        process _                 = return ()
 
 enumCacheFile :: (Functor m, MonadIO m)
               => I.Enumeratee [Word8] Stream m a
@@ -107,16 +109,16 @@ enumStream = I.unfoldConvStream go
         go :: (Functor m, MonadIO m)
            => CacheFile
            -> Iteratee [Word8] m (CacheFile, Stream)
-        go fi = do
+        go cf = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
                 Just PacketHeader -> do
-                    (trackNo, packet) <- readPacket (cfSpecs fi)
-                    return (fi, StreamPacket trackNo (fromJust packet))
+                    (trackNo, packet) <- readPacket (cfSpecs cf)
+                    return (cf, StreamPacket cf trackNo (fromJust packet))
                 Just SummaryHeader -> do
-                    (trackNo, summary) <- readSummary (cfSpecs fi)
-                    return (fi, StreamSummary trackNo (fromJust summary))
-                _ -> return (fi, StreamNull)
+                    (trackNo, summary) <- readSummary (cfSpecs cf)
+                    return (cf, StreamSummary cf trackNo (fromJust summary))
+                _ -> return (cf, StreamNull)
 
 ------------------------------------------------------------
 
