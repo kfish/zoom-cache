@@ -18,7 +18,7 @@ module Data.Iteratee.ZoomCache (
     -- * Types
       Stream(..)
 
-    -- Parsing iteratees
+    -- * Parsing iteratees
     , iterHeaders
 
     -- * Enumeratee
@@ -54,13 +54,13 @@ import Data.ZoomCache.Summary
 
 data Stream =
     StreamPacket
-        { _strmFile    :: CacheFile
-        , _strmTrack   :: TrackNo
+        { strmFile    :: CacheFile
+        , strmTrack   :: TrackNo
         , strmPacket  :: Packet
         }
     | StreamSummary
-        { _strmFile    :: CacheFile
-        , _strmTrack   :: TrackNo
+        { strmFile    :: CacheFile
+        , strmTrack   :: TrackNo
         , strmSummary :: Summary
         }
     | StreamNull
@@ -74,33 +74,17 @@ instance LL.NullPoint Stream where
 
 ----------------------------------------------------------------------
 
-mapStream :: (Functor m, MonadIO m)
-          => (Stream -> m ())
-          -> Iteratee [Word8] m ()
-mapStream = I.joinI . enumCacheFile . I.mapChunksM_
-
-mapPackets :: (Functor m, MonadIO m)
-           => (Packet -> m ())
-           -> Iteratee [Word8] m ()
-mapPackets f = mapStream process
-    where
-        process StreamPacket{..} = f strmPacket
-        process _                = return ()
-
-mapSummaries :: (Functor m, MonadIO m)
-             => (Summary -> m ())
-             -> Iteratee [Word8] m ()
-mapSummaries f = mapStream process
-    where
-        process StreamSummary{..} = f strmSummary
-        process _                 = return ()
-
+-- | An enumeratee of a zoom-cache file, from the global header onwards.
+-- The global and track headers will be transparently read, and the 
+-- 'CacheFile' visible in the 'Stream' elements.
 enumCacheFile :: (Functor m, MonadIO m)
               => I.Enumeratee [Word8] Stream m a
 enumCacheFile iter = do
     fi <- iterHeaders
     enumStream fi iter
 
+-- | An enumeratee of zoom-cache data, after global and track headers
+-- have been read, or if the 'CacheFile' has been acquired elsewhere.
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
             -> I.Enumeratee [Word8] Stream m a
@@ -133,6 +117,8 @@ parseHeader h
 ------------------------------------------------------------
 -- Global, track headers
 
+-- | Parse only the global and track headers of a zoom-cache file, returning
+-- a 'CacheFile'
 iterHeaders :: (Functor m, MonadIO m)
             => I.Iteratee [Word8] m CacheFile
 iterHeaders = iterGlobal >>= go
@@ -240,6 +226,33 @@ readSummary specs = do
             I.drop byteLength
             return Nothing
     return (trackNo, summary)
+
+----------------------------------------------------------------------
+-- Convenience functions
+
+-- | Map a monadic 'Stream' processing function over an entire zoom-cache file.
+mapStream :: (Functor m, MonadIO m)
+          => (Stream -> m ())
+          -> Iteratee [Word8] m ()
+mapStream = I.joinI . enumCacheFile . I.mapChunksM_
+
+-- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
+mapPackets :: (Functor m, MonadIO m)
+           => (Packet -> m ())
+           -> Iteratee [Word8] m ()
+mapPackets f = mapStream process
+    where
+        process StreamPacket{..} = f strmPacket
+        process _                = return ()
+
+-- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
+mapSummaries :: (Functor m, MonadIO m)
+             => (Summary -> m ())
+             -> Iteratee [Word8] m ()
+mapSummaries f = mapStream process
+    where
+        process StreamSummary{..} = f strmSummary
+        process _                 = return ()
 
 ----------------------------------------------------------------------
 -- zoom-cache datatype parsers
