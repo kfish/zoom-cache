@@ -10,7 +10,7 @@
 -- Stability   : unstable
 -- Portability : unknown
 --
--- Types used throughout zoom-cache
+-- Pretty-printing of zoom-cache types
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Pretty (
@@ -28,6 +28,7 @@ import Data.ZoomCache.Summary
 
 ----------------------------------------------------------------------
 
+-- | Pretty-print a 'Global'
 prettyGlobal :: Global -> String
 prettyGlobal Global{..} = unlines
     [ "Version:\t\t" ++ show vMaj ++ "." ++ show vMin
@@ -39,6 +40,7 @@ prettyGlobal Global{..} = unlines
     where
         Version vMaj vMin = version
 
+-- | Pretty-print a 'TrackSpec'
 prettyTrackSpec :: TrackNo -> TrackSpec -> String
 prettyTrackSpec trackNo TrackSpec{..} = unlines
     [ "Track " ++ show trackNo ++ ":"
@@ -47,6 +49,7 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
     , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
     ]
 
+-- | Pretty-print a 'Summary'
 prettySummary :: Summary -> String
 prettySummary s@SummaryDouble{..} = concat
     [ prettySummaryTimes s
