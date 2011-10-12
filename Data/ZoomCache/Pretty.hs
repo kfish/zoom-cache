@@ -16,12 +16,15 @@
 module Data.ZoomCache.Pretty (
       prettyGlobal
     , prettyTrackSpec
+    , prettySummary
 ) where
 
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Ratio
+import Text.Printf
 
 import Data.ZoomCache.Common
+import Data.ZoomCache.Summary
 
 ----------------------------------------------------------------------
 
@@ -43,6 +46,34 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
     , "\tType:\t" ++ show specType
     , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
     ]
+
+prettySummary :: Summary -> String
+prettySummary s@SummaryDouble{..} = concat
+    [ prettySummaryTimes s
+    , prettySummaryLevel s
+    , printf "\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\t"
+          summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
+    , prettySummaryAvgRMS s
+    ]
+prettySummary s@SummaryInt{..} = concat
+    [ prettySummaryTimes s
+    , prettySummaryLevel s
+    , printf "\tentry: %d\texit: %df\tmin: %d\tmax: %d\t"
+        summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
+    , prettySummaryAvgRMS s
+    ]
+
+prettySummaryTimes :: Summary -> String
+prettySummaryTimes s = printf "[%d - %d]" (unTS $ summaryEntryTime s)
+                                          (unTS $ summaryExitTime s)
+
+prettySummaryLevel :: Summary -> String
+prettySummaryLevel s = printf "lvl: %d" (summaryLevel s)
+
+prettySummaryAvgRMS :: Summary -> String
+prettySummaryAvgRMS s = printf "avg: %.3f\trms: %.3f" (summaryAvg s) (summaryRMS s)
+
+----------------------------------------------------------------------
 
 ratShow :: Rational -> String
 ratShow r
