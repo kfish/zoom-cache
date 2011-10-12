@@ -16,8 +16,7 @@
 
 module Data.Iteratee.ZoomCache (
     -- * Types
-      FileInfo(..)
-    , ZoomStream(..)
+      Stream(..)
 
     -- Parsing iteratees
     , iterHeaders
@@ -52,7 +51,7 @@ import Data.ZoomCache.Summary
 
 ----------------------------------------------------------------------
 
-data ZoomStream =
+data Stream =
     StreamPacket
         { _strmTrack   :: TrackNo
         , _strmPacket  :: Packet
@@ -63,17 +62,17 @@ data ZoomStream =
         }
     | StreamNull
 
-instance LL.Nullable ZoomStream where
+instance LL.Nullable Stream where
     nullC StreamNull = True
     nullC _          = False
 
-instance LL.NullPoint ZoomStream where
+instance LL.NullPoint Stream where
     empty = StreamNull
 
 ----------------------------------------------------------------------
 
 mapStream :: (Functor m, MonadIO m)
-          => (ZoomStream -> m ())
+          => (Stream -> m ())
           -> Iteratee [Word8] m ()
 mapStream f = do
     fi <- iterHeaders
@@ -98,12 +97,12 @@ mapSummaries f = mapStream process
 
 enumStream :: (Functor m, MonadIO m)
             => FileInfo
-            -> I.Enumeratee [Word8] ZoomStream m a
+            -> I.Enumeratee [Word8] Stream m a
 enumStream = I.unfoldConvStream go
     where
         go :: (Functor m, MonadIO m)
            => FileInfo
-           -> Iteratee [Word8] m (FileInfo, ZoomStream)
+           -> Iteratee [Word8] m (FileInfo, Stream)
         go fi = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
