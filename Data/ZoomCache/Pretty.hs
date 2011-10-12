@@ -64,26 +64,28 @@ prettyTimeStamp r (TS t)
           (minT, secN) = quotRem secT 60
           (hrs, minN) = quotRem minT 60
 
--- | Pretty-print a 'Summary'
-prettySummary :: Summary -> String
-prettySummary s@SummaryDouble{..} = concat
-    [ prettySummaryTimes s
+-- | Pretty-print a 'Summary', given a datarate
+prettySummary :: Rational -> Summary -> String
+prettySummary r s@SummaryDouble{..} = concat
+    [ prettySummaryTimes r s
     , prettySummaryLevel s
     , printf "\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\t"
           summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
     , prettySummaryAvgRMS s
     ]
-prettySummary s@SummaryInt{..} = concat
-    [ prettySummaryTimes s
+prettySummary r s@SummaryInt{..} = concat
+    [ prettySummaryTimes r s
     , prettySummaryLevel s
     , printf "\tentry: %d\texit: %df\tmin: %d\tmax: %d\t"
         summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
     , prettySummaryAvgRMS s
     ]
 
-prettySummaryTimes :: Summary -> String
-prettySummaryTimes s = printf "[%d - %d]" (unTS $ summaryEntryTime s)
-                                          (unTS $ summaryExitTime s)
+prettySummaryTimes :: Rational -> Summary -> String
+prettySummaryTimes r s = concat
+    [ "[", (prettyTimeStamp r $ summaryEntryTime s)
+    , "-", (prettyTimeStamp r $ summaryExitTime s), "] "
+    ]
 
 prettySummaryLevel :: Summary -> String
 prettySummaryLevel s = printf "lvl: %d" (summaryLevel s)

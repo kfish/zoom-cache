@@ -43,10 +43,10 @@ zoomDumpFile :: FilePath -> IO ()
 zoomDumpFile = I.fileDriverRandom (mapStream dumpData)
 
 zoomDumpSummary :: FilePath -> IO ()
-zoomDumpSummary = I.fileDriverRandom (mapSummaries dumpSummary)
+zoomDumpSummary = I.fileDriverRandom (mapStream dumpSummary)
 
 zoomDumpSummaryLevel :: Int -> FilePath -> IO ()
-zoomDumpSummaryLevel lvl = I.fileDriverRandom (mapSummaries (dumpSummaryLevel lvl))
+zoomDumpSummaryLevel lvl = I.fileDriverRandom (mapStream (dumpSummaryLevel lvl))
 
 ----------------------------------------------------------------------
 
@@ -55,11 +55,14 @@ info CacheFile{..} = do
     putStrLn . prettyGlobal $ cfGlobal
     mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ cfSpecs
 
+streamRate :: Stream -> Maybe Rational
+streamRate StreamNull = Nothing
+streamRate s          = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
+
 dumpData :: Stream -> IO ()
-dumpData StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
+dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
     where
-        rate = specRate <$> IM.lookup strmTrack (cfSpecs strmFile)
-        pretty = case rate of
+        pretty = case streamRate s of
             Just r  -> prettyTimeStamp r
             Nothing -> show . unTS
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
@@ -68,11 +71,15 @@ dumpData StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
             PDInt is    -> map show is
 dumpData _ = return ()
 
-dumpSummary :: Summary -> IO ()
-dumpSummary = putStrLn . prettySummary
+dumpSummary :: Stream -> IO ()
+dumpSummary s@StreamSummary{..} = case streamRate s of
+    Just r  -> putStrLn $ prettySummary r strmSummary
+    Nothing -> return ()
+dumpSummary _                 = return ()
 
-dumpSummaryLevel :: Int -> Summary -> IO ()
-dumpSummaryLevel level s
-    | level == summaryLevel s = dumpSummary s
-    | otherwise               = return ()
+dumpSummaryLevel :: Int -> Stream -> IO ()
+dumpSummaryLevel level s@StreamSummary{..}
+    | level == summaryLevel strmSummary = dumpSummary s
+    | otherwise                         = return ()
+dumpSummaryLevel _ _ = return ()
 
