@@ -42,11 +42,11 @@ zoomInfoFile path = I.fileDriverRandom iterHeaders path >>= info
 zoomDumpFile :: TrackNo -> FilePath -> IO ()
 zoomDumpFile trackNo = I.fileDriverRandom (mapStream (dumpData trackNo))
 
-zoomDumpSummary :: FilePath -> IO ()
-zoomDumpSummary = I.fileDriverRandom (mapStream dumpSummary)
+zoomDumpSummary :: TrackNo -> FilePath -> IO ()
+zoomDumpSummary trackNo = I.fileDriverRandom (mapStream (dumpSummary trackNo))
 
-zoomDumpSummaryLevel :: Int -> FilePath -> IO ()
-zoomDumpSummaryLevel lvl = I.fileDriverRandom (mapStream (dumpSummaryLevel lvl))
+zoomDumpSummaryLevel :: TrackNo -> Int -> FilePath -> IO ()
+zoomDumpSummaryLevel trackNo lvl = I.fileDriverRandom (mapStream (dumpSummaryLevel trackNo lvl))
 
 ----------------------------------------------------------------------
 
@@ -73,15 +73,17 @@ dumpData trackNo s@StreamPacket{..}
             PDInt is    -> map show is
 dumpData _ _ = return ()
 
-dumpSummary :: Stream -> IO ()
-dumpSummary s@StreamSummary{..} = case streamRate s of
-    Just r  -> putStrLn $ prettySummary r strmSummary
-    Nothing -> return ()
-dumpSummary _                 = return ()
+dumpSummary :: TrackNo -> Stream -> IO ()
+dumpSummary trackNo s@StreamSummary{..}
+    | strmTrack == trackNo = case streamRate s of
+        Just r  -> putStrLn $ prettySummary r strmSummary
+        Nothing -> return ()
+    | otherwise            = return ()
+dumpSummary _ _            = return ()
 
-dumpSummaryLevel :: Int -> Stream -> IO ()
-dumpSummaryLevel level s@StreamSummary{..}
-    | level == summaryLevel strmSummary = dumpSummary s
-    | otherwise                         = return ()
-dumpSummaryLevel _ _ = return ()
+dumpSummaryLevel :: TrackNo -> Int -> Stream -> IO ()
+dumpSummaryLevel trackNo level s@StreamSummary{..}
+    | level == summaryLevel strmSummary && strmTrack == trackNo = dumpSummary trackNo s
+    | otherwise                                                 = return ()
+dumpSummaryLevel _ _ _ = return ()
 

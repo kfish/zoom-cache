@@ -185,10 +185,12 @@ zoomSummary = defCmd {
         }
 
 zoomSummaryHandler :: App () ()
-zoomSummaryHandler = liftIO . f =<< appArgs
+zoomSummaryHandler = do
+    (config, filenames) <- liftIO . processArgs =<< appArgs
+    liftIO . (f (track config)) $ filenames
     where
-        f (lvl:paths) = mapM_ (zoomDumpSummaryLevel (read lvl)) paths
-        f _ = putStrLn "Usage: zoom-cache summary n file.zxd"
+        f trackNo (lvl:paths) = mapM_ (zoomDumpSummaryLevel trackNo (read lvl)) paths
+        f _ _ = putStrLn "Usage: zoom-cache summary n file.zxd"
 
 ------------------------------------------------------------
 -- The Application
