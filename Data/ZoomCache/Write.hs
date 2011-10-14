@@ -380,7 +380,7 @@ mkTrackState spec entry w = TrackWork
             , ztsdEntry = 0.0
             , ztsdExit = 0.0
             , ztsdMin = floatMax
-            , ztsdMax = floatMin
+            , ztsdMax = negate floatMax
             , ztsdSum = 0.0
             , ztsSumSq = 0.0
             }
