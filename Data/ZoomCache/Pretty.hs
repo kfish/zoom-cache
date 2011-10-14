@@ -54,7 +54,9 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
 prettyTimeStamp :: Rational -> TimeStamp -> String
 prettyTimeStamp r (TS t)
     | d == 0    = "00:00:00.000"
-    -- | d < 100   = printf "%02d:%02d:%02d::%02d" hrs minN secN framesN
+    {-
+    | d < 100   = printf "%02d:%02d:%02d::%02d" hrs minN secN framesN
+    -}
     | otherwise = printf "%02d:%02d:%02d.%03d" hrs minN secN msN
     where
           d = denominator r
