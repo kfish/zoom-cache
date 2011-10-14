@@ -169,7 +169,9 @@ zoomDump = defCmd {
         }
 
 zoomDumpHandler :: App () ()
-zoomDumpHandler = mapM_ (liftIO . zoomDumpFile) =<< appArgs
+zoomDumpHandler = do
+    (config, filenames) <- liftIO . processArgs =<< appArgs
+    mapM_ (liftIO . zoomDumpFile (track config)) filenames
 
 ------------------------------------------------------------
 

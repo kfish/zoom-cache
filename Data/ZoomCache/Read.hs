@@ -39,8 +39,8 @@ import Data.ZoomCache.Summary
 zoomInfoFile :: FilePath -> IO ()
 zoomInfoFile path = I.fileDriverRandom iterHeaders path >>= info
 
-zoomDumpFile :: FilePath -> IO ()
-zoomDumpFile = I.fileDriverRandom (mapStream dumpData)
+zoomDumpFile :: TrackNo -> FilePath -> IO ()
+zoomDumpFile trackNo = I.fileDriverRandom (mapStream (dumpData trackNo))
 
 zoomDumpSummary :: FilePath -> IO ()
 zoomDumpSummary = I.fileDriverRandom (mapStream dumpSummary)
@@ -59,17 +59,19 @@ streamRate :: Stream -> Maybe Rational
 streamRate StreamNull = Nothing
 streamRate s          = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
 
-dumpData :: Stream -> IO ()
-dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
+dumpData :: TrackNo -> Stream -> IO ()
+dumpData trackNo s@StreamPacket{..}
+    | strmTrack == trackNo = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
+    | otherwise            = return ()
     where
         pretty = case streamRate s of
             Just r  -> prettyTimeStamp r
             Nothing -> show . unTS
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
         vals = case packetData strmPacket of
-            PDDouble ds -> map show ds
+            PDDouble ds -> map (printf "%.3f") ds
             PDInt is    -> map show is
-dumpData _ = return ()
+dumpData _ _ = return ()
 
 dumpSummary :: Stream -> IO ()
 dumpSummary s@StreamSummary{..} = case streamRate s of
