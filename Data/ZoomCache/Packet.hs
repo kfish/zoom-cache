@@ -15,21 +15,20 @@
 module Data.ZoomCache.Packet (
     -- * Types
       Packet(..)
-    , PacketData(..)
 ) where
+
+import Data.Dynamic
 
 import Data.ZoomCache.Common
 
 ------------------------------------------------------------
-
-data PacketData = PDDouble [Double] | PDInt [Int]
 
 data Packet = Packet
     { packetTrack      :: TrackNo
     , packetEntryTime  :: TimeStamp
     , packetExitTime   :: TimeStamp
     , packetCount      :: Int
-    , packetData       :: PacketData
+    , packetData       :: [Dynamic]
     , packetTimeStamps :: [TimeStamp]
     }
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
@@ -23,9 +24,11 @@ module Data.ZoomCache.Read (
 ) where
 
 import Control.Applicative ((<$>))
+import Data.Dynamic
 import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
+import Data.Maybe (catMaybes)
 import Text.Printf
 
 import Data.Iteratee.ZoomCache
@@ -68,9 +71,14 @@ dumpData trackNo s@StreamPacket{..}
             Just r  -> prettyTimeStamp r
             Nothing -> show . unTS
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
-        vals = case packetData strmPacket of
-            PDDouble ds -> map (printf "%.3f") ds
-            PDInt is    -> map show is
+        ds = packetData strmPacket
+        raws :: forall a. Typeable a => [a]
+        raws = catMaybes $ map fromDynamic ds
+        dsType = dynTypeRep <$> take 1 ds
+        vals = if dsType == [typeRepDouble]
+                   then map (printf "%.3f") (raws :: [Double])
+                   else map show (raws :: [Int])
+        typeRepDouble = typeOf (undefined :: Double)
 dumpData _ _ = return ()
 
 dumpSummary :: TrackNo -> Stream -> IO ()

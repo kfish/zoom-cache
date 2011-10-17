@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -35,6 +36,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import qualified Data.ByteString.Lazy as L
+import Data.Dynamic
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
@@ -185,9 +187,9 @@ readPacket specs = do
         Just TrackSpec{..} -> do
             d <- case specType of
                 ZDouble -> do
-                    PDDouble <$> replicateM count zRead
+                    map toDyn <$> replicateM count zReadFloat64be
                 ZInt -> do
-                    PDInt <$> replicateM count zRead
+                    map toDyn <$> replicateM count zReadInt32
             ts <- map TS <$> case specDRType of
                 ConstantDR -> do
                     return $ take count [unTS entryTime ..]
