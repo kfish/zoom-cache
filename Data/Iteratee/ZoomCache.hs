@@ -185,9 +185,9 @@ readPacket specs = do
         Just TrackSpec{..} -> do
             d <- case specType of
                 ZDouble -> do
-                    PDDouble <$> replicateM count zReadFloat64be
+                    PDDouble <$> replicateM count zRead
                 ZInt -> do
-                    PDInt <$> replicateM count zReadInt32
+                    PDInt <$> replicateM count zRead
             ts <- map TS <$> case specDRType of
                 ConstantDR -> do
                     return $ take count [unTS entryTime ..]
@@ -311,3 +311,17 @@ readRational64 = do
     if (den == 0)
         then return 0
         else return $ (fromIntegral num) % (fromIntegral den)
+
+----------------------------------------------------------------------
+
+class ZReadable a where
+    zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
+    zStreamType :: (a, TrackType)
+
+instance ZReadable Double where
+    zRead = zReadFloat64be
+    zStreamType = (undefined, ZDouble)
+
+instance ZReadable Int where
+    zRead = zReadInt32
+    zStreamType = (undefined, ZInt)
