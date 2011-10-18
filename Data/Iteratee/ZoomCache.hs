@@ -185,11 +185,7 @@ readPacket specs = do
     count <- zReadInt32
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
-            d <- case specType of
-                ZDouble -> do
-                    map toDyn <$> replicateM count zReadFloat64be
-                ZInt -> do
-                    map toDyn <$> replicateM count zReadInt32
+            d <- replicateM count (dynRead specType)
             ts <- map TS <$> case specDRType of
                 ConstantDR -> do
                     return $ take count [unTS entryTime ..]
@@ -315,6 +311,12 @@ readRational64 = do
         else return $ (fromIntegral num) % (fromIntegral den)
 
 ----------------------------------------------------------------------
+
+dynRead :: (Functor m, MonadIO m)
+        => TrackType
+        -> Iteratee [Word8] m Dynamic
+dynRead ZDouble = fmap toDyn zReadFloat64be
+dynRead ZInt = fmap toDyn zReadInt32
 
 class ZReadable a where
     zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
