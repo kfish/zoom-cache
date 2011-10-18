@@ -58,7 +58,7 @@ data Stream =
     StreamPacket
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmPacket  :: Packet
+        , strmPacket  :: Packet [Dynamic]
         }
     | StreamSummary
         { strmFile    :: CacheFile
@@ -176,7 +176,7 @@ readTrackHeader = do
 
 readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
-           -> Iteratee [Word8] m (TrackNo, Maybe Packet)
+           -> Iteratee [Word8] m (TrackNo, Maybe (Packet [Dynamic]))
 readPacket specs = do
     trackNo <- zReadInt32
     entryTime <- TS <$> zReadInt64
@@ -236,7 +236,7 @@ mapStream = I.joinI . enumCacheFile . I.mapChunksM_
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
 mapPackets :: (Functor m, MonadIO m)
-           => (Packet -> m ())
+           => ((Packet [Dynamic]) -> m ())
            -> Iteratee [Word8] m ()
 mapPackets f = mapStream process
     where

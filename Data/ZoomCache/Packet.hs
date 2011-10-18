@@ -17,18 +17,16 @@ module Data.ZoomCache.Packet (
       Packet(..)
 ) where
 
-import Data.Dynamic
-
 import Data.ZoomCache.Common
 
 ------------------------------------------------------------
 
-data Packet = Packet
+data Packet a = Packet
     { packetTrack      :: TrackNo
     , packetEntryTime  :: TimeStamp
     , packetExitTime   :: TimeStamp
     , packetCount      :: Int
-    , packetData       :: [Dynamic]
+    , packetData       :: a
     , packetTimeStamps :: [TimeStamp]
     }
 
