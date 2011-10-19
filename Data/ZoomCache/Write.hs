@@ -50,7 +50,7 @@ import System.IO
 
 import Data.ZoomCache.Binary
 import Data.ZoomCache.Common
-import Data.ZoomCache.Summary
+import Data.ZoomCache.Types
 import Numeric.FloatMinMax
 
 ------------------------------------------------------------

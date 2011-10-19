@@ -25,7 +25,7 @@ import Data.Ratio
 import Text.Printf
 
 import Data.ZoomCache.Common
-import Data.ZoomCache.Summary
+import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 

@@ -35,7 +35,6 @@ import Data.Iteratee.ZoomCache
 import Data.ZoomCache.Common
 import Data.ZoomCache.Pretty
 import Data.ZoomCache.Types
-import Data.ZoomCache.Summary
 
 ------------------------------------------------------------
 
