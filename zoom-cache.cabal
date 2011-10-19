@@ -51,9 +51,9 @@ Library
   -- Modules exported by the library.
   Exposed-modules:     Data.ZoomCache.Binary
                        Data.ZoomCache.Common
+                       Data.ZoomCache.Dump
                        Data.ZoomCache.Packet
                        Data.ZoomCache.Pretty
-                       Data.ZoomCache.Read
                        Data.ZoomCache.Summary
                        Data.ZoomCache.Write
                        Data.Iteratee.ZoomCache

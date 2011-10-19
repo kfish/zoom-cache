@@ -4,7 +4,7 @@
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
--- Module      : Data.ZoomCache.Write
+-- Module      : Data.ZoomCache.Dump
 -- Copyright   : Conrad Parker
 -- License     : BSD3-style (see LICENSE)
 --
@@ -15,7 +15,7 @@
 -- Reading of ZoomCache files.
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.Read (
+module Data.ZoomCache.Dump (
     -- * Functions
       zoomDumpFile
     , zoomDumpSummary
