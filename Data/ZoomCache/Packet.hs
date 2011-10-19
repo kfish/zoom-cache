@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -13,11 +14,31 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Packet (
+    -- * Classes
+      ZoomRead(..)
+    , PacketData(..)
+
     -- * Types
-      Packet(..)
+    , Packet(..)
 ) where
 
+import Data.Dynamic
+
 import Data.ZoomCache.Common
+
+------------------------------------------------------------
+
+class ZoomRead a where
+    data PacketData a :: *
+
+instance ZoomRead Dynamic where
+    data PacketData Dynamic = PDDynamic [Dynamic]
+
+instance ZoomRead Double where
+    data PacketData Double = PDDouble [Double]
+
+instance ZoomRead Int where
+    data PacketData Int = PDInt [Int]
 
 ------------------------------------------------------------
 
@@ -26,7 +47,7 @@ data Packet a = Packet
     , packetEntryTime  :: TimeStamp
     , packetExitTime   :: TimeStamp
     , packetCount      :: Int
-    , packetData       :: a
+    , packetData       :: PacketData a
     , packetTimeStamps :: [TimeStamp]
     }
 

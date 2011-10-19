@@ -71,7 +71,7 @@ dumpData trackNo s@StreamPacket{..}
             Just r  -> prettyTimeStamp r
             Nothing -> show . unTS
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
-        ds = packetData strmPacket
+        PDDynamic ds = packetData strmPacket
         raws :: forall a. Typeable a => [a]
         raws = catMaybes $ map fromDynamic ds
         dsType = dynTypeRep <$> take 1 ds
