@@ -2,7 +2,7 @@
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
--- Module      : Data.ZoomCache.Write
+-- Module      : Data.ZoomCache.Types
 -- Copyright   : Conrad Parker
 -- License     : BSD3-style (see LICENSE)
 --
@@ -13,7 +13,7 @@
 -- ZoomCache packet definition
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.Packet (
+module Data.ZoomCache.Types (
     -- * Classes
       ZoomRead(..)
     , PacketData(..)

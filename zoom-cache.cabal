@@ -52,9 +52,9 @@ Library
   Exposed-modules:     Data.ZoomCache.Binary
                        Data.ZoomCache.Common
                        Data.ZoomCache.Dump
-                       Data.ZoomCache.Packet
                        Data.ZoomCache.Pretty
                        Data.ZoomCache.Summary
+                       Data.ZoomCache.Types
                        Data.ZoomCache.Write
                        Data.Iteratee.ZoomCache
                        Numeric.FloatMinMax
