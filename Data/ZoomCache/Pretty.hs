@@ -67,33 +67,21 @@ prettyTimeStamp r (TS t)
           (hrs, minN) = quotRem minT 60
 
 -- | Pretty-print a 'Summary', given a datarate
-prettySummary :: Rational -> Summary -> String
-prettySummary r s@SummaryDouble{..} = concat
+prettySummary :: (ZoomSummary a) => Rational -> Summary a -> String
+prettySummary r s = concat
     [ prettySummaryTimes r s
     , prettySummaryLevel s
-    , printf "\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\t"
-          summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
-    , prettySummaryAvgRMS s
-    ]
-prettySummary r s@SummaryInt{..} = concat
-    [ prettySummaryTimes r s
-    , prettySummaryLevel s
-    , printf "\tentry: %d\texit: %df\tmin: %d\tmax: %d\t"
-        summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
-    , prettySummaryAvgRMS s
+    , prettySummaryData (summaryData s)
     ]
 
-prettySummaryTimes :: Rational -> Summary -> String
+prettySummaryTimes :: (ZoomSummary a) => Rational -> Summary a -> String
 prettySummaryTimes r s = concat
     [ "[", (prettyTimeStamp r $ summaryEntryTime s)
     , "-", (prettyTimeStamp r $ summaryExitTime s), "] "
     ]
 
-prettySummaryLevel :: Summary -> String
+prettySummaryLevel :: (ZoomSummary a) => Summary a -> String
 prettySummaryLevel s = printf "lvl: %d" (summaryLevel s)
-
-prettySummaryAvgRMS :: Summary -> String
-prettySummaryAvgRMS s = printf "avg: %.3f\trms: %.3f" (summaryAvg s) (summaryRMS s)
 
 ----------------------------------------------------------------------
 

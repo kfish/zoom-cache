@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -51,7 +52,6 @@ import System.IO
 import Data.ZoomCache.Binary
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
-import Numeric.FloatMinMax
 
 ------------------------------------------------------------
 
@@ -65,60 +65,47 @@ class ZoomWrite t where
 instance ZoomWrite Double where
     write = writeDouble
 
+{-
 instance ZoomWrite Int where
     write = writeInt
+-}
 
 instance ZoomWrite (TimeStamp, Double) where
     write = writeDoubleVBR
 
+{-
 instance ZoomWrite (TimeStamp, Int) where
     write = writeIntVBR
+-}
 
 ------------------------------------------------------------
 
-data ZoomWHandle = ZoomWHandle
+data ZoomWHandle a = ZoomWHandle
     { whHandle    :: Handle
-    , whTrackWork :: IntMap TrackWork
-    , whDeferred  :: IntMap [Summary]
+    , whTrackWork :: IntMap (TrackWork a)
+    , whDeferred  :: IntMap [Summary a]
     , whWriteData :: Bool
     }
 
-data TrackWork = TrackWork
+data TrackWork a = TrackWork
     { twSpec      :: TrackSpec
     , twBuilder   :: Builder
     , twTSBuilder :: Builder
     , twCount     :: Int
     , twWatermark :: Int
-    , twLevels    :: IntMap (Maybe Summary)
+    , twLevels    :: IntMap (Maybe (Summary a))
     , twEntryTime :: TimeStamp
     , twExitTime  :: TimeStamp
-    , twData      :: ZTSData
-    }
-
-data ZTSData = ZTSDouble
-    { ztsTime  :: TimeStamp
-    , ztsdEntry :: Double
-    , ztsdExit  :: Double
-    , ztsdMin   :: Double
-    , ztsdMax   :: Double
-    , ztsdSum   :: Double
-    , ztsSumSq  :: Double
-    }
-    | ZTSInt
-    { ztsTime  :: TimeStamp
-    , ztsiEntry :: Int
-    , ztsiExit  :: Int
-    , ztsiMin   :: Int
-    , ztsiMax   :: Int
-    , ztsiSum   :: Int
-    , ztsSumSq  :: Double
+    , twData      :: SummaryWork a
     }
 
 ----------------------------------------------------------------------
 -- Public API
 
+type HurdyDurr = Double
+
 -- | A StateT IO monad for writing a ZoomCache file
-type ZoomW = StateT ZoomWHandle IO
+type ZoomW = StateT (ZoomWHandle HurdyDurr) IO
 
 -- | Run a @ZoomW ()@ action on a given file handle, using the specified
 -- 'TrackMap' specification
@@ -151,17 +138,19 @@ flush = do
         , whDeferred = IM.empty
         }
     where
-        flushTrack :: TrackWork -> TrackWork
+        flushTrack :: (ZoomSummaryWrite a)
+                   => TrackWork a -> TrackWork a
         flushTrack tw = d{twLevels = twLevels tw}
             where
                 d = mkTrackState (twSpec tw) (twExitTime tw) (twWatermark tw)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
-openWrite :: TrackMap
+openWrite :: (ZoomSummaryWrite a)
+          => TrackMap
           -> Bool              -- ^ Whether or not to write raw data packets.
                                -- If False, only summary blocks are written.
           -> FilePath
-          -> IO ZoomWHandle
+          -> IO (ZoomWHandle a)
 openWrite trackMap doRaw path = do
     h <- openFile path WriteMode
     let global = mkGlobal (IM.size trackMap)
@@ -170,9 +159,10 @@ openWrite trackMap doRaw path = do
     mapM_ (uncurry (writeTrackHeader h)) (IM.assocs trackMap)
     return $ ZoomWHandle h tracks IM.empty doRaw
     where
-        addTrack :: TrackNo -> TrackSpec
-                 -> IntMap TrackWork
-                 -> IntMap TrackWork
+        addTrack :: (ZoomSummaryWrite a)
+                 => TrackNo -> TrackSpec
+                 -> IntMap (TrackWork a)
+                 -> IntMap (TrackWork a)
         addTrack trackNo spec = IM.insert trackNo trackState
             where
                 trackState = mkTrackState spec (TS 0) 1024
@@ -193,7 +183,7 @@ watermark trackNo =  do
 setWatermark :: TrackNo -> Int -> ZoomW ()
 setWatermark trackNo w = modifyTrack trackNo f
     where
-        f :: TrackWork -> TrackWork
+        f :: TrackWork a -> TrackWork a
         f tw = tw { twWatermark = w }
 
 ----------------------------------------------------------------------
@@ -246,12 +236,12 @@ flushIfNeeded trackNo = do
         Just track -> when (flushNeeded track) flush
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
     where
-        flushNeeded :: TrackWork -> Bool
+        flushNeeded :: TrackWork a -> Bool
         flushNeeded TrackWork{..} = twCount >= twWatermark
 
-writeData :: (ZoomWrite a)
+writeData :: (ZoomWrite a, a ~ HurdyDurr)
           => (a -> Builder)
-          -> (Int -> TimeStamp -> a -> ZTSData -> ZTSData)
+          -> (Int -> TimeStamp -> a -> SummaryWork a -> SummaryWork a)
           -> TrackNo -> a -> ZoomW ()
 writeData builder updater trackNo d = do
     incTime trackNo
@@ -266,9 +256,9 @@ writeData builder updater trackNo d = do
         }
     flushIfNeeded trackNo
 
-writeDataVBR :: (ZoomWrite a)
+writeDataVBR :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
              => (a -> Builder)
-             -> (Int -> TimeStamp -> a -> ZTSData -> ZTSData)
+             -> (Int -> TimeStamp -> a -> SummaryWork a -> SummaryWork a)
              -> TrackNo -> (TimeStamp, a) -> ZoomW ()
 writeDataVBR builder updater trackNo (t, d) = do
     setTime trackNo t
@@ -288,44 +278,18 @@ writeDataVBR builder updater trackNo (t, d) = do
     flushIfNeeded trackNo
 
 writeDouble :: TrackNo -> Double -> ZoomW ()
-writeDouble = writeData (fromWord64be . toWord64) updateZTSDouble
+writeDouble = writeData (fromWord64be . toWord64) updateSummaryData
 
 writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
-writeDoubleVBR = writeDataVBR (fromWord64be . toWord64) updateZTSDouble
+writeDoubleVBR = writeDataVBR (fromWord64be . toWord64) updateSummaryData
 
-updateZTSDouble :: Int -> TimeStamp -> Double -> ZTSData -> ZTSData
-updateZTSDouble count t d ZTSDouble{..} = ZTSDouble
-    { ztsTime = t
-    , ztsdEntry = if count == 0 then d else ztsdEntry
-    , ztsdExit = d
-    , ztsdMin = min ztsdMin d
-    , ztsdMax = max ztsdMax d
-    , ztsdSum = ztsdSum + (d * dur)
-    , ztsSumSq = ztsSumSq + (d*d * dur)
-    }
-    where
-        dur = fromIntegral $ (unTS t) - (unTS ztsTime)
-updateZTSDouble _ _ _ ZTSInt{..} = error "updateZTSDouble on Int data"
-
+{- XXX KEEP THIS
 writeInt :: TrackNo -> Int -> ZoomW ()
-writeInt = writeData encInt updateZTSInt
+writeInt = writeData encInt updateSummaryData
 
 writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
-writeIntVBR = writeDataVBR encInt updateZTSInt
-
-updateZTSInt :: Int -> TimeStamp  -> Int -> ZTSData -> ZTSData
-updateZTSInt count t i ZTSInt{..} = ZTSInt
-    { ztsTime = t
-    , ztsiEntry = if count == 0 then i else ztsiEntry
-    , ztsiExit = i
-    , ztsiMin = min ztsiMin i
-    , ztsiMax = max ztsiMax i
-    , ztsiSum = ztsiSum + (i * dur)
-    , ztsSumSq = ztsSumSq + fromIntegral (i*i * dur)
-    }
-    where
-        dur = fromIntegral $ (unTS t) - (unTS ztsTime)
-updateZTSInt _ _ _ ZTSDouble{..} = error "updateZTSInt on Double data"
+writeIntVBR = writeDataVBR encInt updateSummaryData
+-}
 
 ----------------------------------------------------------------------
 -- Global
@@ -342,13 +306,15 @@ mkGlobal n = Global
 ----------------------------------------------------------------------
 -- TrackState
 
-modifyTracks :: (IntMap TrackWork -> IntMap TrackWork) -> ZoomW ()
+modifyTracks :: (ZoomSummaryWrite a, a ~ HurdyDurr)
+             => (IntMap (TrackWork a) -> IntMap (TrackWork a)) -> ZoomW ()
 modifyTracks f = modify (\z -> z { whTrackWork = f (whTrackWork z) })
 
-modifyTrack :: TrackNo -> (TrackWork -> TrackWork) -> ZoomW ()
+modifyTrack :: (ZoomSummaryWrite a, a ~ HurdyDurr)
+            => TrackNo -> (TrackWork a -> TrackWork a) -> ZoomW ()
 modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
-bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
+bsFromTrack :: TrackNo -> TrackWork a -> L.ByteString
 bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     [ fromLazyByteString packetHeader
     , encInt trackNo
@@ -362,7 +328,8 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     where
         len = L.length . toLazyByteString
 
-mkTrackState :: TrackSpec -> TimeStamp -> Int -> TrackWork
+mkTrackState :: (ZoomSummaryWrite a)
+             => TrackSpec -> TimeStamp -> Int -> TrackWork a
 mkTrackState spec entry w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
@@ -372,65 +339,38 @@ mkTrackState spec entry w = TrackWork
         , twLevels = IM.empty
         , twEntryTime = entry
         , twExitTime = entry
-        , twData = initZTSData (specType spec)
+        , twData = initSummaryWork entry -- (specType spec)
         }
-    where
-        initZTSData ZDouble = ZTSDouble
-            { ztsTime = entry
-            , ztsdEntry = 0.0
-            , ztsdExit = 0.0
-            , ztsdMin = floatMax
-            , ztsdMax = negate floatMax
-            , ztsdSum = 0.0
-            , ztsSumSq = 0.0
-            }
-        initZTSData ZInt = ZTSInt
-            { ztsTime = entry
-            , ztsiEntry = 0
-            , ztsiExit = 0
-            , ztsiMin = maxBound
-            , ztsiMax = minBound
-            , ztsiSum = 0
-            , ztsSumSq = 0
-            }
 
 ----------------------------------------------------------------------
 -- Summary
 
-flushSummary :: TrackNo -> TrackWork -> ZoomW ()
+flushSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr)
+             => TrackNo -> TrackWork a -> ZoomW ()
 flushSummary trackNo trackState@TrackWork{..} =
     pushSummary trackState (mkSummary trackNo trackState)
 
-mkSummary :: TrackNo -> TrackWork -> Summary
+mkSummary :: (ZoomSummaryWrite a) => TrackNo -> TrackWork a -> Summary a
 mkSummary trackNo TrackWork{..} = mk (specType twSpec)
     where
-        mk ZDouble = SummaryDouble
+        mk ZDouble = Summary
             { summaryTrack = trackNo
             , summaryLevel = 1
             , summaryEntryTime = twEntryTime
             , summaryExitTime = twExitTime
-            , summaryDoubleEntry = ztsdEntry twData
-            , summaryDoubleExit = ztsdExit twData
-            , summaryDoubleMin = ztsdMin twData
-            , summaryDoubleMax = ztsdMax twData
-            , summaryAvg = ztsdSum twData / dur
-            , summaryRMS = sqrt $ ztsSumSq  twData / dur
+            , summaryData = mkSummaryData dur twData
             }
-        mk ZInt = SummaryInt
+        mk ZInt = Summary
             { summaryTrack = trackNo
             , summaryLevel = 1
             , summaryEntryTime = twEntryTime
             , summaryExitTime = twExitTime
-            , summaryIntEntry = ztsiEntry twData
-            , summaryIntExit = ztsiExit twData
-            , summaryIntMin = ztsiMin twData
-            , summaryIntMax = ztsiMax twData
-            , summaryAvg = fromIntegral (ztsiSum twData) / dur
-            , summaryRMS = sqrt $ ztsSumSq  twData / dur
+            , summaryData = mkSummaryData dur twData
             }
         dur = fromIntegral $ (unTS twExitTime) - (unTS twEntryTime)
 
-pushSummary :: TrackWork -> Summary -> ZoomW ()
+pushSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr)
+            => TrackWork a -> Summary a -> ZoomW ()
 pushSummary zt s = do
     deferSummary s
     case IM.lookup (summaryLevel s) (twLevels zt) of
@@ -441,11 +381,12 @@ pushSummary zt s = do
         _                -> do
             insert (Just s)
     where
-        insert :: Maybe Summary -> ZoomW ()
+        insert :: (ZoomSummaryWrite a, a ~ HurdyDurr)
+               => Maybe (Summary a) -> ZoomW ()
         insert x = modifyTrack (summaryTrack s) (\ztt ->
             ztt { twLevels = IM.insert (summaryLevel s) x (twLevels ztt) } )
 
-deferSummary :: Summary -> ZoomW ()
+deferSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr) => Summary a -> ZoomW ()
 deferSummary s = do
     modify $ \z -> z
         { whDeferred = IM.alter f (summaryLevel s) (whDeferred z) }
@@ -453,7 +394,7 @@ deferSummary s = do
         f Nothing        = Just [s]
         f (Just pending) = Just (pending ++ [s])
 
-writeSummary :: Summary -> ZoomW ()
+writeSummary :: (ZoomSummaryWrite a) => Summary a -> ZoomW ()
 writeSummary s = do
     h <- gets whHandle
     liftIO . L.hPut h . toLazyByteString . fromSummary $ s

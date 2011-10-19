@@ -62,7 +62,7 @@ data Stream =
     | StreamSummary
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmSummary :: Summary
+        , strmSummary :: Summary Dynamic
         }
     | StreamNull
 
@@ -198,7 +198,7 @@ readPacket specs = do
 
 readSummary :: (Functor m, MonadIO m)
             => IntMap TrackSpec
-            -> Iteratee [Word8] m (TrackNo, Maybe Summary)
+            -> Iteratee [Word8] m (TrackNo, Maybe (Summary Dynamic))
 readSummary specs = do
     trackNo <- zReadInt32
     lvl <- zReadInt32
@@ -212,13 +212,19 @@ readSummary specs = do
                 ZDouble -> do
                     let n = flip div 8 byteLength
                     [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-                    return $ Just (SummaryDouble trackNo lvl entryTime exitTime
-                                       en ex mn mx avg rms)
+                    return $ Just (Summary trackNo lvl entryTime exitTime
+                                      (SummaryDynamic $
+                                          toDyn (SummaryDouble en ex mn mx avg rms)
+                                      )
+                                  )
                 ZInt -> do
                     [en,ex,mn,mx] <- replicateM 4 zReadInt32
                     [avg,rms] <- replicateM 2 zReadFloat64be
-                    return $ Just (SummaryInt trackNo lvl entryTime exitTime
-                                       en ex mn mx avg rms)
+                    return $ Just (Summary trackNo lvl entryTime exitTime
+                                       (SummaryDynamic $
+                                           toDyn (SummaryInt en ex mn mx avg rms)
+                                       )
+                                  )
         Nothing -> do
             I.drop byteLength
             return Nothing
@@ -235,7 +241,7 @@ mapStream = I.joinI . enumCacheFile . I.mapChunksM_
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
 mapPackets :: (Functor m, MonadIO m)
-           => ((Packet Dynamic) -> m ())
+           => (Packet Dynamic -> m ())
            -> Iteratee [Word8] m ()
 mapPackets f = mapStream process
     where
@@ -244,7 +250,7 @@ mapPackets f = mapStream process
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
 mapSummaries :: (Functor m, MonadIO m)
-             => (Summary -> m ())
+             => (Summary Dynamic -> m ())
              -> Iteratee [Word8] m ()
 mapSummaries f = mapStream process
     where
