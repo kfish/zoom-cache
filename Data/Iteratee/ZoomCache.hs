@@ -62,7 +62,7 @@ data Stream =
     | StreamSummary
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmSummary :: Summary Dynamic
+        , strmSummary :: OpaqueSummary
         }
     | StreamNull
 
@@ -198,7 +198,7 @@ readPacket specs = do
 
 readSummary :: (Functor m, MonadIO m)
             => IntMap TrackSpec
-            -> Iteratee [Word8] m (TrackNo, Maybe (Summary Dynamic))
+            -> Iteratee [Word8] m (TrackNo, Maybe OpaqueSummary)
 readSummary specs = do
     trackNo <- zReadInt32
     lvl <- zReadInt32
@@ -212,19 +212,15 @@ readSummary specs = do
                 ZDouble -> do
                     let n = flip div 8 byteLength
                     [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
-                    return $ Just (Summary trackNo lvl entryTime exitTime
-                                      (SummaryDynamic $
-                                          toDyn (SummaryDouble en ex mn mx avg rms)
-                                      )
-                                  )
+                    return . Just . mkOpaqueSummary $
+                        Summary trackNo lvl entryTime exitTime
+                            (SummaryDouble en ex mn mx avg rms)
                 ZInt -> do
                     [en,ex,mn,mx] <- replicateM 4 zReadInt32
                     [avg,rms] <- replicateM 2 zReadFloat64be
-                    return $ Just (Summary trackNo lvl entryTime exitTime
-                                       (SummaryDynamic $
-                                           toDyn (SummaryInt en ex mn mx avg rms)
-                                       )
-                                  )
+                    return . Just . mkOpaqueSummary $
+                        Summary trackNo lvl entryTime exitTime
+                            (SummaryInt en ex mn mx avg rms)
         Nothing -> do
             I.drop byteLength
             return Nothing
@@ -250,7 +246,7 @@ mapPackets f = mapStream process
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
 mapSummaries :: (Functor m, MonadIO m)
-             => (Summary Dynamic -> m ())
+             => (OpaqueSummary -> m ())
              -> Iteratee [Word8] m ()
 mapSummaries f = mapStream process
     where

@@ -83,14 +83,17 @@ dumpData _ _ = return ()
 dumpSummary :: TrackNo -> Stream -> IO ()
 dumpSummary trackNo s@StreamSummary{..}
     | strmTrack == trackNo = case streamRate s of
-        Just r  -> putStrLn $ prettySummary r strmSummary
+        Just r  -> putStrLn $ f r strmSummary
         Nothing -> return ()
     | otherwise            = return ()
-dumpSummary _ _            = return ()
+    where
+        f r (OpSummary a) = prettySummary r a
+dumpSummary _ _           = return ()
 
 dumpSummaryLevel :: TrackNo -> Int -> Stream -> IO ()
 dumpSummaryLevel trackNo level s@StreamSummary{..}
-    | level == summaryLevel strmSummary && strmTrack == trackNo = dumpSummary trackNo s
-    | otherwise                                                 = return ()
+    | level == opLevel strmSummary && strmTrack == trackNo = dumpSummary trackNo s
+    | otherwise                                            = return ()
+    where opLevel (OpSummary a) = summaryLevel a
 dumpSummaryLevel _ _ _ = return ()
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -21,6 +22,9 @@ module Data.ZoomCache.Types (
     , PacketData(..)
     , ZoomSummary(..)
     , ZoomSummaryWrite(..)
+
+    , OpaqueSummary(..)
+    , mkOpaqueSummary
 
     -- * Types
     , Packet(..)
@@ -79,6 +83,11 @@ data Packet a = Packet
     }
 
 ------------------------------------------------------------
+
+data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
+
+mkOpaqueSummary :: ZoomSummary a => Summary a -> OpaqueSummary
+mkOpaqueSummary = OpSummary
 
 class ZoomSummary a where
     data SummaryData a :: *
