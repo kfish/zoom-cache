@@ -142,7 +142,7 @@ flush = do
                    => TrackWork a -> TrackWork a
         flushTrack tw = d{twLevels = twLevels tw}
             where
-                d = mkTrackState (twSpec tw) (twExitTime tw) (twWatermark tw)
+                d = mkTrackWork (twSpec tw) (twExitTime tw) (twWatermark tw)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: (ZoomSummaryWrite a)
@@ -165,7 +165,7 @@ openWrite trackMap doRaw path = do
                  -> IntMap (TrackWork a)
         addTrack trackNo spec = IM.insert trackNo trackState
             where
-                trackState = mkTrackState spec (TS 0) 1024
+                trackState = mkTrackWork spec (TS 0) 1024
 
 -- | Create a track map for a stream of a given type, as track no. 1
 oneTrack :: TrackType -> DataRateType -> Rational -> L.ByteString -> TrackMap
@@ -328,9 +328,9 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     where
         len = L.length . toLazyByteString
 
-mkTrackState :: (ZoomSummaryWrite a)
-             => TrackSpec -> TimeStamp -> Int -> TrackWork a
-mkTrackState spec entry w = TrackWork
+mkTrackWork :: (ZoomSummaryWrite a)
+            => TrackSpec -> TimeStamp -> Int -> TrackWork a
+mkTrackWork spec entry w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
         , twTSBuilder = mempty
