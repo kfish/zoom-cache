@@ -83,7 +83,7 @@ instance ZoomWrite (TimeStamp, Int) where
 data ZoomWHandle a = ZoomWHandle
     { whHandle    :: Handle
     , whTrackWork :: IntMap (TrackWork a)
-    , whDeferred  :: IntMap [Summary a]
+    , whDeferred  :: IntMap Builder
     , whWriteData :: Bool
     }
 
@@ -131,8 +131,8 @@ flush = do
     when doRaw $
         liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
     mapM_ (uncurry flushSummary) (IM.assocs tracks)
-    pending <- concat . IM.elems <$> gets whDeferred
-    mapM_ writeSummary pending
+    pending <- mconcat . IM.elems <$> gets whDeferred
+    liftIO . L.hPut h . toLazyByteString $ pending
     modify $ \z -> z
         { whTrackWork = IM.map flushTrack (whTrackWork z)
         , whDeferred = IM.empty
@@ -391,13 +391,9 @@ deferSummary s = do
     modify $ \z -> z
         { whDeferred = IM.alter f (summaryLevel s) (whDeferred z) }
     where
-        f Nothing        = Just [s]
-        f (Just pending) = Just (pending ++ [s])
-
-writeSummary :: (ZoomSummaryWrite a) => Summary a -> ZoomW ()
-writeSummary s = do
-    h <- gets whHandle
-    liftIO . L.hPut h . toLazyByteString . fromSummary $ s
+        b = fromSummary s
+        f Nothing        = Just b
+        f (Just pending) = Just (pending <> b)
 
 ------------------------------------------------------------
 
