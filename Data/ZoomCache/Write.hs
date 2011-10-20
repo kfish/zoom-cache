@@ -374,12 +374,8 @@ pushSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr)
 pushSummary zt s = do
     deferSummary s
     case IM.lookup (summaryLevel s) (twLevels zt) of
-        Just g -> do
-            let new = g s
-            delete
-            pushSummary zt new
-        Nothing          -> do
-            insert f
+        Just g  -> delete >> pushSummary zt (g s)
+        Nothing -> insert f
     where
         f :: (ZoomSummaryWrite a, a ~ HurdyDurr)
           => Summary a -> Summary a
