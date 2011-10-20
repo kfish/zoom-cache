@@ -239,11 +239,10 @@ flushIfNeeded trackNo = do
         flushNeeded :: TrackWork a -> Bool
         flushNeeded TrackWork{..} = twCount >= twWatermark
 
-writeData :: (ZoomWrite a, a ~ HurdyDurr)
+writeData :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
           => (a -> Builder)
-          -> (Int -> TimeStamp -> a -> SummaryWork a -> SummaryWork a)
           -> TrackNo -> a -> ZoomW ()
-writeData builder updater trackNo d = do
+writeData builder trackNo d = do
     incTime trackNo
 
     doRaw <- gets whWriteData
@@ -252,15 +251,14 @@ writeData builder updater trackNo d = do
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
-        , twData = updater (twCount z) (twExitTime z) d (twData z)
+        , twData = updateSummaryData (twCount z) (twExitTime z) d (twData z)
         }
     flushIfNeeded trackNo
 
 writeDataVBR :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
              => (a -> Builder)
-             -> (Int -> TimeStamp -> a -> SummaryWork a -> SummaryWork a)
              -> TrackNo -> (TimeStamp, a) -> ZoomW ()
-writeDataVBR builder updater trackNo (t, d) = do
+writeDataVBR builder trackNo (t, d) = do
     setTime trackNo t
 
     doRaw <- gets whWriteData
@@ -273,15 +271,15 @@ writeDataVBR builder updater trackNo (t, d) = do
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
-        , twData = updater (twCount z) t d (twData z)
+        , twData = updateSummaryData (twCount z) t d (twData z)
         }
     flushIfNeeded trackNo
 
 writeDouble :: TrackNo -> Double -> ZoomW ()
-writeDouble = writeData (fromWord64be . toWord64) updateSummaryData
+writeDouble = writeData (fromWord64be . toWord64)
 
 writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
-writeDoubleVBR = writeDataVBR (fromWord64be . toWord64) updateSummaryData
+writeDoubleVBR = writeDataVBR (fromWord64be . toWord64)
 
 {- XXX KEEP THIS
 writeInt :: TrackNo -> Int -> ZoomW ()
