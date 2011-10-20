@@ -240,9 +240,8 @@ flushIfNeeded trackNo = do
         flushNeeded TrackWork{..} = twCount >= twWatermark
 
 writeData :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
-          => (a -> Builder)
-          -> TrackNo -> a -> ZoomW ()
-writeData builder trackNo d = do
+          => TrackNo -> a -> ZoomW ()
+writeData trackNo d = do
     incTime trackNo
 
     doRaw <- gets whWriteData
@@ -256,9 +255,8 @@ writeData builder trackNo d = do
     flushIfNeeded trackNo
 
 writeDataVBR :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
-             => (a -> Builder)
-             -> TrackNo -> (TimeStamp, a) -> ZoomW ()
-writeDataVBR builder trackNo (t, d) = do
+             => TrackNo -> (TimeStamp, a) -> ZoomW ()
+writeDataVBR trackNo (t, d) = do
     setTime trackNo t
 
     doRaw <- gets whWriteData
@@ -276,10 +274,10 @@ writeDataVBR builder trackNo (t, d) = do
     flushIfNeeded trackNo
 
 writeDouble :: TrackNo -> Double -> ZoomW ()
-writeDouble = writeData (fromWord64be . toWord64)
+writeDouble = writeData
 
 writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
-writeDoubleVBR = writeDataVBR (fromWord64be . toWord64)
+writeDoubleVBR = writeDataVBR
 
 {- XXX KEEP THIS
 writeInt :: TrackNo -> Int -> ZoomW ()

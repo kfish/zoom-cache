@@ -98,6 +98,7 @@ instance Typeable1 SummaryData
 
 class ZoomSummary a => ZoomSummaryWrite a where
     data SummaryWork a :: *
+    builder            :: a -> Builder
     initSummaryWork    :: TimeStamp -> SummaryWork a
     mkSummaryData      :: Double -> SummaryWork a -> SummaryData a
     fromSummaryData    :: SummaryData a -> Builder
@@ -160,6 +161,7 @@ instance ZoomSummaryWrite Double where
         , ztsdSum   :: Double
         , ztsdSumSq :: Double
         }
+    builder           = fromWord64be . toWord64
     initSummaryWork   = initSummaryDouble
     mkSummaryData     = mkSummaryDouble
     fromSummaryData   = fromSummaryDouble
@@ -270,6 +272,7 @@ instance ZoomSummaryWrite Int where
         , ztsiSum   :: Int
         , ztsiSumSq :: Double
         }
+    builder           = encInt
     initSummaryWork   = initSummaryInt
     mkSummaryData     = mkSummaryInt
     fromSummaryData   = fromSummaryInt
