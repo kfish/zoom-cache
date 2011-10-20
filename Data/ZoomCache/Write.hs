@@ -93,7 +93,7 @@ data TrackWork a = TrackWork
     , twTSBuilder :: Builder
     , twCount     :: Int
     , twWatermark :: Int
-    , twLevels    :: IntMap (Maybe (Summary a))
+    , twLevels    :: IntMap (Maybe (Summary a -> Summary a))
     , twEntryTime :: TimeStamp
     , twExitTime  :: TimeStamp
     , twData      :: SummaryWork a
@@ -374,15 +374,19 @@ pushSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr)
 pushSummary zt s = do
     deferSummary s
     case IM.lookup (summaryLevel s) (twLevels zt) of
-        Just (Just prev) -> do
-            let new = (prev `appendSummary` s) { summaryLevel = summaryLevel s + 1 }
+        Just (Just g) -> do
+            let new = g s
             insert Nothing
             pushSummary zt new
         _                -> do
-            insert (Just s)
+            insert (Just f)
     where
+        f :: (ZoomSummaryWrite a, a ~ HurdyDurr)
+          => Summary a -> Summary a
+        f next = (s `appendSummary` next) { summaryLevel = summaryLevel s + 1 }
+
         insert :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-               => Maybe (Summary a) -> ZoomW ()
+               => Maybe (Summary a -> Summary a) -> ZoomW ()
         insert x = modifyTrack (summaryTrack s) (\ztt ->
             ztt { twLevels = IM.insert (summaryLevel s) x (twLevels ztt) } )
 
