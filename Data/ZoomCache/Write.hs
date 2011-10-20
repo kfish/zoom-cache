@@ -63,19 +63,19 @@ class ZoomWrite t where
     write :: TrackNo -> t -> ZoomW ()
 
 instance ZoomWrite Double where
-    write = writeDouble
+    write = writeData
 
 {-
 instance ZoomWrite Int where
-    write = writeInt
+    write = writeData
 -}
 
 instance ZoomWrite (TimeStamp, Double) where
-    write = writeDoubleVBR
+    write = writeDataVBR
 
 {-
 instance ZoomWrite (TimeStamp, Int) where
-    write = writeIntVBR
+    write = writeDataVBR
 -}
 
 ------------------------------------------------------------
@@ -272,20 +272,6 @@ writeDataVBR trackNo (t, d) = do
         , twData = updateSummaryData (twCount z) t d (twData z)
         }
     flushIfNeeded trackNo
-
-writeDouble :: TrackNo -> Double -> ZoomW ()
-writeDouble = writeData
-
-writeDoubleVBR :: TrackNo -> (TimeStamp, Double) -> ZoomW ()
-writeDoubleVBR = writeDataVBR
-
-{- XXX KEEP THIS
-writeInt :: TrackNo -> Int -> ZoomW ()
-writeInt = writeData encInt updateSummaryData
-
-writeIntVBR :: TrackNo -> (TimeStamp, Int) -> ZoomW ()
-writeIntVBR = writeDataVBR encInt updateSummaryData
--}
 
 ----------------------------------------------------------------------
 -- Global
