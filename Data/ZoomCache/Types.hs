@@ -26,6 +26,11 @@ module Data.ZoomCache.Types (
     , OpaqueSummary(..)
     , mkOpaqueSummary
 
+    , OpaqueSummaryWrite(..)
+    , clearWork
+    , clearLevel
+    , updateOpSumm
+
     -- * Types
     , Packet(..)
     , Summary(..)
@@ -44,7 +49,10 @@ module Data.ZoomCache.Types (
 ) where
 
 import Blaze.ByteString.Builder
+import qualified Data.ByteString.Lazy as L
 import Data.Dynamic
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as IM
 import Data.Monoid
 import Data.Typeable
 import Text.Printf
@@ -88,6 +96,46 @@ data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
 
 mkOpaqueSummary :: ZoomSummary a => Summary a -> OpaqueSummary
 mkOpaqueSummary = OpSummary
+
+data OpaqueSummaryWrite = forall a . (Typeable a, ZoomSummaryWrite a) => OpSummaryWrite
+    { levels   :: IntMap (Summary a -> Summary a)
+    , currWork :: Maybe (SummaryWork a)
+    }
+
+clearWork :: OpaqueSummaryWrite -> OpaqueSummaryWrite
+clearWork (OpSummaryWrite l _) = OpSummaryWrite l Nothing
+
+clearLevel :: Int -> OpaqueSummaryWrite -> OpaqueSummaryWrite
+clearLevel level (OpSummaryWrite l cw) = OpSummaryWrite (IM.delete level l) cw
+
+updateOpSumm :: (Typeable b, ZoomSummaryWrite b)
+             => Int -> TimeStamp -> b
+             -> Maybe OpaqueSummaryWrite
+             -> Maybe OpaqueSummaryWrite
+
+updateOpSumm count t d Nothing = Just (OpSummaryWrite IM.empty (Just cw))
+    where
+        cw = updateSummaryData count t d (initSummaryWork t)
+
+updateOpSumm count t d (Just (OpSummaryWrite l Nothing)) =
+    case cw'm of
+        Just _  -> Just (OpSummaryWrite l cw'm)
+        Nothing -> Nothing
+    where
+        cw'm = case (fromDynamic . toDyn $ d) of
+            Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
+            Nothing -> Nothing
+
+updateOpSumm count t d (Just (OpSummaryWrite l (Just cw))) =
+    case cw'm of
+        Just _  -> Just (OpSummaryWrite l cw'm)
+        Nothing -> Nothing
+    where
+        cw'm = case (fromDynamic . toDyn $ d) of
+            Just d' -> Just (updateSummaryData count t d' cw)
+            Nothing -> Nothing
+
+------------------------------------------------------------
 
 class ZoomSummary a where
     data SummaryData a :: *

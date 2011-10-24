@@ -47,6 +47,7 @@ import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Monoid
+import Data.Typeable
 import System.IO
 
 import Data.ZoomCache.Binary
@@ -80,32 +81,29 @@ instance ZoomWrite (TimeStamp, Int) where
 
 ------------------------------------------------------------
 
-data ZoomWHandle a = ZoomWHandle
+data ZoomWHandle = ZoomWHandle
     { whHandle    :: Handle
-    , whTrackWork :: IntMap (TrackWork a)
+    , whTrackWork :: IntMap TrackWork
     , whDeferred  :: IntMap Builder
     , whWriteData :: Bool
     }
 
-data TrackWork a = TrackWork
+data TrackWork = TrackWork
     { twSpec      :: TrackSpec
     , twBuilder   :: Builder
     , twTSBuilder :: Builder
     , twCount     :: Int
     , twWatermark :: Int
-    , twLevels    :: IntMap (Summary a -> Summary a)
     , twEntryTime :: TimeStamp
     , twExitTime  :: TimeStamp
-    , twData      :: SummaryWork a
+    , twWriter    :: Maybe OpaqueSummaryWrite
     }
 
 ----------------------------------------------------------------------
 -- Public API
 
-type HurdyDurr = Double
-
 -- | A StateT IO monad for writing a ZoomCache file
-type ZoomW = StateT (ZoomWHandle HurdyDurr) IO
+type ZoomW = StateT ZoomWHandle IO
 
 -- | Run a @ZoomW ()@ action on a given file handle, using the specified
 -- 'TrackMap' specification
@@ -138,19 +136,17 @@ flush = do
         , whDeferred = IM.empty
         }
     where
-        flushTrack :: (ZoomSummaryWrite a)
-                   => TrackWork a -> TrackWork a
-        flushTrack tw = d{twLevels = twLevels tw}
+        flushTrack :: TrackWork -> TrackWork
+        flushTrack tw = d{twWriter = clearWork <$> (twWriter tw)}
             where
                 d = mkTrackWork (twSpec tw) (twExitTime tw) (twWatermark tw)
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
-openWrite :: (ZoomSummaryWrite a)
-          => TrackMap
+openWrite :: TrackMap
           -> Bool              -- ^ Whether or not to write raw data packets.
                                -- If False, only summary blocks are written.
           -> FilePath
-          -> IO (ZoomWHandle a)
+          -> IO ZoomWHandle
 openWrite trackMap doRaw path = do
     h <- openFile path WriteMode
     let global = mkGlobal (IM.size trackMap)
@@ -159,10 +155,9 @@ openWrite trackMap doRaw path = do
     mapM_ (uncurry (writeTrackHeader h)) (IM.assocs trackMap)
     return $ ZoomWHandle h tracks IM.empty doRaw
     where
-        addTrack :: (ZoomSummaryWrite a)
-                 => TrackNo -> TrackSpec
-                 -> IntMap (TrackWork a)
-                 -> IntMap (TrackWork a)
+        addTrack :: TrackNo -> TrackSpec
+                 -> IntMap TrackWork
+                 -> IntMap TrackWork
         addTrack trackNo spec = IM.insert trackNo trackState
             where
                 trackState = mkTrackWork spec (TS 0) 1024
@@ -183,7 +178,7 @@ watermark trackNo =  do
 setWatermark :: TrackNo -> Int -> ZoomW ()
 setWatermark trackNo w = modifyTrack trackNo f
     where
-        f :: TrackWork a -> TrackWork a
+        f :: TrackWork -> TrackWork
         f tw = tw { twWatermark = w }
 
 ----------------------------------------------------------------------
@@ -236,10 +231,10 @@ flushIfNeeded trackNo = do
         Just track -> when (flushNeeded track) flush
         Nothing -> error "no such track" -- addTrack trackNo, if no data has been written
     where
-        flushNeeded :: TrackWork a -> Bool
+        flushNeeded :: TrackWork -> Bool
         flushNeeded TrackWork{..} = twCount >= twWatermark
 
-writeData :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
+writeData :: (Typeable a, ZoomWrite a, ZoomSummaryWrite a)
           => TrackNo -> a -> ZoomW ()
 writeData trackNo d = do
     incTime trackNo
@@ -250,11 +245,11 @@ writeData trackNo d = do
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
-        , twData = updateSummaryData (twCount z) (twExitTime z) d (twData z)
+        , twWriter = updateOpSumm (twCount z) (twExitTime z) d (twWriter z)
         }
     flushIfNeeded trackNo
 
-writeDataVBR :: (ZoomWrite a, ZoomSummaryWrite a, a ~ HurdyDurr)
+writeDataVBR :: (Typeable a, ZoomWrite a, ZoomSummaryWrite a)
              => TrackNo -> (TimeStamp, a) -> ZoomW ()
 writeDataVBR trackNo (t, d) = do
     setTime trackNo t
@@ -269,7 +264,7 @@ writeDataVBR trackNo (t, d) = do
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
-        , twData = updateSummaryData (twCount z) t d (twData z)
+        , twWriter = updateOpSumm (twCount z) t d (twWriter z)
         }
     flushIfNeeded trackNo
 
@@ -288,15 +283,13 @@ mkGlobal n = Global
 ----------------------------------------------------------------------
 -- TrackState
 
-modifyTracks :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-             => (IntMap (TrackWork a) -> IntMap (TrackWork a)) -> ZoomW ()
+modifyTracks :: (IntMap TrackWork -> IntMap TrackWork) -> ZoomW ()
 modifyTracks f = modify (\z -> z { whTrackWork = f (whTrackWork z) })
 
-modifyTrack :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-            => TrackNo -> (TrackWork a -> TrackWork a) -> ZoomW ()
+modifyTrack :: TrackNo -> (TrackWork -> TrackWork) -> ZoomW ()
 modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
-bsFromTrack :: TrackNo -> TrackWork a -> L.ByteString
+bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
 bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     [ fromLazyByteString packetHeader
     , encInt trackNo
@@ -310,76 +303,58 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     where
         len = L.length . toLazyByteString
 
-mkTrackWork :: (ZoomSummaryWrite a)
-            => TrackSpec -> TimeStamp -> Int -> TrackWork a
+mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
 mkTrackWork spec entry w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
         , twTSBuilder = mempty
         , twCount = 0
         , twWatermark = w
-        , twLevels = IM.empty
         , twEntryTime = entry
         , twExitTime = entry
-        , twData = initSummaryWork entry -- (specType spec)
+        , twWriter = Nothing
         }
 
 ----------------------------------------------------------------------
 -- Summary
 
-flushSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-             => TrackNo -> TrackWork a -> ZoomW ()
-flushSummary trackNo trackState@TrackWork{..} =
-    pushSummary trackState (mkSummary trackNo trackState)
+flushSummary :: TrackNo -> TrackWork -> ZoomW ()
+flushSummary trackNo TrackWork{..} = case twWriter of
+    Just writer -> do
+        let (writer', bs) = flushOpSumm trackNo twEntryTime twExitTime writer
+        modify $ \z -> z { whDeferred = IM.unionWith mappend (whDeferred z) bs }
+        modifyTrack trackNo (\ztt -> ztt { twWriter = Just writer' } )
+    _           -> return ()
 
-mkSummary :: (ZoomSummaryWrite a) => TrackNo -> TrackWork a -> Summary a
-mkSummary trackNo TrackWork{..} = mk (specType twSpec)
+flushOpSumm :: TrackNo -> TimeStamp -> TimeStamp
+            -> OpaqueSummaryWrite -> (OpaqueSummaryWrite, IntMap Builder)
+flushOpSumm _       _         _        op@(OpSummaryWrite _ Nothing) = (op, IM.empty)
+flushOpSumm trackNo entryTime exitTime (OpSummaryWrite l (Just cw))  =
+    (OpSummaryWrite l' (Just cw), bs)
     where
-        mk ZDouble = Summary
+        (bs, l') = pushSummary s IM.empty l
+        s = Summary
             { summaryTrack = trackNo
             , summaryLevel = 1
-            , summaryEntryTime = twEntryTime
-            , summaryExitTime = twExitTime
-            , summaryData = mkSummaryData dur twData
+            , summaryEntryTime = entryTime
+            , summaryExitTime = exitTime
+            , summaryData = mkSummaryData dur cw
             }
-        mk ZInt = Summary
-            { summaryTrack = trackNo
-            , summaryLevel = 1
-            , summaryEntryTime = twEntryTime
-            , summaryExitTime = twExitTime
-            , summaryData = mkSummaryData dur twData
-            }
-        dur = fromIntegral $ (unTS twExitTime) - (unTS twEntryTime)
+        dur = fromIntegral $ (unTS exitTime) - (unTS entryTime)
 
-pushSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-            => TrackWork a -> Summary a -> ZoomW ()
-pushSummary zt s = do
-    deferSummary s
-    case IM.lookup (summaryLevel s) (twLevels zt) of
-        Just g  -> delete >> pushSummary zt (g s)
-        Nothing -> insert f
+pushSummary :: (ZoomSummaryWrite a)
+            => Summary a
+            -> IntMap Builder -> IntMap (Summary a -> Summary a)
+            -> (IntMap Builder, IntMap (Summary a -> Summary a))
+pushSummary s bs l = do
+    case IM.lookup (summaryLevel s) l of
+        Just g  -> pushSummary (g s) bs' cleared
+        Nothing -> (bs', inserted)
     where
-        f :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-          => Summary a -> Summary a
+        bs' = IM.insert (summaryLevel s) (fromSummary s) bs
         f next = (s `appendSummary` next) { summaryLevel = summaryLevel s + 1 }
-
-        insert :: (ZoomSummaryWrite a, a ~ HurdyDurr)
-               => (Summary a -> Summary a) -> ZoomW ()
-        insert x = modifyTrack (summaryTrack s) (\ztt ->
-            ztt { twLevels = IM.insert (summaryLevel s) x (twLevels ztt) } )
-
-        delete :: ZoomW ()
-        delete = modifyTrack (summaryTrack s) (\ztt ->
-            ztt { twLevels = IM.delete (summaryLevel s) (twLevels ztt) } )
-
-deferSummary :: (ZoomSummaryWrite a, a ~ HurdyDurr) => Summary a -> ZoomW ()
-deferSummary s = do
-    modify $ \z -> z
-        { whDeferred = IM.alter f (summaryLevel s) (whDeferred z) }
-    where
-        b = fromSummary s
-        f Nothing        = Just b
-        f (Just pending) = Just (pending <> b)
+        inserted = IM.insert (summaryLevel s) f l
+        cleared = IM.delete (summaryLevel s) l
 
 ------------------------------------------------------------
 
