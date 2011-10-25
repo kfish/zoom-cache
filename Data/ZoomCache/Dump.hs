@@ -36,6 +36,8 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Pretty
 import Data.ZoomCache.Types
 
+import Data.ZoomCache.Dynamic
+
 ------------------------------------------------------------
 
 zoomInfoFile :: FilePath -> IO ()

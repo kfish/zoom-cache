@@ -53,6 +53,7 @@ import Data.ZoomCache.Types
 
 -- XXX: Remove these
 import Data.ZoomCache.Double
+import Data.ZoomCache.Dynamic
 import Data.ZoomCache.Int
 
 ----------------------------------------------------------------------

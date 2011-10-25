@@ -19,7 +19,7 @@
 module Data.ZoomCache.Types (
     -- * Classes
       ZoomRead(..)
-    , PacketData(..)
+    , PacketData()
     , ZoomSummary(..)
     , ZoomSummaryWrite(..)
 
@@ -34,8 +34,7 @@ module Data.ZoomCache.Types (
     -- * Types
     , Packet(..)
     , Summary(..)
-    , SummaryData(..)
-    -- , SummaryWork()
+    , SummaryData()
 
     , summaryDuration
     , appendSummary
@@ -65,9 +64,6 @@ import Data.ZoomCache.Common
 
 class ZoomRead a where
     data PacketData a :: *
-
-instance ZoomRead Dynamic where
-    data PacketData Dynamic = PDDynamic [Dynamic]
 
 ------------------------------------------------------------
 
@@ -144,17 +140,6 @@ class ZoomSummary a => ZoomSummaryWrite a where
     appendSummaryData  :: Double -> SummaryData a
                        -> Double -> SummaryData a
                        -> SummaryData a
-
-------------------------------------------------------------
--- Dynamic
-
-instance ZoomSummary Dynamic where
-    data SummaryData Dynamic = SummaryDynamic Dynamic
-    prettySummaryData = prettySummaryDynamic
-    -- typeOfSummaryData = const (typeOf (undefined :: Dynamic))
-
-prettySummaryDynamic :: SummaryData Dynamic -> String
-prettySummaryDynamic _ = "<<SummaryDynamic>>"
 
 ------------------------------------------------------------
 -- | A recorded block of summary data
