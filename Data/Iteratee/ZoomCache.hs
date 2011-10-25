@@ -335,12 +335,9 @@ readRational64 = do
 
 class ZReadable a where
     zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
-    zStreamType :: (a, TrackType)
 
 instance ZReadable Double where
     zRead = zReadFloat64be
-    zStreamType = (undefined, ZDouble)
 
 instance ZReadable Int where
     zRead = zReadInt32
-    zStreamType = (undefined, ZInt)
