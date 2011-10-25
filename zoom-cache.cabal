@@ -53,7 +53,6 @@ Library
                        Data.ZoomCache.Common
                        Data.ZoomCache.Double
                        Data.ZoomCache.Dump
-                       Data.ZoomCache.Dynamic
                        Data.ZoomCache.Int
                        Data.ZoomCache.Pretty
                        Data.ZoomCache.Types
