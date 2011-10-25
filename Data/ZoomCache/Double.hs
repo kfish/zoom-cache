@@ -10,7 +10,11 @@ module Data.ZoomCache.Double (
 )where
 
 import Blaze.ByteString.Builder
+import Control.Monad (replicateM)
+import Control.Monad.Trans (MonadIO)
+import Data.Iteratee (Iteratee)
 import Data.Monoid
+import Data.Word
 import Text.Printf
 
 import Data.Iteratee.ZoomCache.Utils
@@ -52,7 +56,14 @@ instance ZoomSummary Double where
         , summaryDoubleAvg   :: Double
         , summaryDoubleRMS   :: Double
         }
+    readSummaryData = readSummaryDataDouble
     prettySummaryData = prettySummaryDouble
+
+readSummaryDataDouble :: (Functor m, MonadIO m)
+                      => Iteratee [Word8] m (SummaryData Double)
+readSummaryDataDouble = do
+    [en,ex,mn,mx,avg,rms] <- replicateM 6 zReadFloat64be
+    return (SummaryDouble en ex mn mx avg rms)
 
 prettySummaryDouble :: SummaryData Double -> String
 prettySummaryDouble SummaryDouble{..} = concat

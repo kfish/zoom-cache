@@ -51,8 +51,8 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 
 -- XXX: Remove these
-import Data.ZoomCache.Double
-import Data.ZoomCache.Int
+import Data.ZoomCache.Double()
+import Data.ZoomCache.Int()
 
 ----------------------------------------------------------------------
 
@@ -229,17 +229,13 @@ readSummary specs = do
         Just TrackSpec{..} -> do
             case specType of
                 ZDouble -> do
-                    let n = flip div 8 byteLength
-                    [en,ex,mn,mx,avg,rms] <- replicateM n zReadFloat64be
+                    (sd :: SummaryData Double) <- readSummaryData
                     return . Just . mkOpaqueSummary $
-                        Summary trackNo lvl entryTime exitTime
-                            (SummaryDouble en ex mn mx avg rms)
+                        Summary trackNo lvl entryTime exitTime sd
                 ZInt -> do
-                    [en,ex,mn,mx] <- replicateM 4 zReadInt32
-                    [avg,rms] <- replicateM 2 zReadFloat64be
+                    (sd :: SummaryData Int) <- readSummaryData
                     return . Just . mkOpaqueSummary $
-                        Summary trackNo lvl entryTime exitTime
-                            (SummaryInt en ex mn mx avg rms)
+                        Summary trackNo lvl entryTime exitTime sd
         Nothing -> do
             I.drop byteLength
             return Nothing

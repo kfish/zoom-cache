@@ -10,7 +10,11 @@ module Data.ZoomCache.Int (
 )where
 
 import Blaze.ByteString.Builder
+import Control.Monad (replicateM)
+import Control.Monad.Trans (MonadIO)
+import Data.Iteratee (Iteratee)
 import Data.Monoid
+import Data.Word
 import Text.Printf
 
 import Data.Iteratee.ZoomCache.Utils
@@ -51,7 +55,15 @@ instance ZoomSummary Int where
         , summaryIntAvg   :: Double
         , summaryIntRMS   :: Double
         }
+    readSummaryData = readSummaryDataInt
     prettySummaryData = prettySummaryInt
+
+readSummaryDataInt :: (Functor m, MonadIO m)
+                   => Iteratee [Word8] m (SummaryData Int)
+readSummaryDataInt = do
+    [en,ex,mn,mx] <- replicateM 4 zReadInt32
+    [avg,rms] <- replicateM 2 zReadFloat64be
+    return (SummaryInt en ex mn mx avg rms)
 
 prettySummaryInt :: SummaryData Int -> String
 prettySummaryInt SummaryInt{..} = concat

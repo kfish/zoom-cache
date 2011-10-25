@@ -138,6 +138,8 @@ updateOpSumm count t d (Just (OpSummaryWrite l (Just cw))) =
 
 class ZoomSummary a where
     data SummaryData a :: *
+    readSummaryData :: (Functor m, MonadIO m)
+                    => Iteratee [Word8] m (SummaryData a)
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
