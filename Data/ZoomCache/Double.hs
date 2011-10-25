@@ -32,8 +32,8 @@ instance ZoomRead Double where
     packetDataFromList = PDDouble
     prettyPacketData = prettyPacketDouble
 
-prettyPacketDouble :: PacketData Double -> String
-prettyPacketDouble (PDDouble ds) = concatMap (printf "%.3f") ds
+prettyPacketDouble :: PacketData Double -> [String]
+prettyPacketDouble (PDDouble ds) = map (printf "%.3f") ds
 
 ----------------------------------------------------------------------
 -- Write

@@ -71,7 +71,7 @@ class ZoomRead a where
     data PacketData a  :: *
     zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
     packetDataFromList :: [a] -> PacketData a
-    prettyPacketData   :: PacketData a -> String
+    prettyPacketData   :: PacketData a -> [String]
 
 ------------------------------------------------------------
 

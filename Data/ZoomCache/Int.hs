@@ -31,8 +31,8 @@ instance ZoomRead Int where
     packetDataFromList = PDInt
     prettyPacketData = prettyPacketInt
 
-prettyPacketInt :: PacketData Int -> String
-prettyPacketInt (PDInt ds) = concatMap show ds
+prettyPacketInt :: PacketData Int -> [String]
+prettyPacketInt (PDInt ds) = map show ds
 
 ----------------------------------------------------------------------
 -- Write
