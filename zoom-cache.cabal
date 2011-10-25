@@ -58,6 +58,7 @@ Library
                        Data.ZoomCache.Types
                        Data.ZoomCache.Write
                        Data.Iteratee.ZoomCache
+                       Data.Iteratee.ZoomCache.Utils
                        Numeric.FloatMinMax
   
   -- Packages needed in order to build this package.
