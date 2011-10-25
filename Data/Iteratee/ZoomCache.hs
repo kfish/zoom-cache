@@ -49,8 +49,11 @@ import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
 import Data.ZoomCache.Common
-import Data.ZoomCache.Int
 import Data.ZoomCache.Types
+
+-- XXX: Remove these
+import Data.ZoomCache.Double
+import Data.ZoomCache.Int
 
 ----------------------------------------------------------------------
 

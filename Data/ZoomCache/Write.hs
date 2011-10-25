@@ -67,12 +67,6 @@ class ZoomWrite t where
     -- | Write a value to an open ZoomCache file.
     write :: TrackNo -> t -> ZoomW ()
 
-instance ZoomWrite Double where
-    write = writeData
-
-instance ZoomWrite (TimeStamp, Double) where
-    write = writeDataVBR
-
 ------------------------------------------------------------
 
 data ZoomWHandle = ZoomWHandle
