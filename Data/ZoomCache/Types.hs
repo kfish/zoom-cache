@@ -49,12 +49,10 @@ module Data.ZoomCache.Types (
 ) where
 
 import Blaze.ByteString.Builder
-import qualified Data.ByteString.Lazy as L
 import Data.Dynamic
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Monoid
-import Data.Typeable
 import Text.Printf
 
 -- Binary helpers
@@ -141,8 +139,6 @@ class ZoomSummary a where
     data SummaryData a :: *
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
-
-instance Typeable1 SummaryData
 
 class ZoomSummary a => ZoomSummaryWrite a where
     data SummaryWork a :: *
