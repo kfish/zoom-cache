@@ -120,7 +120,7 @@ zoomGenHandler = do
 zoomWriteFile :: Config -> [FilePath] -> IO ()
 zoomWriteFile _          []       = return ()
 zoomWriteFile Config{..} (path:_)
-    -- | intData   = w ZInt ints path
+    | intData   = w ZInt ints path
     | otherwise = w ZDouble doubles path
     where
     w :: (ZoomWrite a, ZoomWrite (TimeStamp, a))

@@ -66,18 +66,14 @@ class ZoomWrite t where
 instance ZoomWrite Double where
     write = writeData
 
-{-
 instance ZoomWrite Int where
     write = writeData
--}
 
 instance ZoomWrite (TimeStamp, Double) where
     write = writeDataVBR
 
-{-
 instance ZoomWrite (TimeStamp, Int) where
     write = writeDataVBR
--}
 
 ------------------------------------------------------------
 
