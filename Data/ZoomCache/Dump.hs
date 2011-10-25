@@ -24,19 +24,15 @@ module Data.ZoomCache.Dump (
 ) where
 
 import Control.Applicative ((<$>))
-import Data.Dynamic
 import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
-import Data.Maybe (catMaybes)
 import Text.Printf
 
 import Data.Iteratee.ZoomCache
 import Data.ZoomCache.Common
 import Data.ZoomCache.Pretty
 import Data.ZoomCache.Types
-
-import Data.ZoomCache.Dynamic
 
 ------------------------------------------------------------
 
@@ -72,14 +68,8 @@ dumpData trackNo s@StreamPacket{..}
             Just r  -> prettyTimeStamp r
             Nothing -> show . unTS
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
-        PDDynamic ds = packetData strmPacket
-        raws :: forall a. Typeable a => [a]
-        raws = catMaybes $ map fromDynamic ds
-        dsType = dynTypeRep <$> take 1 ds
-        vals = if dsType == [typeRepDouble]
-                   then map (printf "%.3f") (raws :: [Double])
-                   else map show (raws :: [Int])
-        typeRepDouble = typeOf (undefined :: Double)
+        vals = f (packetData strmPacket)
+        f (OpPacket a) = prettyPacketData a
 dumpData _ _ = return ()
 
 dumpSummary :: TrackNo -> Stream -> IO ()

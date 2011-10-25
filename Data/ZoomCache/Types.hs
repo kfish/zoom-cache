@@ -23,6 +23,9 @@ module Data.ZoomCache.Types (
     , ZoomSummary(..)
     , ZoomSummaryWrite(..)
 
+    , OpaquePacketData(..)
+    , mkOpaquePacketData
+
     , OpaqueSummary(..)
     , mkOpaqueSummary
 
@@ -64,19 +67,25 @@ import Data.ZoomCache.Common
 
 class ZoomRead a where
     data PacketData a :: *
+    prettyPacketData  :: PacketData a -> String
 
 ------------------------------------------------------------
 
-data Packet a = Packet
+data Packet = Packet
     { packetTrack      :: TrackNo
     , packetEntryTime  :: TimeStamp
     , packetExitTime   :: TimeStamp
     , packetCount      :: Int
-    , packetData       :: PacketData a
+    , packetData       :: OpaquePacketData
     , packetTimeStamps :: [TimeStamp]
     }
 
 ------------------------------------------------------------
+
+data OpaquePacketData = forall a . ZoomRead a => OpPacket (PacketData a)
+
+mkOpaquePacketData :: ZoomRead a => PacketData a -> OpaquePacketData
+mkOpaquePacketData = OpPacket
 
 data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
 

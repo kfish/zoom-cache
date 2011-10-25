@@ -36,7 +36,6 @@ import Control.Applicative ((<$>))
 import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import qualified Data.ByteString.Lazy as L
-import Data.Dynamic
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
@@ -53,7 +52,6 @@ import Data.ZoomCache.Types
 
 -- XXX: Remove these
 import Data.ZoomCache.Double
-import Data.ZoomCache.Dynamic
 import Data.ZoomCache.Int
 
 ----------------------------------------------------------------------
@@ -62,7 +60,7 @@ data Stream =
     StreamPacket
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmPacket  :: Packet Dynamic
+        , strmPacket  :: Packet
         }
     | StreamSummary
         { strmFile    :: CacheFile
@@ -180,7 +178,7 @@ readTrackHeader = do
 
 readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
-           -> Iteratee [Word8] m (TrackNo, Maybe (Packet Dynamic))
+           -> Iteratee [Word8] m (TrackNo, Maybe Packet)
 readPacket specs = do
     trackNo <- zReadInt32
     entryTime <- TS <$> zReadInt64
@@ -189,13 +187,27 @@ readPacket specs = do
     count <- zReadInt32
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
-            d <- replicateM count (dynRead specType)
-            ts <- map TS <$> case specDRType of
-                ConstantDR -> do
-                    return $ take count [unTS entryTime ..]
-                VariableDR -> do
-                    replicateM count zReadInt64
-            return $ Just (Packet trackNo entryTime exitTime count (PDDynamic d) ts)
+            case specType of
+                ZDouble -> do
+                    d <- replicateM count zRead
+                    ts <- map TS <$> case specDRType of
+                        ConstantDR -> do
+                            return $ take count [unTS entryTime ..]
+                        VariableDR -> do
+                            replicateM count zReadInt64
+                    return . Just $
+                        (Packet trackNo entryTime exitTime count
+                            (mkOpaquePacketData (PDDouble d)) ts)
+                ZInt -> do
+                    d <- replicateM count zRead
+                    ts <- map TS <$> case specDRType of
+                        ConstantDR -> do
+                            return $ take count [unTS entryTime ..]
+                        VariableDR -> do
+                            replicateM count zReadInt64
+                    return . Just $
+                        (Packet trackNo entryTime exitTime count
+                            (mkOpaquePacketData (PDInt d)) ts)
         Nothing -> do
             I.drop byteLength
             return Nothing
@@ -242,7 +254,7 @@ mapStream = I.joinI . enumCacheFile . I.mapChunksM_
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
 mapPackets :: (Functor m, MonadIO m)
-           => (Packet Dynamic -> m ())
+           => (Packet -> m ())
            -> Iteratee [Word8] m ()
 mapPackets f = mapStream process
     where
@@ -317,12 +329,6 @@ readRational64 = do
         else return $ (fromIntegral num) % (fromIntegral den)
 
 ----------------------------------------------------------------------
-
-dynRead :: (Functor m, MonadIO m)
-        => TrackType
-        -> Iteratee [Word8] m Dynamic
-dynRead ZDouble = fmap toDyn zReadFloat64be
-dynRead ZInt = fmap toDyn zReadInt32
 
 class ZReadable a where
     zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a

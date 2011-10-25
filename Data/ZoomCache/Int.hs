@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 
 module Data.ZoomCache.Int (
-      SummaryData(..)
+      PacketData(..)
+    , SummaryData(..)
     , SummaryWork(..)
 )where
 
@@ -21,6 +22,10 @@ import Data.ZoomCache.Write
 
 instance ZoomRead Int where
     data PacketData Int = PDInt [Int]
+    prettyPacketData = prettyPacketInt
+
+prettyPacketInt :: PacketData Int -> String
+prettyPacketInt (PDInt ds) = concatMap show ds
 
 ----------------------------------------------------------------------
 -- Write

@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 
 module Data.ZoomCache.Double (
-      SummaryData(..)
+      PacketData(..)
+    , SummaryData(..)
     , SummaryWork(..)
 )where
 
@@ -22,6 +23,10 @@ import Numeric.FloatMinMax
 
 instance ZoomRead Double where
     data PacketData Double = PDDouble [Double]
+    prettyPacketData = prettyPacketDouble
+
+prettyPacketDouble :: PacketData Double -> String
+prettyPacketDouble (PDDouble ds) = concatMap (printf "%.3f") ds
 
 ----------------------------------------------------------------------
 -- Write
