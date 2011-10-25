@@ -23,6 +23,7 @@ import Numeric.FloatMinMax
 
 instance ZoomRead Double where
     data PacketData Double = PDDouble [Double]
+    packetDataFromList = PDDouble
     prettyPacketData = prettyPacketDouble
 
 prettyPacketDouble :: PacketData Double -> String

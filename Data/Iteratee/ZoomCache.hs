@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -190,17 +191,17 @@ readPacket specs = do
             let readTS = readTimeStamps specDRType count entryTime
             case specType of
                 ZDouble -> do
-                    d <- replicateM count zRead
+                    (d :: [Double]) <- replicateM count zRead
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
-                            (mkOpaquePacketData (PDDouble d)) ts)
+                            (mkOpaquePacketData d) ts)
                 ZInt -> do
-                    d <- replicateM count zRead
+                    (d :: [Int]) <- replicateM count zRead
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
-                            (mkOpaquePacketData (PDInt d)) ts)
+                            (mkOpaquePacketData d) ts)
         Nothing -> do
             I.drop byteLength
             return Nothing

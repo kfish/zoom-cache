@@ -66,8 +66,9 @@ import Data.ZoomCache.Common
 ------------------------------------------------------------
 
 class ZoomRead a where
-    data PacketData a :: *
-    prettyPacketData  :: PacketData a -> String
+    data PacketData a  :: *
+    packetDataFromList :: [a] -> PacketData a
+    prettyPacketData   :: PacketData a -> String
 
 ------------------------------------------------------------
 
@@ -84,8 +85,8 @@ data Packet = Packet
 
 data OpaquePacketData = forall a . ZoomRead a => OpPacket (PacketData a)
 
-mkOpaquePacketData :: ZoomRead a => PacketData a -> OpaquePacketData
-mkOpaquePacketData = OpPacket
+mkOpaquePacketData :: ZoomRead a => [a] -> OpaquePacketData
+mkOpaquePacketData = OpPacket . packetDataFromList
 
 data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
 

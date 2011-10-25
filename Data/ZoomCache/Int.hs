@@ -22,6 +22,7 @@ import Data.ZoomCache.Write
 
 instance ZoomRead Int where
     data PacketData Int = PDInt [Int]
+    packetDataFromList = PDInt
     prettyPacketData = prettyPacketInt
 
 prettyPacketInt :: PacketData Int -> String

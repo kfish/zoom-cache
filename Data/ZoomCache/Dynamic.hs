@@ -17,6 +17,7 @@ import Data.ZoomCache.Types
 
 instance ZoomRead Dynamic where
     data PacketData Dynamic = PDDynamic [Dynamic]
+    packetDataFromList = PDDynamic
     prettyPacketData = prettyPacketDynamic
 
 prettyPacketDynamic :: PacketData Dynamic -> String
