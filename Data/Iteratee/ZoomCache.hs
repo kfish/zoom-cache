@@ -49,6 +49,7 @@ import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
 import Data.ZoomCache.Common
+import Data.ZoomCache.Int
 import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------

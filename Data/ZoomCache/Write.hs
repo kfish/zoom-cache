@@ -21,6 +21,10 @@ module Data.ZoomCache.Write (
     -- * The ZoomWrite class
       ZoomWrite(..)
 
+    -- * Instance helpers
+    , writeData
+    , writeDataVBR
+
     -- * The ZoomW monad
     , ZoomW
     , withFileWrite
@@ -66,13 +70,7 @@ class ZoomWrite t where
 instance ZoomWrite Double where
     write = writeData
 
-instance ZoomWrite Int where
-    write = writeData
-
 instance ZoomWrite (TimeStamp, Double) where
-    write = writeDataVBR
-
-instance ZoomWrite (TimeStamp, Int) where
     write = writeDataVBR
 
 ------------------------------------------------------------
