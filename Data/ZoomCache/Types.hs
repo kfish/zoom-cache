@@ -51,9 +51,11 @@ module Data.ZoomCache.Types (
 ) where
 
 import Blaze.ByteString.Builder
+import Control.Monad.Trans (MonadIO)
 import Data.Dynamic
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
+import Data.Iteratee (Iteratee)
 import Data.Monoid
 
 -- Binary helpers
@@ -67,6 +69,7 @@ import Data.ZoomCache.Common
 
 class ZoomRead a where
     data PacketData a  :: *
+    zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
     packetDataFromList :: [a] -> PacketData a
     prettyPacketData   :: PacketData a -> String
 

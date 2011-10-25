@@ -13,6 +13,7 @@ import Blaze.ByteString.Builder
 import Data.Monoid
 import Text.Printf
 
+import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 import Data.ZoomCache.Write
@@ -23,6 +24,7 @@ import Numeric.FloatMinMax
 
 instance ZoomRead Double where
     data PacketData Double = PDDouble [Double]
+    zRead = zReadFloat64be
     packetDataFromList = PDDouble
     prettyPacketData = prettyPacketDouble
 

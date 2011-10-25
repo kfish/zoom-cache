@@ -296,14 +296,3 @@ readDataRateType = do
         0 -> return ConstantDR
         1 -> return VariableDR
         _ -> error "Bad data rate type"
-
-----------------------------------------------------------------------
-
-class ZReadable a where
-    zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
-
-instance ZReadable Double where
-    zRead = zReadFloat64be
-
-instance ZReadable Int where
-    zRead = zReadInt32
