@@ -187,24 +187,17 @@ readPacket specs = do
     count <- zReadInt32
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
+            let readTS = readTimeStamps specDRType count entryTime
             case specType of
                 ZDouble -> do
                     d <- replicateM count zRead
-                    ts <- map TS <$> case specDRType of
-                        ConstantDR -> do
-                            return $ take count [unTS entryTime ..]
-                        VariableDR -> do
-                            replicateM count zReadInt64
+                    ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
                             (mkOpaquePacketData (PDDouble d)) ts)
                 ZInt -> do
                     d <- replicateM count zRead
-                    ts <- map TS <$> case specDRType of
-                        ConstantDR -> do
-                            return $ take count [unTS entryTime ..]
-                        VariableDR -> do
-                            replicateM count zReadInt64
+                    ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
                             (mkOpaquePacketData (PDInt d)) ts)
@@ -212,6 +205,15 @@ readPacket specs = do
             I.drop byteLength
             return Nothing
     return (trackNo, packet)
+    where
+        readTimeStamps :: (Functor m, MonadIO m)
+                       => DataRateType -> Int -> TimeStamp
+                       -> Iteratee [Word8] m [TimeStamp]
+        readTimeStamps drType count entry = map TS <$> case drType of
+            ConstantDR -> do
+                return $ take count [unTS entry ..]
+            VariableDR -> do
+                replicateM count zReadInt64
 
 readSummary :: (Functor m, MonadIO m)
             => IntMap TrackSpec
