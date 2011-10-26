@@ -26,7 +26,7 @@ module Data.ZoomCache.Types (
 
     , ZoomSummary(..)
 
-    , OpaqueSummaryWrite(..)
+    , ZoomWork(..)
     , clearWork
     , clearLevel
     , updateOpSumm
@@ -128,38 +128,38 @@ class ZoomWritable a where
                        -> Double -> SummaryData a
                        -> SummaryData a
 
-data OpaqueSummaryWrite = forall a . (Typeable a, ZoomWritable a) => OpSummaryWrite
+data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
     { levels   :: IntMap (Summary a -> Summary a)
     , currWork :: Maybe (SummaryWork a)
     }
 
-clearWork :: OpaqueSummaryWrite -> OpaqueSummaryWrite
-clearWork (OpSummaryWrite l _) = OpSummaryWrite l Nothing
+clearWork :: ZoomWork -> ZoomWork
+clearWork (ZoomWork l _) = ZoomWork l Nothing
 
-clearLevel :: Int -> OpaqueSummaryWrite -> OpaqueSummaryWrite
-clearLevel level (OpSummaryWrite l cw) = OpSummaryWrite (IM.delete level l) cw
+clearLevel :: Int -> ZoomWork -> ZoomWork
+clearLevel level (ZoomWork l cw) = ZoomWork (IM.delete level l) cw
 
 updateOpSumm :: (Typeable b, ZoomWritable b)
              => Int -> TimeStamp -> b
-             -> Maybe OpaqueSummaryWrite
-             -> Maybe OpaqueSummaryWrite
+             -> Maybe ZoomWork
+             -> Maybe ZoomWork
 
-updateOpSumm count t d Nothing = Just (OpSummaryWrite IM.empty (Just cw))
+updateOpSumm count t d Nothing = Just (ZoomWork IM.empty (Just cw))
     where
         cw = updateSummaryData count t d (initSummaryWork t)
 
-updateOpSumm count t d (Just (OpSummaryWrite l Nothing)) =
+updateOpSumm count t d (Just (ZoomWork l Nothing)) =
     case cw'm of
-        Just _  -> Just (OpSummaryWrite l cw'm)
+        Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
     where
         cw'm = case (fromDynamic . toDyn $ d) of
             Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
             Nothing -> Nothing
 
-updateOpSumm count t d (Just (OpSummaryWrite l (Just cw))) =
+updateOpSumm count t d (Just (ZoomWork l (Just cw))) =
     case cw'm of
-        Just _  -> Just (OpSummaryWrite l cw'm)
+        Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
     where
         cw'm = case (fromDynamic . toDyn $ d) of

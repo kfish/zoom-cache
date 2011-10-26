@@ -85,7 +85,7 @@ data TrackWork = TrackWork
     , twWatermark :: Int
     , twEntryTime :: TimeStamp
     , twExitTime  :: TimeStamp
-    , twWriter    :: Maybe OpaqueSummaryWrite
+    , twWriter    :: Maybe ZoomWork
     }
 
 ----------------------------------------------------------------------
@@ -309,16 +309,16 @@ mkTrackWork spec entry w = TrackWork
 flushSummary :: TrackNo -> TrackWork -> ZoomW ()
 flushSummary trackNo TrackWork{..} = case twWriter of
     Just writer -> do
-        let (writer', bs) = flushOpSumm trackNo twEntryTime twExitTime writer
+        let (writer', bs) = flushWork trackNo twEntryTime twExitTime writer
         modify $ \z -> z { whDeferred = IM.unionWith mappend (whDeferred z) bs }
         modifyTrack trackNo (\ztt -> ztt { twWriter = Just writer' } )
     _           -> return ()
 
-flushOpSumm :: TrackNo -> TimeStamp -> TimeStamp
-            -> OpaqueSummaryWrite -> (OpaqueSummaryWrite, IntMap Builder)
-flushOpSumm _       _         _        op@(OpSummaryWrite _ Nothing) = (op, IM.empty)
-flushOpSumm trackNo entryTime exitTime (OpSummaryWrite l (Just cw))  =
-    (OpSummaryWrite l' (Just cw), bs)
+flushWork :: TrackNo -> TimeStamp -> TimeStamp
+          -> ZoomWork -> (ZoomWork, IntMap Builder)
+flushWork _       _         _        op@(ZoomWork _ Nothing) = (op, IM.empty)
+flushWork trackNo entryTime exitTime (ZoomWork l (Just cw))  =
+    (ZoomWork l' (Just cw), bs)
     where
         (bs, l') = pushSummary s IM.empty l
         s = Summary
