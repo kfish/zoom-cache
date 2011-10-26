@@ -117,7 +117,7 @@ data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
 ------------------------------------------------------------
 -- Write
 
-class ZoomSummary a => ZoomSummaryWrite a where
+class ZoomSummaryWrite a where
     data SummaryWork a :: *
     builder            :: a -> Builder
     initSummaryWork    :: TimeStamp -> SummaryWork a
