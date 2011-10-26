@@ -377,6 +377,20 @@ pushSummary s bs l = do
         inserted = IM.insert (summaryLevel s) f l
         cleared = IM.delete (summaryLevel s) l
 
+-- | Append two Summaries, merging statistical summary data.
+-- XXX: summaries are only compatible if tracks and levels are equal
+appendSummary :: (ZoomWritable a) => Summary a -> Summary a -> Summary a
+appendSummary s1 s2 = Summary
+    { summaryTrack = summaryTrack s1
+    , summaryLevel = summaryLevel s1
+    , summaryEntryTime = summaryEntryTime s1
+    , summaryExitTime = summaryExitTime s2
+    , summaryData = appendSummaryData (dur s1) (summaryData s1)
+                                      (dur s2) (summaryData s2)
+    }
+    where
+        dur = fromIntegral . summaryDuration
+
 ------------------------------------------------------------
 
 (<>) :: Monoid a => a -> a -> a

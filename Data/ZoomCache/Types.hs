@@ -34,14 +34,12 @@ module Data.ZoomCache.Types (
     , SummaryData()
 
     , summaryDuration
-    , appendSummary
 ) where
 
 import Blaze.ByteString.Builder
 import Control.Monad.Trans (MonadIO)
 import Data.Dynamic
 import Data.IntMap (IntMap)
-import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import Data.Word
 
@@ -71,20 +69,6 @@ data Summary a = Summary
 -- | The duration covered by a summary, in units of 1 / the track's datarate
 summaryDuration :: Summary a -> Integer
 summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
-
--- | Append two Summaries, merging statistical summary data.
--- XXX: summaries are only compatible if tracks and levels are equal
-appendSummary :: (ZoomWritable a) => Summary a -> Summary a -> Summary a
-appendSummary s1 s2 = Summary
-    { summaryTrack = summaryTrack s1
-    , summaryLevel = summaryLevel s1
-    , summaryEntryTime = summaryEntryTime s1
-    , summaryExitTime = summaryExitTime s2
-    , summaryData = appendSummaryData (dur s1) (summaryData s1)
-                                      (dur s2) (summaryData s2)
-    }
-    where
-        dur = fromIntegral . summaryDuration
 
 ------------------------------------------------------------
 -- Read
