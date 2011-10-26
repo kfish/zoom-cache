@@ -16,16 +16,16 @@
 
 module Blaze.ByteString.Builder.ZoomCache (
     -- * Builders
-      fromGlobal
-    , fromTrackType
-    , fromDataRateType
+      fromDataRateType
+    , fromGlobal
+    , fromSummary
     , fromTimeStamp
     , fromTrackNo
-    , fromSummary
+    , fromTrackType
 
     -- * Builder helpers
-    , fromIntegral32be
     , fromDouble
+    , fromIntegral32be
     , fromRational64
 ) where
 
@@ -37,12 +37,15 @@ import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
-
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 -- Builders for local types
+
+fromDataRateType :: DataRateType -> Builder
+fromDataRateType ConstantDR = fromInt16be 0
+fromDataRateType VariableDR = fromInt16be 1
 
 fromGlobal :: Global -> Builder
 fromGlobal Global{..} = mconcat
@@ -55,26 +58,6 @@ fromGlobal Global{..} = mconcat
         ]
     , fromLazyByteString $ LC.pack (replicate 20 '\0') -- UTCTime
     ]
-
-fromVersion :: Version -> Builder
-fromVersion (Version vMaj vMin) = mconcat
-    [ fromInt16be . fromIntegral $ vMaj
-    , fromInt16be . fromIntegral $ vMin
-    ]
-
-fromTrackType :: TrackType -> Builder
-fromTrackType ZDouble = fromInt16be 0
-fromTrackType ZInt    = fromInt16be 1
-
-fromDataRateType :: DataRateType -> Builder
-fromDataRateType ConstantDR = fromInt16be 0
-fromDataRateType VariableDR = fromInt16be 1
-
-fromTimeStamp :: TimeStamp -> Builder
-fromTimeStamp = fromInt64be . fromIntegral . unTS
-
-fromTrackNo :: TrackNo -> Builder
-fromTrackNo = fromInt32be . fromIntegral
 
 fromSummary :: (ZoomSummaryWrite a) => Summary a -> Builder
 fromSummary s@Summary{..} = mconcat [ fromSummaryHeader s, l, d]
@@ -91,21 +74,37 @@ fromSummaryHeader s = mconcat
     , fromTimeStamp . summaryExitTime $ s
     ]
 
-----------------------------------------------------------------------
--- Binary data helpers
+fromTimeStamp :: TimeStamp -> Builder
+fromTimeStamp = fromInt64be . fromIntegral . unTS
 
-fromRational64 :: Rational -> Builder
-fromRational64 r = mconcat
-    [ fromInt64be . fromIntegral . numerator $ r
-    , fromInt64be . fromIntegral . denominator $ r
+fromTrackNo :: TrackNo -> Builder
+fromTrackNo = fromInt32be . fromIntegral
+
+fromTrackType :: TrackType -> Builder
+fromTrackType ZDouble = fromInt16be 0
+fromTrackType ZInt    = fromInt16be 1
+
+fromVersion :: Version -> Builder
+fromVersion (Version vMaj vMin) = mconcat
+    [ fromInt16be . fromIntegral $ vMaj
+    , fromInt16be . fromIntegral $ vMin
     ]
 
-fromIntegral32be :: forall a . (Integral a) => a -> Builder
-fromIntegral32be = fromInt32be . fromIntegral
+----------------------------------------------------------------------
+-- Binary data helpers
 
 fromDouble :: Double -> Builder
 fromDouble = fromWord64be . toWord64
     where
         toWord64 :: Double -> Word64
         toWord64 = unsafeCoerce
+
+fromIntegral32be :: forall a . (Integral a) => a -> Builder
+fromIntegral32be = fromInt32be . fromIntegral
+
+fromRational64 :: Rational -> Builder
+fromRational64 r = mconcat
+    [ fromInt64be . fromIntegral . numerator $ r
+    , fromInt64be . fromIntegral . denominator $ r
+    ]
 
