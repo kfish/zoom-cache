@@ -234,7 +234,7 @@ writeData trackNo d = do
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
-        , twWriter = updateOpSumm (twCount z) (twExitTime z) d (twWriter z)
+        , twWriter = updateWork (twCount z) (twExitTime z) d (twWriter z)
         }
     flushIfNeeded trackNo
 
@@ -252,7 +252,7 @@ writeDataVBR trackNo (t, d) = do
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
-        , twWriter = updateOpSumm (twCount z) t d (twWriter z)
+        , twWriter = updateWork (twCount z) t d (twWriter z)
         }
     flushIfNeeded trackNo
 

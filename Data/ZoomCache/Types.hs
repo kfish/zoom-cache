@@ -29,7 +29,7 @@ module Data.ZoomCache.Types (
     , ZoomWork(..)
     , clearWork
     , clearLevel
-    , updateOpSumm
+    , updateWork
 
     -- * Types
     , Packet(..)
@@ -139,16 +139,16 @@ clearWork (ZoomWork l _) = ZoomWork l Nothing
 clearLevel :: Int -> ZoomWork -> ZoomWork
 clearLevel level (ZoomWork l cw) = ZoomWork (IM.delete level l) cw
 
-updateOpSumm :: (Typeable b, ZoomWritable b)
-             => Int -> TimeStamp -> b
-             -> Maybe ZoomWork
-             -> Maybe ZoomWork
+updateWork :: (Typeable b, ZoomWritable b)
+           => Int -> TimeStamp -> b
+           -> Maybe ZoomWork
+           -> Maybe ZoomWork
 
-updateOpSumm count t d Nothing = Just (ZoomWork IM.empty (Just cw))
+updateWork count t d Nothing = Just (ZoomWork IM.empty (Just cw))
     where
         cw = updateSummaryData count t d (initSummaryWork t)
 
-updateOpSumm count t d (Just (ZoomWork l Nothing)) =
+updateWork count t d (Just (ZoomWork l Nothing)) =
     case cw'm of
         Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
@@ -157,7 +157,7 @@ updateOpSumm count t d (Just (ZoomWork l Nothing)) =
             Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
             Nothing -> Nothing
 
-updateOpSumm count t d (Just (ZoomWork l (Just cw))) =
+updateWork count t d (Just (ZoomWork l (Just cw))) =
     case cw'm of
         Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
