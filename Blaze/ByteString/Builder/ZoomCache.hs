@@ -3,7 +3,7 @@
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
--- Module      : Data.ZoomCache.Write
+-- Module      : Blaze.ByteString.Builder.ZoomCache
 -- Copyright   : Conrad Parker
 -- License     : BSD3-style (see LICENSE)
 --
@@ -14,7 +14,7 @@
 -- Blaze-builder utility functions for writing ZoomCache files.
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.Binary (
+module Blaze.ByteString.Builder.ZoomCache (
     -- * Builders
       fromGlobal
     , fromTrackType

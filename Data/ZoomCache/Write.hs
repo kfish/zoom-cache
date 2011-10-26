@@ -54,7 +54,7 @@ import Data.Monoid
 import Data.Typeable
 import System.IO
 
-import Data.ZoomCache.Binary
+import Blaze.ByteString.Builder.ZoomCache
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 
