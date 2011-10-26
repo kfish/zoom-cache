@@ -27,9 +27,6 @@ module Data.ZoomCache.Types (
     , ZoomSummary(..)
 
     , ZoomWork(..)
-    , clearWork
-    , clearLevel
-    , updateWork
 
     -- * Types
     , Packet(..)
@@ -132,37 +129,3 @@ data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
     { levels   :: IntMap (Summary a -> Summary a)
     , currWork :: Maybe (SummaryWork a)
     }
-
-clearWork :: ZoomWork -> ZoomWork
-clearWork (ZoomWork l _) = ZoomWork l Nothing
-
-clearLevel :: Int -> ZoomWork -> ZoomWork
-clearLevel level (ZoomWork l cw) = ZoomWork (IM.delete level l) cw
-
-updateWork :: (Typeable b, ZoomWritable b)
-           => Int -> TimeStamp -> b
-           -> Maybe ZoomWork
-           -> Maybe ZoomWork
-
-updateWork count t d Nothing = Just (ZoomWork IM.empty (Just cw))
-    where
-        cw = updateSummaryData count t d (initSummaryWork t)
-
-updateWork count t d (Just (ZoomWork l Nothing)) =
-    case cw'm of
-        Just _  -> Just (ZoomWork l cw'm)
-        Nothing -> Nothing
-    where
-        cw'm = case (fromDynamic . toDyn $ d) of
-            Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
-            Nothing -> Nothing
-
-updateWork count t d (Just (ZoomWork l (Just cw))) =
-    case cw'm of
-        Just _  -> Just (ZoomWork l cw'm)
-        Nothing -> Nothing
-    where
-        cw'm = case (fromDynamic . toDyn $ d) of
-            Just d' -> Just (updateSummaryData count t d' cw)
-            Nothing -> Nothing
-

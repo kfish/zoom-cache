@@ -47,11 +47,11 @@ import Control.Applicative ((<$>))
 import Control.Monad.State
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
+import Data.Dynamic
 import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Monoid
-import Data.Typeable
 import System.IO
 
 import Blaze.ByteString.Builder.ZoomCache
@@ -302,6 +302,39 @@ mkTrackWork spec entry w = TrackWork
         , twExitTime = entry
         , twWriter = Nothing
         }
+
+----------------------------------------------------------------------
+-- Working state
+
+clearWork :: ZoomWork -> ZoomWork
+clearWork (ZoomWork l _) = ZoomWork l Nothing
+
+updateWork :: (Typeable b, ZoomWritable b)
+           => Int -> TimeStamp -> b
+           -> Maybe ZoomWork
+           -> Maybe ZoomWork
+
+updateWork count t d Nothing = Just (ZoomWork IM.empty (Just cw))
+    where
+        cw = updateSummaryData count t d (initSummaryWork t)
+
+updateWork count t d (Just (ZoomWork l Nothing)) =
+    case cw'm of
+        Just _  -> Just (ZoomWork l cw'm)
+        Nothing -> Nothing
+    where
+        cw'm = case (fromDynamic . toDyn $ d) of
+            Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
+            Nothing -> Nothing
+
+updateWork count t d (Just (ZoomWork l (Just cw))) =
+    case cw'm of
+        Just _  -> Just (ZoomWork l cw'm)
+        Nothing -> Nothing
+    where
+        cw'm = case (fromDynamic . toDyn $ d) of
+            Just d' -> Just (updateSummaryData count t d' cw)
+            Nothing -> Nothing
 
 ----------------------------------------------------------------------
 -- Summary
