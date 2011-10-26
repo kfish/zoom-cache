@@ -115,10 +115,12 @@ data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 
 class ZoomWritable a where
     data SummaryWork a :: *
+
     fromRaw            :: a -> Builder
-    initSummaryWork    :: TimeStamp -> SummaryWork a
-    mkSummaryData      :: Double -> SummaryWork a -> SummaryData a
     fromSummaryData    :: SummaryData a -> Builder
+
+    initSummaryWork    :: TimeStamp -> SummaryWork a
+    toSummaryData      :: Double -> SummaryWork a -> SummaryData a
     updateSummaryData  :: Int -> TimeStamp -> a
                        -> SummaryWork a
                        -> SummaryWork a

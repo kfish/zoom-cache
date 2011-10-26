@@ -102,10 +102,12 @@ instance ZoomWritable Int where
         , ztsiSum   :: Int
         , ztsiSumSq :: Double
         }
+
     fromRaw           = fromIntegral32be
-    initSummaryWork   = initSummaryInt
-    mkSummaryData     = mkSummaryInt
     fromSummaryData   = fromSummaryInt
+
+    initSummaryWork   = initSummaryInt
+    toSummaryData     = mkSummaryInt
     updateSummaryData = updateSummaryInt
     appendSummaryData = appendSummaryInt
 

@@ -326,7 +326,7 @@ flushOpSumm trackNo entryTime exitTime (OpSummaryWrite l (Just cw))  =
             , summaryLevel = 1
             , summaryEntryTime = entryTime
             , summaryExitTime = exitTime
-            , summaryData = mkSummaryData dur cw
+            , summaryData = toSummaryData dur cw
             }
         dur = fromIntegral $ (unTS exitTime) - (unTS entryTime)
 
