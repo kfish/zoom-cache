@@ -103,7 +103,7 @@ instance ZoomSummaryWrite Int where
         , ztsiSum   :: Int
         , ztsiSumSq :: Double
         }
-    builder           = encInt
+    builder           = fromIntegral32be
     initSummaryWork   = initSummaryInt
     mkSummaryData     = mkSummaryInt
     fromSummaryData   = fromSummaryInt
@@ -132,7 +132,7 @@ mkSummaryInt dur SummaryWorkInt{..} = SummaryInt
     }
 
 fromSummaryInt :: SummaryData Int -> Builder
-fromSummaryInt SummaryInt{..} = mconcat $ map encInt
+fromSummaryInt SummaryInt{..} = mconcat $ map fromIntegral32be
     [ summaryIntEntry
     , summaryIntExit
     , summaryIntMin

@@ -24,7 +24,7 @@ module Blaze.ByteString.Builder.ZoomCache (
     , fromSummary
 
     -- * Builder helpers
-    , encInt
+    , fromIntegral32be
     , fromDouble
     , fromRational64
 ) where
@@ -49,7 +49,7 @@ fromGlobal Global{..} = mconcat
     [ fromLazyByteString globalHeader
     , mconcat $
         [ fromVersion version
-        , encInt noTracks
+        , fromIntegral32be noTracks
         , fromRational64 presentationTime
         , fromRational64 baseTime
         ]
@@ -80,13 +80,13 @@ fromSummary :: (ZoomSummaryWrite a) => Summary a -> Builder
 fromSummary s@Summary{..} = mconcat [ fromSummaryHeader s, l, d]
     where
         d = fromSummaryData summaryData
-        l = encInt . L.length . toLazyByteString $ d
+        l = fromIntegral32be . L.length . toLazyByteString $ d
 
 fromSummaryHeader :: Summary a -> Builder
 fromSummaryHeader s = mconcat
     [ fromLazyByteString summaryHeader
-    , encInt . summaryTrack $ s
-    , encInt . summaryLevel $ s
+    , fromIntegral32be . summaryTrack $ s
+    , fromIntegral32be . summaryLevel $ s
     , fromTimeStamp . summaryEntryTime $ s
     , fromTimeStamp . summaryExitTime $ s
     ]
@@ -100,8 +100,8 @@ fromRational64 r = mconcat
     , fromInt64be . fromIntegral . denominator $ r
     ]
 
-encInt :: forall a . (Integral a) => a -> Builder
-encInt = fromInt32be . fromIntegral
+fromIntegral32be :: forall a . (Integral a) => a -> Builder
+fromIntegral32be = fromInt32be . fromIntegral
 
 fromDouble :: Double -> Builder
 fromDouble = fromWord64be . toWord64

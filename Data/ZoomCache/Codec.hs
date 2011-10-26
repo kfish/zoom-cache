@@ -38,7 +38,7 @@ module Data.ZoomCache.Codec (
 
     -- * Binary data helpers
     , fromRational64
-    , encInt
+    , fromIntegral32be
     , fromDouble
 
     -- * Write instance helpers

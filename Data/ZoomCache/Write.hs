@@ -187,7 +187,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
             , fromTrackType specType
             , fromDataRateType specDRType
             , fromRational64 specRate
-            , encInt . LC.length $ specName
+            , fromIntegral32be . LC.length $ specName
             ]
         , specName
         ]
@@ -279,11 +279,11 @@ modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
 bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     [ fromLazyByteString packetHeader
-    , encInt trackNo
+    , fromIntegral32be trackNo
     , fromTimeStamp twEntryTime
     , fromTimeStamp twExitTime
-    , encInt (len twBuilder + len twTSBuilder)
-    , encInt twCount
+    , fromIntegral32be (len twBuilder + len twTSBuilder)
+    , fromIntegral32be twCount
     , twBuilder
     , twTSBuilder
     ]
