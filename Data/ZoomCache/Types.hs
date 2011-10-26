@@ -27,7 +27,6 @@ module Data.ZoomCache.Types (
     , mkOpaquePacketData
 
     , OpaqueSummary(..)
-    , mkOpaqueSummary
 
     , OpaqueSummaryWrite(..)
     , clearWork
@@ -80,9 +79,6 @@ mkOpaquePacketData :: ZoomRead a => [a] -> OpaquePacketData
 mkOpaquePacketData = OpPacket . packetDataFromList
 
 data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
-
-mkOpaqueSummary :: ZoomSummary a => Summary a -> OpaqueSummary
-mkOpaqueSummary = OpSummary
 
 data OpaqueSummaryWrite = forall a . (Typeable a, ZoomSummaryWrite a) => OpSummaryWrite
     { levels   :: IntMap (Summary a -> Summary a)

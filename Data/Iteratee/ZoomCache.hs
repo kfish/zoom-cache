@@ -230,11 +230,11 @@ readSummary specs = do
             case specType of
                 ZDouble -> do
                     (sd :: SummaryData Double) <- readSummaryData
-                    return . Just . mkOpaqueSummary $
+                    return . Just . OpSummary $
                         Summary trackNo lvl entryTime exitTime sd
                 ZInt -> do
                     (sd :: SummaryData Int) <- readSummaryData
-                    return . Just . mkOpaqueSummary $
+                    return . Just . OpSummary $
                         Summary trackNo lvl entryTime exitTime sd
         Nothing -> do
             I.drop byteLength
