@@ -2,6 +2,20 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
+----------------------------------------------------------------------
+-- |
+-- Module      : Data.ZoomCache.Int
+-- Copyright   : Conrad Parker
+-- License     : BSD3-style (see LICENSE)
+--
+-- Maintainer  : Conrad Parker <conrad@metadecks.org>
+-- Stability   : unstable
+-- Portability : unknown
+--
+-- Default codec implementation for values of type Int. This module
+-- implements the interfaces documented in "Data.ZoomCache.Codec".
+-- View the module source for enlightenment.
+----------------------------------------------------------------------
 
 module Data.ZoomCache.Int (
       PacketData(..)

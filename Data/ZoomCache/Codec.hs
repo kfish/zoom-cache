@@ -9,7 +9,12 @@
 -- Stability   : unstable
 -- Portability : unknown
 --
--- API for implementing ZoomCache codec instances
+-- Interface for implementing ZoomCache codec instances.
+-- This module re-exports the interfaces required for developing
+-- zoom-cache codecs.
+--
+-- For sample implementations, read the source of the provided instances
+-- "Data.ZoomCache.Int" and "Data.ZoomCache.Double".
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Codec (
