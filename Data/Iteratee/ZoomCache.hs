@@ -104,7 +104,7 @@ enumStream = I.unfoldConvStream go
                     (trackNo, packet) <- readPacket (cfSpecs cf)
                     return (cf, StreamPacket cf trackNo (fromJust packet))
                 Just SummaryHeader -> do
-                    (trackNo, summary) <- readSummary (cfSpecs cf)
+                    (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
                     return (cf, StreamSummary cf trackNo (fromJust summary))
                 _ -> return (cf, StreamNull)
 
@@ -215,10 +215,10 @@ readPacket specs = do
             VariableDR -> do
                 replicateM count zReadInt64
 
-readSummary :: (Functor m, MonadIO m)
-            => IntMap TrackSpec
-            -> Iteratee [Word8] m (TrackNo, Maybe OpaqueSummary)
-readSummary specs = do
+readSummaryBlock :: (Functor m, MonadIO m)
+                 => IntMap TrackSpec
+                 -> Iteratee [Word8] m (TrackNo, Maybe OpaqueSummary)
+readSummaryBlock specs = do
     trackNo <- zReadInt32
     lvl <- zReadInt32
     entryTime <- TS <$> zReadInt64
