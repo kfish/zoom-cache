@@ -50,6 +50,7 @@ Cabal-version:       >=1.6
 Library
   -- Modules exported by the library.
   Exposed-modules:     Data.ZoomCache.Binary
+                       Data.ZoomCache.Codec
                        Data.ZoomCache.Common
                        Data.ZoomCache.Double
                        Data.ZoomCache.Dump

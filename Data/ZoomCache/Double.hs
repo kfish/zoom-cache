@@ -17,10 +17,7 @@ import Data.Monoid
 import Data.Word
 import Text.Printf
 
-import Data.Iteratee.ZoomCache.Utils
-import Data.ZoomCache.Common
-import Data.ZoomCache.Types
-import Data.ZoomCache.Write
+import Data.ZoomCache.Codec
 import Numeric.FloatMinMax
 
 ----------------------------------------------------------------------
