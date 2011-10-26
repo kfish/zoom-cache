@@ -111,6 +111,8 @@ enumStream = I.unfoldConvStream go
 
 ------------------------------------------------------------
 
+data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
+
 parseHeader :: L.ByteString -> Maybe HeaderType
 parseHeader h
     | h == globalHeader  = Just GlobalHeader

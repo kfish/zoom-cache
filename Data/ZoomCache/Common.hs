@@ -14,8 +14,7 @@
 
 module Data.ZoomCache.Common (
   -- * Types
-    HeaderType(..)
-  , TimeStamp(..)
+    TimeStamp(..)
   , TrackType(..)
   , DataRateType(..)
   , TrackNo
@@ -46,8 +45,6 @@ type TrackNo = Int
 
 data TimeStamp = TS { unTS :: !Integer }
     deriving (Eq, Ord, Show)
-
-data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
 
 data Version = Version Int Int
     deriving (Eq, Show)
