@@ -137,7 +137,7 @@ fromSummaryInt SummaryInt{..} = mconcat $ map encInt
     , summaryIntExit
     , summaryIntMin
     , summaryIntMax
-    ] ++ map encDbl
+    ] ++ map fromDouble
     [ summaryIntAvg
     , summaryIntRMS
     ]

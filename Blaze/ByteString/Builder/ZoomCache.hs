@@ -26,7 +26,7 @@ module Blaze.ByteString.Builder.ZoomCache (
     -- * Builder helpers
     , encInt
     , encInt64
-    , encDbl
+    , fromDouble
     , fromRational64
 ) where
 
@@ -107,8 +107,8 @@ encInt = fromInt32be . fromIntegral
 encInt64 :: forall a . (Integral a) => a -> Builder
 encInt64 = fromInt64be . fromIntegral
 
-encDbl :: Double -> Builder
-encDbl = fromWord64be . toWord64
+fromDouble :: Double -> Builder
+fromDouble = fromWord64be . toWord64
     where
         toWord64 :: Double -> Word64
         toWord64 = unsafeCoerce

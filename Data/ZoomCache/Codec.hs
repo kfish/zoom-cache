@@ -40,7 +40,7 @@ module Data.ZoomCache.Codec (
     , fromRational64
     , encInt
     , encInt64
-    , encDbl
+    , fromDouble
 
     -- * Write instance helpers
     , writeData

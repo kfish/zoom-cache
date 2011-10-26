@@ -103,7 +103,7 @@ instance ZoomSummaryWrite Double where
         , ztsdSum   :: Double
         , ztsdSumSq :: Double
         }
-    builder           = encDbl
+    builder           = fromDouble
     initSummaryWork   = initSummaryDouble
     mkSummaryData     = mkSummaryDouble
     fromSummaryData   = fromSummaryDouble
@@ -132,7 +132,7 @@ mkSummaryDouble dur SummaryWorkDouble{..} = SummaryDouble
     }
 
 fromSummaryDouble :: SummaryData Double -> Builder
-fromSummaryDouble SummaryDouble{..} = mconcat $ map encDbl
+fromSummaryDouble SummaryDouble{..} = mconcat $ map fromDouble
     [ summaryDoubleEntry
     , summaryDoubleExit
     , summaryDoubleMin
