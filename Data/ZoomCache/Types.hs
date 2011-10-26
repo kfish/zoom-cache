@@ -23,7 +23,6 @@ module Data.ZoomCache.Types (
     , ZoomSummaryWrite(..)
 
     , ZoomRaw(..)
-    , mkOpaquePacketData
 
     , OpaqueSummary(..)
 
@@ -108,9 +107,6 @@ class ZoomRead a where
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
 data ZoomRaw = forall a . ZoomRead a => ZoomRaw (RawData a)
-
-mkOpaquePacketData :: ZoomRead a => [a] -> ZoomRaw
-mkOpaquePacketData = ZoomRaw . fromList
 
 data OpaqueSummary = forall a . ZoomRead a => OpSummary (Summary a)
 

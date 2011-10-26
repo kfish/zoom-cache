@@ -194,13 +194,13 @@ readPacket specs = do
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
-                            (mkOpaquePacketData d) ts)
+                            (ZoomRaw . fromList $ d) ts)
                 ZInt -> do
                     (d :: [Int]) <- replicateM count readRaw
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
-                            (mkOpaquePacketData d) ts)
+                            (ZoomRaw . fromList $ d) ts)
         Nothing -> do
             I.drop byteLength
             return Nothing
