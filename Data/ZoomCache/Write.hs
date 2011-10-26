@@ -55,6 +55,7 @@ import Data.Typeable
 import System.IO
 
 import Blaze.ByteString.Builder.ZoomCache
+import Blaze.ByteString.Builder.ZoomCache.Internal
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 
