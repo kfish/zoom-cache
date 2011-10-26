@@ -43,22 +43,6 @@ instance ZoomRead Double where
     packetDataFromList = PDDouble
     prettyPacketData = prettyPacketDouble
 
-prettyPacketDouble :: PacketData Double -> [String]
-prettyPacketDouble (PDDouble ds) = map (printf "%.3f") ds
-
-----------------------------------------------------------------------
--- Write
-
-instance ZoomWrite Double where
-    write = writeData
-
-instance ZoomWrite (TimeStamp, Double) where
-    write = writeDataVBR
-
-----------------------------------------------------------------------
--- Summary
-
-instance ZoomSummary Double where
     data SummaryData Double = SummaryDouble
         { summaryDoubleEntry :: Double
         , summaryDoubleExit  :: Double
@@ -69,6 +53,9 @@ instance ZoomSummary Double where
         }
     readSummaryData = readSummaryDataDouble
     prettySummaryData = prettySummaryDouble
+
+prettyPacketDouble :: PacketData Double -> [String]
+prettyPacketDouble (PDDouble ds) = map (printf "%.3f") ds
 
 readSummaryDataDouble :: (Functor m, MonadIO m)
                       => Iteratee [Word8] m (SummaryData Double)
@@ -92,6 +79,15 @@ typeOfSummaryDouble _ = mkTyConApp tyCon [d,d,d,d]
         tyCon = mkTyCon3 "zoom-cache" "Data.ZoomCache.Types" "SummaryDouble"
         d = typeOf (undefined :: Double)
 -}
+
+----------------------------------------------------------------------
+-- Write
+
+instance ZoomWrite Double where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Double) where
+    write = writeDataVBR
 
 instance ZoomSummaryWrite Double where
     data SummaryWork Double = SummaryWorkDouble

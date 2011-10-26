@@ -42,22 +42,6 @@ instance ZoomRead Int where
     packetDataFromList = PDInt
     prettyPacketData = prettyPacketInt
 
-prettyPacketInt :: PacketData Int -> [String]
-prettyPacketInt (PDInt ds) = map show ds
-
-----------------------------------------------------------------------
--- Write
-
-instance ZoomWrite Int where
-    write = writeData
-
-instance ZoomWrite (TimeStamp, Int) where
-    write = writeDataVBR
-
-----------------------------------------------------------------------
--- Summary
-
-instance ZoomSummary Int where
     data SummaryData Int = SummaryInt
         { summaryIntEntry :: Int
         , summaryIntExit  :: Int
@@ -68,6 +52,9 @@ instance ZoomSummary Int where
         }
     readSummaryData = readSummaryDataInt
     prettySummaryData = prettySummaryInt
+
+prettyPacketInt :: PacketData Int -> [String]
+prettyPacketInt (PDInt ds) = map show ds
 
 readSummaryDataInt :: (Functor m, MonadIO m)
                    => Iteratee [Word8] m (SummaryData Int)
@@ -92,6 +79,15 @@ typeOfSummaryInt _ = mkTyConApp tyCon [i,i,i,i]
         tyCon = mkTyCon3 "zoom-cache" "Data.ZoomCache.Types" "SummaryInt"
         i = typeOf (undefined :: Int)
 -}
+
+----------------------------------------------------------------------
+-- Write
+
+instance ZoomWrite Int where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Int) where
+    write = writeDataVBR
 
 instance ZoomSummaryWrite Int where
     data SummaryWork Int = SummaryWorkInt

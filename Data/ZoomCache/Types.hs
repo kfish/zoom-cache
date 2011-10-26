@@ -20,7 +20,6 @@ module Data.ZoomCache.Types (
     -- * Classes
       ZoomRead(..)
     , PacketData()
-    , ZoomSummary(..)
     , ZoomSummaryWrite(..)
 
     , OpaquePacketData(..)
@@ -100,7 +99,6 @@ class ZoomRead a where
     packetDataFromList :: [a] -> PacketData a
     prettyPacketData   :: PacketData a -> [String]
 
-class ZoomSummary a where
     data SummaryData a :: *
     readSummaryData :: (Functor m, MonadIO m)
                     => Iteratee [Word8] m (SummaryData a)
@@ -112,7 +110,7 @@ data OpaquePacketData = forall a . ZoomRead a => OpPacket (PacketData a)
 mkOpaquePacketData :: ZoomRead a => [a] -> OpaquePacketData
 mkOpaquePacketData = OpPacket . packetDataFromList
 
-data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
+data OpaqueSummary = forall a . ZoomRead a => OpSummary (Summary a)
 
 ------------------------------------------------------------
 -- Write
