@@ -39,9 +39,9 @@ import Numeric.FloatMinMax
 
 instance ZoomRead Double where
     data PacketData Double = PDDouble [Double]
-    zRead = zReadFloat64be
-    packetDataFromList = PDDouble
-    prettyPacketData = prettyPacketDouble
+
+    readRaw  = zReadFloat64be
+    fromList = PDDouble
 
     data SummaryData Double = SummaryDouble
         { summaryDoubleEntry :: Double
@@ -51,15 +51,18 @@ instance ZoomRead Double where
         , summaryDoubleAvg   :: Double
         , summaryDoubleRMS   :: Double
         }
-    readSummaryData = readSummaryDataDouble
+
+    readSummary = readSummaryDouble
+
+    prettyPacketData = prettyPacketDouble
     prettySummaryData = prettySummaryDouble
 
 prettyPacketDouble :: PacketData Double -> [String]
 prettyPacketDouble (PDDouble ds) = map (printf "%.3f") ds
 
-readSummaryDataDouble :: (Functor m, MonadIO m)
-                      => Iteratee [Word8] m (SummaryData Double)
-readSummaryDataDouble = do
+readSummaryDouble :: (Functor m, MonadIO m)
+                  => Iteratee [Word8] m (SummaryData Double)
+readSummaryDouble = do
     [en,ex,mn,mx,avg,rms] <- replicateM 6 zReadFloat64be
     return (SummaryDouble en ex mn mx avg rms)
 

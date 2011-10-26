@@ -190,13 +190,13 @@ readPacket specs = do
             let readTS = readTimeStamps specDRType count entryTime
             case specType of
                 ZDouble -> do
-                    (d :: [Double]) <- replicateM count zRead
+                    (d :: [Double]) <- replicateM count readRaw
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
                             (mkOpaquePacketData d) ts)
                 ZInt -> do
-                    (d :: [Int]) <- replicateM count zRead
+                    (d :: [Int]) <- replicateM count readRaw
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
@@ -229,11 +229,11 @@ readSummaryBlock specs = do
         Just TrackSpec{..} -> do
             case specType of
                 ZDouble -> do
-                    (sd :: SummaryData Double) <- readSummaryData
+                    (sd :: SummaryData Double) <- readSummary
                     return . Just . OpSummary $
                         Summary trackNo lvl entryTime exitTime sd
                 ZInt -> do
-                    (sd :: SummaryData Int) <- readSummaryData
+                    (sd :: SummaryData Int) <- readSummary
                     return . Just . OpSummary $
                         Summary trackNo lvl entryTime exitTime sd
         Nothing -> do

@@ -95,20 +95,22 @@ appendSummary s1 s2 = Summary
 
 class ZoomRead a where
     data PacketData a  :: *
-    zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
-    packetDataFromList :: [a] -> PacketData a
-    prettyPacketData   :: PacketData a -> [String]
+    readRaw            :: (Functor m, MonadIO m)
+                       => Iteratee [Word8] m a
+    fromList           :: [a] -> PacketData a
 
     data SummaryData a :: *
-    readSummaryData :: (Functor m, MonadIO m)
-                    => Iteratee [Word8] m (SummaryData a)
+    readSummary        :: (Functor m, MonadIO m)
+                       => Iteratee [Word8] m (SummaryData a)
+
+    prettyPacketData   :: PacketData a -> [String]
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
 data OpaquePacketData = forall a . ZoomRead a => OpPacket (PacketData a)
 
 mkOpaquePacketData :: ZoomRead a => [a] -> OpaquePacketData
-mkOpaquePacketData = OpPacket . packetDataFromList
+mkOpaquePacketData = OpPacket . fromList
 
 data OpaqueSummary = forall a . ZoomRead a => OpSummary (Summary a)
 

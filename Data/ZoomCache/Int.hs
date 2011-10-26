@@ -38,9 +38,9 @@ import Data.ZoomCache.Codec
 
 instance ZoomRead Int where
     data PacketData Int = PDInt [Int]
-    zRead = zReadInt32
-    packetDataFromList = PDInt
-    prettyPacketData = prettyPacketInt
+
+    readRaw  = zReadInt32
+    fromList = PDInt
 
     data SummaryData Int = SummaryInt
         { summaryIntEntry :: Int
@@ -50,15 +50,18 @@ instance ZoomRead Int where
         , summaryIntAvg   :: Double
         , summaryIntRMS   :: Double
         }
-    readSummaryData = readSummaryDataInt
+
+    readSummary = readSummaryInt
+
+    prettyPacketData  = prettyPacketInt
     prettySummaryData = prettySummaryInt
 
 prettyPacketInt :: PacketData Int -> [String]
 prettyPacketInt (PDInt ds) = map show ds
 
-readSummaryDataInt :: (Functor m, MonadIO m)
-                   => Iteratee [Word8] m (SummaryData Int)
-readSummaryDataInt = do
+readSummaryInt :: (Functor m, MonadIO m)
+               => Iteratee [Word8] m (SummaryData Int)
+readSummaryInt = do
     [en,ex,mn,mx] <- replicateM 4 zReadInt32
     [avg,rms] <- replicateM 2 zReadFloat64be
     return (SummaryInt en ex mn mx avg rms)
