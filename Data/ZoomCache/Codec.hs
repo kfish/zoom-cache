@@ -49,6 +49,7 @@ module Data.ZoomCache.Codec (
 ) where
 
 import Data.Iteratee.ZoomCache.Utils
+import Data.ZoomCache.Binary
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 import Data.ZoomCache.Write

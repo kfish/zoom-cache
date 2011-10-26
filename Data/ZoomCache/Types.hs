@@ -41,13 +41,6 @@ module Data.ZoomCache.Types (
 
     , summaryDuration
     , appendSummary
-
-    -- * Builder helpers
-    , encInt
-    , encInt64
-    , encDbl
-    , fromRational64
-    , toWord64
 ) where
 
 import Blaze.ByteString.Builder
@@ -56,12 +49,7 @@ import Data.Dynamic
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
-import Data.Monoid
-
--- Binary helpers
-import Data.Ratio
 import Data.Word
-import Unsafe.Coerce (unsafeCoerce)
 
 import Data.ZoomCache.Common
 
@@ -183,25 +171,3 @@ appendSummary s1 s2 = Summary
     }
     where
         dur = fromIntegral . summaryDuration
-
-----------------------------------------------------------------------
--- Binary data helpers
-    
-fromRational64 :: Rational -> Builder
-fromRational64 r = mconcat
-    [ fromInt64be . fromIntegral . numerator $ r
-    , fromInt64be . fromIntegral . denominator $ r
-    ]
-
-encInt :: forall a . (Integral a) => a -> Builder
-encInt = fromInt32be . fromIntegral
-
-encInt64 :: forall a . (Integral a) => a -> Builder
-encInt64 = fromInt64be . fromIntegral
-
-encDbl :: Double -> Builder
-encDbl = fromWord64be . toWord64
-
-toWord64 :: Double -> Word64
-toWord64 = unsafeCoerce
-
