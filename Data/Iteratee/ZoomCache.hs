@@ -48,7 +48,7 @@ import Data.Word
 
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
-import Data.ZoomCache.Internal
+import Data.ZoomCache.Format
 import Data.ZoomCache.Types
 
 -- XXX: Remove these

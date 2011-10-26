@@ -88,6 +88,7 @@ Library
                        Data.ZoomCache.Common
                        Data.ZoomCache.Double
                        Data.ZoomCache.Dump
+                       Data.ZoomCache.Format
                        Data.ZoomCache.Int
                        Data.ZoomCache.Pretty
                        Data.ZoomCache.Types
@@ -96,7 +97,6 @@ Library
                        Data.Iteratee.ZoomCache.Utils
 
   Other-modules:       Blaze.ByteString.Builder.ZoomCache.Internal
-                       Data.ZoomCache.Internal
                        Numeric.FloatMinMax
   
   -- Packages needed in order to build this package.
