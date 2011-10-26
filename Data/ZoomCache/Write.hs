@@ -223,7 +223,7 @@ flushIfNeeded trackNo = do
         flushNeeded :: TrackWork -> Bool
         flushNeeded TrackWork{..} = twCount >= twWatermark
 
-writeData :: (Typeable a, ZoomWrite a, ZoomSummaryWrite a)
+writeData :: (Typeable a, ZoomWrite a, ZoomWritable a)
           => TrackNo -> a -> ZoomW ()
 writeData trackNo d = do
     incTime trackNo
@@ -238,7 +238,7 @@ writeData trackNo d = do
         }
     flushIfNeeded trackNo
 
-writeDataVBR :: (Typeable a, ZoomWrite a, ZoomSummaryWrite a)
+writeDataVBR :: (Typeable a, ZoomWrite a, ZoomWritable a)
              => TrackNo -> (TimeStamp, a) -> ZoomW ()
 writeDataVBR trackNo (t, d) = do
     setTime trackNo t
@@ -330,7 +330,7 @@ flushOpSumm trackNo entryTime exitTime (OpSummaryWrite l (Just cw))  =
             }
         dur = fromIntegral $ (unTS exitTime) - (unTS entryTime)
 
-pushSummary :: (ZoomSummaryWrite a)
+pushSummary :: (ZoomWritable a)
             => Summary a
             -> IntMap Builder -> IntMap (Summary a -> Summary a)
             -> (IntMap Builder, IntMap (Summary a -> Summary a))

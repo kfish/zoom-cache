@@ -20,7 +20,7 @@ module Data.ZoomCache.Types (
     -- * Classes
       ZoomReadable(..)
     , RawData()
-    , ZoomSummaryWrite(..)
+    , ZoomWritable(..)
 
     , ZoomRaw(..)
 
@@ -77,7 +77,7 @@ summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
 -- | Append two Summaries, merging statistical summary data.
 -- XXX: summaries are only compatible if tracks and levels are equal
-appendSummary :: (ZoomSummaryWrite a) => Summary a -> Summary a -> Summary a
+appendSummary :: (ZoomWritable a) => Summary a -> Summary a -> Summary a
 appendSummary s1 s2 = Summary
     { summaryTrack = summaryTrack s1
     , summaryLevel = summaryLevel s1
@@ -113,7 +113,7 @@ data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 ------------------------------------------------------------
 -- Write
 
-class ZoomSummaryWrite a where
+class ZoomWritable a where
     data SummaryWork a :: *
     builder            :: a -> Builder
     initSummaryWork    :: TimeStamp -> SummaryWork a
@@ -126,7 +126,7 @@ class ZoomSummaryWrite a where
                        -> Double -> SummaryData a
                        -> SummaryData a
 
-data OpaqueSummaryWrite = forall a . (Typeable a, ZoomSummaryWrite a) => OpSummaryWrite
+data OpaqueSummaryWrite = forall a . (Typeable a, ZoomWritable a) => OpSummaryWrite
     { levels   :: IntMap (Summary a -> Summary a)
     , currWork :: Maybe (SummaryWork a)
     }
@@ -137,7 +137,7 @@ clearWork (OpSummaryWrite l _) = OpSummaryWrite l Nothing
 clearLevel :: Int -> OpaqueSummaryWrite -> OpaqueSummaryWrite
 clearLevel level (OpSummaryWrite l cw) = OpSummaryWrite (IM.delete level l) cw
 
-updateOpSumm :: (Typeable b, ZoomSummaryWrite b)
+updateOpSumm :: (Typeable b, ZoomWritable b)
              => Int -> TimeStamp -> b
              -> Maybe OpaqueSummaryWrite
              -> Maybe OpaqueSummaryWrite

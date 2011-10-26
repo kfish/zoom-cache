@@ -92,7 +92,7 @@ instance ZoomWrite Double where
 instance ZoomWrite (TimeStamp, Double) where
     write = writeDataVBR
 
-instance ZoomSummaryWrite Double where
+instance ZoomWritable Double where
     data SummaryWork Double = SummaryWorkDouble
         { ztsdTime  :: TimeStamp
         , ztsdEntry :: Double

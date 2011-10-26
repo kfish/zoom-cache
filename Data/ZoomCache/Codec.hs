@@ -22,7 +22,7 @@ module Data.ZoomCache.Codec (
       ZoomReadable(..)
     , RawData()
     , SummaryData()
-    , ZoomSummaryWrite(..)
+    , ZoomWritable(..)
     , ZoomWrite(..)
 
     -- * ZoomCache Types

@@ -51,7 +51,7 @@ fromGlobal Global{..} = mconcat
     , fromLazyByteString $ LC.pack (replicate 20 '\0') -- UTCTime
     ]
 
-fromSummary :: (ZoomSummaryWrite a) => Summary a -> Builder
+fromSummary :: ZoomWritable a => Summary a -> Builder
 fromSummary s@Summary{..} = mconcat [ fromSummaryHeader s, l, d]
     where
         d = fromSummaryData summaryData

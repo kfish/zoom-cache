@@ -92,7 +92,7 @@ instance ZoomWrite Int where
 instance ZoomWrite (TimeStamp, Int) where
     write = writeDataVBR
 
-instance ZoomSummaryWrite Int where
+instance ZoomWritable Int where
     data SummaryWork Int = SummaryWorkInt
         { ztsiTime  :: TimeStamp
         , ztsiEntry :: Int
