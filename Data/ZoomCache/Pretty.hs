@@ -67,7 +67,7 @@ prettyTimeStamp r (TS t)
           (hrs, minN) = quotRem minT 60
 
 -- | Pretty-print a 'Summary', given a datarate
-prettySummary :: ZoomRead a => Rational -> Summary a -> String
+prettySummary :: ZoomReadable a => Rational -> Summary a -> String
 prettySummary r s = concat
     [ prettySummaryTimes r s
     , prettySummaryLevel s

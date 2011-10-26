@@ -37,7 +37,7 @@ import Numeric.FloatMinMax
 ----------------------------------------------------------------------
 -- Read
 
-instance ZoomRead Double where
+instance ZoomReadable Double where
     data RawData Double = RDDouble [Double]
 
     readRaw  = zReadFloat64be

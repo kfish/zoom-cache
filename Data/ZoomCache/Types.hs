@@ -18,7 +18,7 @@
 
 module Data.ZoomCache.Types (
     -- * Classes
-      ZoomRead(..)
+      ZoomReadable(..)
     , RawData()
     , ZoomSummaryWrite(..)
 
@@ -92,7 +92,7 @@ appendSummary s1 s2 = Summary
 ------------------------------------------------------------
 -- Read
 
-class ZoomRead a where
+class ZoomReadable a where
     data RawData a  :: *
     readRaw         :: (Functor m, MonadIO m)
                     => Iteratee [Word8] m a
@@ -106,9 +106,9 @@ class ZoomRead a where
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
-data ZoomRaw = forall a . ZoomRead a => ZoomRaw (RawData a)
+data ZoomRaw = forall a . ZoomReadable a => ZoomRaw (RawData a)
 
-data ZoomSummary = forall a . ZoomRead a => ZoomSummary (Summary a)
+data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 
 ------------------------------------------------------------
 -- Write

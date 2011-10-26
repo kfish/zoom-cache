@@ -21,7 +21,7 @@ module Data.ZoomCache (
 
     , CacheFile(..)
 
-    , ZoomRead(..)
+    , ZoomReadable(..)
 
     , ZoomRaw(..)
     , ZoomSummary(..)

@@ -36,7 +36,7 @@ import Data.ZoomCache.Codec
 ----------------------------------------------------------------------
 -- Read
 
-instance ZoomRead Int where
+instance ZoomReadable Int where
     data RawData Int = RDInt [Int]
 
     readRaw  = zReadInt32
