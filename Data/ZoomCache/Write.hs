@@ -230,7 +230,7 @@ writeData trackNo d = do
 
     doRaw <- gets whWriteData
     when doRaw $
-        modifyTrack trackNo $ \z -> z { twBuilder = twBuilder z <> builder d }
+        modifyTrack trackNo $ \z -> z { twBuilder = twBuilder z <> fromRaw d }
 
     modifyTrack trackNo $ \z -> z
         { twCount = twCount z + 1
@@ -246,7 +246,7 @@ writeDataVBR trackNo (t, d) = do
     doRaw <- gets whWriteData
     when doRaw $
         modifyTrack trackNo $ \z -> z
-            { twBuilder = twBuilder z <> builder d
+            { twBuilder = twBuilder z <> fromRaw d
             , twTSBuilder = twTSBuilder z <> fromTimeStamp t
             }
 

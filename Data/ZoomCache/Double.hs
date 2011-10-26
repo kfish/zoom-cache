@@ -102,7 +102,7 @@ instance ZoomWritable Double where
         , ztsdSum   :: Double
         , ztsdSumSq :: Double
         }
-    builder           = fromDouble
+    fromRaw           = fromDouble
     initSummaryWork   = initSummaryDouble
     mkSummaryData     = mkSummaryDouble
     fromSummaryData   = fromSummaryDouble
