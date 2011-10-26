@@ -13,7 +13,7 @@
 -- Stability   : unstable
 -- Portability : unknown
 --
--- ZoomCache packet definition
+-- ZoomCache packet and summary types and interfaces
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Types (
