@@ -29,10 +29,7 @@ import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
 import Text.Printf
 
-import Data.Iteratee.ZoomCache
-import Data.ZoomCache.Common
-import Data.ZoomCache.Pretty
-import Data.ZoomCache.Types
+import Data.ZoomCache
 
 ------------------------------------------------------------
 

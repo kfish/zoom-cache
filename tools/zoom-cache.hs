@@ -15,9 +15,8 @@ import Data.Default
 import System.Console.GetOpt
 import UI.Command
 
-import Data.ZoomCache.Common
+import Data.ZoomCache
 import Data.ZoomCache.Dump
-import Data.ZoomCache.Write
 
 ------------------------------------------------------------
 
