@@ -103,7 +103,7 @@ instance ZoomSummaryWrite Double where
         , ztsdSum   :: Double
         , ztsdSumSq :: Double
         }
-    builder           = fromWord64be . toWord64
+    builder           = encDbl
     initSummaryWork   = initSummaryDouble
     mkSummaryData     = mkSummaryDouble
     fromSummaryData   = fromSummaryDouble

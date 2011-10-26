@@ -41,7 +41,6 @@ module Data.ZoomCache.Codec (
     , encInt
     , encInt64
     , encDbl
-    , toWord64
 
     -- * Write instance helpers
     , writeData
