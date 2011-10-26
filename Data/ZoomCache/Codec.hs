@@ -20,7 +20,7 @@
 module Data.ZoomCache.Codec (
     -- * Interfaces
       ZoomRead(..)
-    , PacketData()
+    , RawData()
     , SummaryData()
     , ZoomSummaryWrite(..)
     , ZoomWrite(..)

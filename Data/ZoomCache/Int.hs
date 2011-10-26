@@ -18,7 +18,7 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Int (
-      PacketData(..)
+      RawData(..)
     , SummaryData(..)
     , SummaryWork(..)
 )where
@@ -37,10 +37,10 @@ import Data.ZoomCache.Codec
 -- Read
 
 instance ZoomRead Int where
-    data PacketData Int = PDInt [Int]
+    data RawData Int = RDInt [Int]
 
     readRaw  = zReadInt32
-    fromList = PDInt
+    fromList = RDInt
 
     data SummaryData Int = SummaryInt
         { summaryIntEntry :: Int
@@ -53,11 +53,11 @@ instance ZoomRead Int where
 
     readSummary = readSummaryInt
 
-    prettyPacketData  = prettyPacketInt
+    prettyRawData  = prettyPacketInt
     prettySummaryData = prettySummaryInt
 
-prettyPacketInt :: PacketData Int -> [String]
-prettyPacketInt (PDInt ds) = map show ds
+prettyPacketInt :: RawData Int -> [String]
+prettyPacketInt (RDInt ds) = map show ds
 
 readSummaryInt :: (Functor m, MonadIO m)
                => Iteratee [Word8] m (SummaryData Int)

@@ -18,7 +18,7 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Double (
-      PacketData(..)
+      RawData(..)
     , SummaryData(..)
     , SummaryWork(..)
 )where
@@ -38,10 +38,10 @@ import Numeric.FloatMinMax
 -- Read
 
 instance ZoomRead Double where
-    data PacketData Double = PDDouble [Double]
+    data RawData Double = RDDouble [Double]
 
     readRaw  = zReadFloat64be
-    fromList = PDDouble
+    fromList = RDDouble
 
     data SummaryData Double = SummaryDouble
         { summaryDoubleEntry :: Double
@@ -54,11 +54,11 @@ instance ZoomRead Double where
 
     readSummary = readSummaryDouble
 
-    prettyPacketData = prettyPacketDouble
+    prettyRawData     = prettyPacketDouble
     prettySummaryData = prettySummaryDouble
 
-prettyPacketDouble :: PacketData Double -> [String]
-prettyPacketDouble (PDDouble ds) = map (printf "%.3f") ds
+prettyPacketDouble :: RawData Double -> [String]
+prettyPacketDouble (RDDouble ds) = map (printf "%.3f") ds
 
 readSummaryDouble :: (Functor m, MonadIO m)
                   => Iteratee [Word8] m (SummaryData Double)

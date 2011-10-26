@@ -66,7 +66,7 @@ dumpData trackNo s@StreamPacket{..}
             Nothing -> show . unTS
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
         vals = f (packetData strmPacket)
-        f (OpPacket a) = prettyPacketData a
+        f (ZoomRaw a) = prettyRawData a
 dumpData _ _ = return ()
 
 dumpSummary :: TrackNo -> Stream -> IO ()

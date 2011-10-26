@@ -19,10 +19,10 @@
 module Data.ZoomCache.Types (
     -- * Classes
       ZoomRead(..)
-    , PacketData()
+    , RawData()
     , ZoomSummaryWrite(..)
 
-    , OpaquePacketData(..)
+    , ZoomRaw(..)
     , mkOpaquePacketData
 
     , OpaqueSummary(..)
@@ -58,7 +58,7 @@ data Packet = Packet
     , packetEntryTime  :: TimeStamp
     , packetExitTime   :: TimeStamp
     , packetCount      :: Int
-    , packetData       :: OpaquePacketData
+    , packetData       :: ZoomRaw
     , packetTimeStamps :: [TimeStamp]
     }
 
@@ -94,23 +94,23 @@ appendSummary s1 s2 = Summary
 -- Read
 
 class ZoomRead a where
-    data PacketData a  :: *
-    readRaw            :: (Functor m, MonadIO m)
-                       => Iteratee [Word8] m a
-    fromList           :: [a] -> PacketData a
+    data RawData a  :: *
+    readRaw         :: (Functor m, MonadIO m)
+                    => Iteratee [Word8] m a
+    fromList        :: [a] -> RawData a
 
     data SummaryData a :: *
     readSummary        :: (Functor m, MonadIO m)
                        => Iteratee [Word8] m (SummaryData a)
 
-    prettyPacketData   :: PacketData a -> [String]
+    prettyRawData      :: RawData a -> [String]
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
-data OpaquePacketData = forall a . ZoomRead a => OpPacket (PacketData a)
+data ZoomRaw = forall a . ZoomRead a => ZoomRaw (RawData a)
 
-mkOpaquePacketData :: ZoomRead a => [a] -> OpaquePacketData
-mkOpaquePacketData = OpPacket . fromList
+mkOpaquePacketData :: ZoomRead a => [a] -> ZoomRaw
+mkOpaquePacketData = ZoomRaw . fromList
 
 data OpaqueSummary = forall a . ZoomRead a => OpSummary (Summary a)
 
