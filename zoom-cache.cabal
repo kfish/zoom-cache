@@ -13,8 +13,41 @@ Version:             0.2.1.1
 Synopsis:            A streamable, seekable, zoomable cache file format
 
 -- A longer description of the package.
-Description:         This library provides a monadic writing and iteratee reading
-                     interface for zoom-cache files.
+Description:
+    zoom-cache is a fairly simple data file format for storing and summarizing
+    streams of time-series data. The purpose of this format is to make it easy
+    to quickly generate plots; /zooming/ refers to being able to render a
+    window of data, and being able to quickly change the bounds of the window:
+    to move around and to zoom in and out.
+    .
+    This library provides a monadic writing and an iteratee reading interface
+    for zoom-cache files.
+    .
+    What's neat about this format and library? Glad you asked!
+    .
+        * While writing a file, summary blocks (such as minimum, maximum,
+    mean and RMS values) are written out every n samples. The summary blocks
+    are hierarchical, such that after two have been written, a new one
+    containing a merged summary of those is written. After two of those Level
+    1 summary blocks have been written, a new Level 2 summary block combining
+    those is written, and so on.
+    .
+        * You can write your own zoom-cache codecs for custom data types, or
+    to implement custom summary functions. In order to do so you provide a
+    'Summary' data type, functions for encoding and decoding raw data values
+    and summaries, and a function for merging 'Summary' blocks. For details,
+    see "Data.ZoomCache.Codec".
+    .
+        * Writing of raw data blocks is optional, under control of the
+    application. If you already have the raw data stored in an easily
+    accessible format, your zoom-cache files may just contain the summary
+    data. On the other hand, if your input data is the result of expensive
+    calculations you may want to store it along with the summary data so that
+    plots of any level of detail can be rendered from a single file.
+    .
+    When developing applications that read or write zoom-cache files, it should
+    be sufficient to import only the module "Data.ZoomCache".
+    .
 
 -- The license under which the package is released.
 License:             BSD3
