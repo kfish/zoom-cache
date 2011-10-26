@@ -54,14 +54,6 @@ import Data.ZoomCache.Common
 
 ------------------------------------------------------------
 
-class ZoomRead a where
-    data PacketData a  :: *
-    zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
-    packetDataFromList :: [a] -> PacketData a
-    prettyPacketData   :: PacketData a -> [String]
-
-------------------------------------------------------------
-
 data Packet = Packet
     { packetTrack      :: TrackNo
     , packetEntryTime  :: TimeStamp
@@ -72,6 +64,48 @@ data Packet = Packet
     }
 
 ------------------------------------------------------------
+-- | A recorded block of summary data
+data Summary a = Summary
+    { summaryTrack :: TrackNo
+    , summaryLevel :: Int
+    , summaryEntryTime :: TimeStamp
+    , summaryExitTime :: TimeStamp
+    , summaryData :: SummaryData a
+    }
+
+-- | The duration covered by a summary, in units of 1 / the track's datarate
+summaryDuration :: Summary a -> Integer
+summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
+
+-- | Append two Summaries, merging statistical summary data.
+-- XXX: summaries are only compatible if tracks and levels are equal
+appendSummary :: (ZoomSummaryWrite a) => Summary a -> Summary a -> Summary a
+appendSummary s1 s2 = Summary
+    { summaryTrack = summaryTrack s1
+    , summaryLevel = summaryLevel s1
+    , summaryEntryTime = summaryEntryTime s1
+    , summaryExitTime = summaryExitTime s2
+    , summaryData = appendSummaryData (dur s1) (summaryData s1)
+                                      (dur s2) (summaryData s2)
+    }
+    where
+        dur = fromIntegral . summaryDuration
+
+------------------------------------------------------------
+-- Read
+
+class ZoomRead a where
+    data PacketData a  :: *
+    zRead :: (Functor m, MonadIO m) => Iteratee [Word8] m a
+    packetDataFromList :: [a] -> PacketData a
+    prettyPacketData   :: PacketData a -> [String]
+
+class ZoomSummary a where
+    data SummaryData a :: *
+    readSummaryData :: (Functor m, MonadIO m)
+                    => Iteratee [Word8] m (SummaryData a)
+    prettySummaryData  :: SummaryData a -> String
+    -- typeOfSummaryData :: SummaryData a -> TypeRep
 
 data OpaquePacketData = forall a . ZoomRead a => OpPacket (PacketData a)
 
@@ -79,6 +113,22 @@ mkOpaquePacketData :: ZoomRead a => [a] -> OpaquePacketData
 mkOpaquePacketData = OpPacket . packetDataFromList
 
 data OpaqueSummary = forall a . ZoomSummary a => OpSummary (Summary a)
+
+------------------------------------------------------------
+-- Write
+
+class ZoomSummary a => ZoomSummaryWrite a where
+    data SummaryWork a :: *
+    builder            :: a -> Builder
+    initSummaryWork    :: TimeStamp -> SummaryWork a
+    mkSummaryData      :: Double -> SummaryWork a -> SummaryData a
+    fromSummaryData    :: SummaryData a -> Builder
+    updateSummaryData  :: Int -> TimeStamp -> a
+                       -> SummaryWork a
+                       -> SummaryWork a
+    appendSummaryData  :: Double -> SummaryData a
+                       -> Double -> SummaryData a
+                       -> SummaryData a
 
 data OpaqueSummaryWrite = forall a . (Typeable a, ZoomSummaryWrite a) => OpSummaryWrite
     { levels   :: IntMap (Summary a -> Summary a)
@@ -118,52 +168,3 @@ updateOpSumm count t d (Just (OpSummaryWrite l (Just cw))) =
             Just d' -> Just (updateSummaryData count t d' cw)
             Nothing -> Nothing
 
-------------------------------------------------------------
-
-class ZoomSummary a where
-    data SummaryData a :: *
-    readSummaryData :: (Functor m, MonadIO m)
-                    => Iteratee [Word8] m (SummaryData a)
-    prettySummaryData  :: SummaryData a -> String
-    -- typeOfSummaryData :: SummaryData a -> TypeRep
-
-class ZoomSummary a => ZoomSummaryWrite a where
-    data SummaryWork a :: *
-    builder            :: a -> Builder
-    initSummaryWork    :: TimeStamp -> SummaryWork a
-    mkSummaryData      :: Double -> SummaryWork a -> SummaryData a
-    fromSummaryData    :: SummaryData a -> Builder
-    updateSummaryData  :: Int -> TimeStamp -> a
-                       -> SummaryWork a
-                       -> SummaryWork a
-    appendSummaryData  :: Double -> SummaryData a
-                       -> Double -> SummaryData a
-                       -> SummaryData a
-
-------------------------------------------------------------
--- | A recorded block of summary data
-data Summary a = Summary
-    { summaryTrack :: TrackNo
-    , summaryLevel :: Int
-    , summaryEntryTime :: TimeStamp
-    , summaryExitTime :: TimeStamp
-    , summaryData :: SummaryData a
-    }
-
--- | The duration covered by a summary, in units of 1 / the track's datarate
-summaryDuration :: Summary a -> Integer
-summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
-
--- | Append two Summaries, merging statistical summary data.
--- XXX: summaries are only compatible if tracks and levels are equal
-appendSummary :: (ZoomSummaryWrite a) => Summary a -> Summary a -> Summary a
-appendSummary s1 s2 = Summary
-    { summaryTrack = summaryTrack s1
-    , summaryLevel = summaryLevel s1
-    , summaryEntryTime = summaryEntryTime s1
-    , summaryExitTime = summaryExitTime s2
-    , summaryData = appendSummaryData (dur s1) (summaryData s1)
-                                      (dur s2) (summaryData s2)
-    }
-    where
-        dur = fromIntegral . summaryDuration
