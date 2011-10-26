@@ -25,7 +25,6 @@ module Blaze.ByteString.Builder.ZoomCache (
 
     -- * Builder helpers
     , encInt
-    , encInt64
     , fromDouble
     , fromRational64
 ) where
@@ -72,7 +71,7 @@ fromDataRateType ConstantDR = fromInt16be 0
 fromDataRateType VariableDR = fromInt16be 1
 
 fromTimeStamp :: TimeStamp -> Builder
-fromTimeStamp = encInt64 . unTS
+fromTimeStamp = fromInt64be . fromIntegral . unTS
 
 fromTrackNo :: TrackNo -> Builder
 fromTrackNo = fromInt32be . fromIntegral
@@ -103,9 +102,6 @@ fromRational64 r = mconcat
 
 encInt :: forall a . (Integral a) => a -> Builder
 encInt = fromInt32be . fromIntegral
-
-encInt64 :: forall a . (Integral a) => a -> Builder
-encInt64 = fromInt64be . fromIntegral
 
 fromDouble :: Double -> Builder
 fromDouble = fromWord64be . toWord64
