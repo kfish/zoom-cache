@@ -24,7 +24,7 @@ module Data.ZoomCache (
     , ZoomRead(..)
 
     , ZoomRaw(..)
-    , OpaqueSummary(..)
+    , ZoomSummary(..)
     , Packet(..)
     , Summary(..)
 

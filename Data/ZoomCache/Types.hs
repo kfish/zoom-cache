@@ -24,7 +24,7 @@ module Data.ZoomCache.Types (
 
     , ZoomRaw(..)
 
-    , OpaqueSummary(..)
+    , ZoomSummary(..)
 
     , OpaqueSummaryWrite(..)
     , clearWork
@@ -108,7 +108,7 @@ class ZoomRead a where
 
 data ZoomRaw = forall a . ZoomRead a => ZoomRaw (RawData a)
 
-data OpaqueSummary = forall a . ZoomRead a => OpSummary (Summary a)
+data ZoomSummary = forall a . ZoomRead a => ZoomSummary (Summary a)
 
 ------------------------------------------------------------
 -- Write

@@ -65,7 +65,7 @@ data Stream =
     | StreamSummary
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmSummary :: OpaqueSummary
+        , strmSummary :: ZoomSummary
         }
     | StreamNull
 
@@ -217,7 +217,7 @@ readPacket specs = do
 
 readSummaryBlock :: (Functor m, MonadIO m)
                  => IntMap TrackSpec
-                 -> Iteratee [Word8] m (TrackNo, Maybe OpaqueSummary)
+                 -> Iteratee [Word8] m (TrackNo, Maybe ZoomSummary)
 readSummaryBlock specs = do
     trackNo <- zReadInt32
     lvl <- zReadInt32
@@ -230,11 +230,11 @@ readSummaryBlock specs = do
             case specType of
                 ZDouble -> do
                     (sd :: SummaryData Double) <- readSummary
-                    return . Just . OpSummary $
+                    return . Just . ZoomSummary $
                         Summary trackNo lvl entryTime exitTime sd
                 ZInt -> do
                     (sd :: SummaryData Int) <- readSummary
-                    return . Just . OpSummary $
+                    return . Just . ZoomSummary $
                         Summary trackNo lvl entryTime exitTime sd
         Nothing -> do
             I.drop byteLength
@@ -261,7 +261,7 @@ mapPackets f = mapStream process
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
 mapSummaries :: (Functor m, MonadIO m)
-             => (OpaqueSummary -> m ())
+             => (ZoomSummary -> m ())
              -> Iteratee [Word8] m ()
 mapSummaries f = mapStream process
     where

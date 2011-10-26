@@ -76,13 +76,13 @@ dumpSummary trackNo s@StreamSummary{..}
         Nothing -> return ()
     | otherwise            = return ()
     where
-        f r (OpSummary a) = prettySummary r a
+        f r (ZoomSummary a) = prettySummary r a
 dumpSummary _ _           = return ()
 
 dumpSummaryLevel :: TrackNo -> Int -> Stream -> IO ()
 dumpSummaryLevel trackNo level s@StreamSummary{..}
     | level == opLevel strmSummary && strmTrack == trackNo = dumpSummary trackNo s
     | otherwise                                            = return ()
-    where opLevel (OpSummary a) = summaryLevel a
+    where opLevel (ZoomSummary a) = summaryLevel a
 dumpSummaryLevel _ _ _ = return ()
 
