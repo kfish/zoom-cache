@@ -22,7 +22,6 @@ module Data.ZoomCache.Common (
 
   -- * Global header
   , Global(..)
-  , globalHeader
 
   -- * CacheFile
   , CacheFile(..)
@@ -31,25 +30,13 @@ module Data.ZoomCache.Common (
 
   -- * Version
   , Version(..)
-  , versionMajor
-  , versionMinor
 
   -- * Track specification
   , TrackMap
   , TrackSpec(..)
-
-  -- * Track header
-  , trackHeader
-
-  -- * Packet header
-  , packetHeader
-
-  -- * Summary header
-  , summaryHeader
 ) where
 
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 
@@ -313,31 +300,4 @@ mkCacheFile g = CacheFile g IM.empty
 -- | Determine whether all tracks of a 'CacheFile' are specified
 fiFull :: CacheFile -> Bool
 fiFull (CacheFile g specs) = IM.size specs == noTracks g
-
-------------------------------------------------------------
--- Magic
-
--- | Magic identifier at the beginning of a zoom-cache file.
-globalHeader :: L.ByteString
-globalHeader = LC.pack "\xe5ZXhe4d\0"
-
--- | The major version encoded by this library
-versionMajor :: Int
-versionMajor = 1
-
--- | The minor version encoded by this library
-versionMinor :: Int
-versionMinor = 0
-
--- | Identifier for track headers
-trackHeader :: L.ByteString
-trackHeader = LC.pack "\xe5ZXtRcK\0"
-
--- | Identifier for packet headers
-packetHeader :: L.ByteString
-packetHeader = LC.pack "\xe5ZXp4ck\0"
-
--- | Identifier for summary headers
-summaryHeader :: L.ByteString
-summaryHeader = LC.pack "\xe5ZX5umm\0"
 

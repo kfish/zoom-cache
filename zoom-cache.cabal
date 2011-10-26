@@ -96,6 +96,7 @@ Library
                        Data.Iteratee.ZoomCache.Utils
 
   Other-modules:       Blaze.ByteString.Builder.ZoomCache.Internal
+                       Data.ZoomCache.Internal
                        Numeric.FloatMinMax
   
   -- Packages needed in order to build this package.
