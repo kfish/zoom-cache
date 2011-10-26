@@ -19,6 +19,7 @@ module Blaze.ByteString.Builder.ZoomCache (
       fromGlobal
     , fromTrackType
     , fromDataRateType
+    , fromTimeStamp
     , fromTrackNo
     , fromSummary
 
@@ -70,6 +71,9 @@ fromDataRateType :: DataRateType -> Builder
 fromDataRateType ConstantDR = fromInt16be 0
 fromDataRateType VariableDR = fromInt16be 1
 
+fromTimeStamp :: TimeStamp -> Builder
+fromTimeStamp = encInt64 . unTS
+
 fromTrackNo :: TrackNo -> Builder
 fromTrackNo = fromInt32be . fromIntegral
 
@@ -84,8 +88,8 @@ fromSummaryHeader s = mconcat
     [ fromLazyByteString summaryHeader
     , encInt . summaryTrack $ s
     , encInt . summaryLevel $ s
-    , encInt64 . unTS . summaryEntryTime $ s
-    , encInt64 . unTS . summaryExitTime $ s
+    , fromTimeStamp . summaryEntryTime $ s
+    , fromTimeStamp . summaryExitTime $ s
     ]
 
 ----------------------------------------------------------------------

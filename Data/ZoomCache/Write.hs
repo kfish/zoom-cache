@@ -246,8 +246,7 @@ writeDataVBR trackNo (t, d) = do
     when doRaw $
         modifyTrack trackNo $ \z -> z
             { twBuilder = twBuilder z <> builder d
-            , twTSBuilder = twTSBuilder z <>
-                  (encInt64 .  unTS) t
+            , twTSBuilder = twTSBuilder z <> fromTimeStamp t
             }
 
     modifyTrack trackNo $ \z -> z
@@ -281,8 +280,8 @@ bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
 bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     [ fromLazyByteString packetHeader
     , encInt trackNo
-    , encInt64 . unTS $ twEntryTime
-    , encInt64 . unTS $ twExitTime
+    , fromTimeStamp twEntryTime
+    , fromTimeStamp twExitTime
     , encInt (len twBuilder + len twTSBuilder)
     , encInt twCount
     , twBuilder
