@@ -41,7 +41,7 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
--- Builders for local types
+-- Creating builders for ZoomCache types.
 
 fromDataRateType :: DataRateType -> Builder
 fromDataRateType ConstantDR = fromInt16be 0
@@ -74,6 +74,7 @@ fromSummaryHeader s = mconcat
     , fromTimeStamp . summaryExitTime $ s
     ]
 
+-- | Serialize a 'TimeStamp' in 64bit big endian format.
 fromTimeStamp :: TimeStamp -> Builder
 fromTimeStamp = fromInt64be . fromIntegral . unTS
 
@@ -91,17 +92,22 @@ fromVersion (Version vMaj vMin) = mconcat
     ]
 
 ----------------------------------------------------------------------
--- Binary data helpers
+-- Creating builders from numeric types used by ZoomCache.
 
+-- | Serialize a 'Double' in big-endian IEEE 754-2008 binary64 format
+-- (IEEE 754-1985 double format).
 fromDouble :: Double -> Builder
 fromDouble = fromWord64be . toWord64
     where
         toWord64 :: Double -> Word64
         toWord64 = unsafeCoerce
 
+-- | Serialize an 'Integral' in 32bit big endian format.
 fromIntegral32be :: forall a . (Integral a) => a -> Builder
 fromIntegral32be = fromInt32be . fromIntegral
 
+-- | Serialize a 'Rational' as a sequence of two 64bit big endian format
+-- integers.
 fromRational64 :: Rational -> Builder
 fromRational64 r = mconcat
     [ fromInt64be . fromIntegral . numerator $ r
