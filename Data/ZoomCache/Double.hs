@@ -77,7 +77,7 @@ import Numeric.FloatMinMax
 instance ZoomReadable Double where
     data RawData Double = RDDouble [Double]
 
-    readRaw  = zReadFloat64be
+    readRaw  = readDouble64be
     fromList = RDDouble
 
     data SummaryData Double = SummaryDouble
@@ -100,7 +100,7 @@ prettyPacketDouble (RDDouble ds) = map (printf "%.3f") ds
 readSummaryDouble :: (Functor m, MonadIO m)
                   => Iteratee [Word8] m (SummaryData Double)
 readSummaryDouble = do
-    [en,ex,mn,mx,avg,rms] <- replicateM 6 zReadFloat64be
+    [en,ex,mn,mx,avg,rms] <- replicateM 6 readDouble64be
     return (SummaryDouble en ex mn mx avg rms)
 
 prettySummaryDouble :: SummaryData Double -> String

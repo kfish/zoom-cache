@@ -70,7 +70,7 @@ import Data.ZoomCache.Codec
 instance ZoomReadable Int where
     data RawData Int = RDInt [Int]
 
-    readRaw  = zReadInt32
+    readRaw  = readInt32be
     fromList = RDInt
 
     data SummaryData Int = SummaryInt
@@ -93,8 +93,8 @@ prettyPacketInt (RDInt ds) = map show ds
 readSummaryInt :: (Functor m, MonadIO m)
                => Iteratee [Word8] m (SummaryData Int)
 readSummaryInt = do
-    [en,ex,mn,mx] <- replicateM 4 zReadInt32
-    [avg,rms] <- replicateM 2 zReadFloat64be
+    [en,ex,mn,mx] <- replicateM 4 readInt32be
+    [avg,rms] <- replicateM 2 readDouble64be
     return (SummaryInt en ex mn mx avg rms)
 
 prettySummaryInt :: SummaryData Int -> String

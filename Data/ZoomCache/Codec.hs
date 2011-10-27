@@ -28,11 +28,11 @@ module Data.ZoomCache.Codec (
     , ZoomWrite(..)
 
     -- * Raw data reading iteratees
-    , zReadInt16
-    , zReadInt32
-    , zReadInt64
-    , zReadFloat64be
-    , readRational64
+    , readInt16be
+    , readInt32be
+    , readInt64be
+    , readDouble64be
+    , readRational64be
 
     -- * ZoomWrite instance helpers
     , writeData

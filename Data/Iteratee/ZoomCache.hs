@@ -155,21 +155,21 @@ iterHeaders = iterGlobal >>= go
 readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
 readGlobalHeader = do
     v <- readVersion
-    n <- zReadInt32
-    p <- readRational64
-    b <- readRational64
+    n <- readInt32be
+    p <- readRational64be
+    b <- readRational64be
     _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
     return $ Global v n p b Nothing
 
 readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
 readTrackHeader = do
-    trackNo <- zReadInt32
+    trackNo <- readInt32be
     trackType <- readTrackType
     drType <- readDataRateType
 
-    rate <- readRational64
+    rate <- readRational64be
 
-    byteLength <- zReadInt32
+    byteLength <- readInt32be
     name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
 
     let spec = TrackSpec trackType drType rate name
@@ -183,11 +183,11 @@ readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
            -> Iteratee [Word8] m (TrackNo, Maybe Packet)
 readPacket specs = do
-    trackNo <- zReadInt32
-    entryTime <- TS <$> zReadInt64
-    exitTime <- TS <$> zReadInt64
-    count <- zReadInt32
-    byteLength <- zReadInt32
+    trackNo <- readInt32be
+    entryTime <- TS <$> readInt64be
+    exitTime <- TS <$> readInt64be
+    count <- readInt32be
+    byteLength <- readInt32be
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readTS = readTimeStamps specDRType count entryTime
@@ -216,17 +216,17 @@ readPacket specs = do
             ConstantDR -> do
                 return $ take count [unTS entry ..]
             VariableDR -> do
-                replicateM count zReadInt64
+                replicateM count readInt64be
 
 readSummaryBlock :: (Functor m, MonadIO m)
                  => IntMap TrackSpec
                  -> Iteratee [Word8] m (TrackNo, Maybe ZoomSummary)
 readSummaryBlock specs = do
-    trackNo <- zReadInt32
-    lvl <- zReadInt32
-    entryTime <- TS <$> zReadInt64
-    exitTime <- TS <$> zReadInt64
-    byteLength <- zReadInt32
+    trackNo <- readInt32be
+    lvl <- readInt32be
+    entryTime <- TS <$> readInt64be
+    exitTime <- TS <$> readInt64be
+    byteLength <- readInt32be
 
     summary <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
@@ -276,8 +276,8 @@ mapSummaries f = mapStream process
 
 readVersion :: (Functor m, MonadIO m) => Iteratee [Word8] m Version
 readVersion = do
-    vMaj <- zReadInt16
-    vMin <- zReadInt16
+    vMaj <- readInt16be
+    vMin <- readInt16be
     return $ Version vMaj vMin
 
 readTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
@@ -293,7 +293,7 @@ parseTrackType h
 
 readDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
 readDataRateType = do
-    n <- zReadInt16
+    n <- readInt16be
     case n of
         0 -> return ConstantDR
         1 -> return VariableDR
