@@ -282,11 +282,14 @@ readVersion = do
 
 readTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
 readTrackType = do
-    n <- zReadInt16
-    case n of
-        0 -> return ZDouble
-        1 -> return ZInt
-        _ -> error "Bad tracktype"
+    tt <- I.joinI $ I.takeUpTo 8 I.stream2list
+    maybe (error "Unknown track type") return (parseTrackType . L.pack $ tt)
+
+parseTrackType :: L.ByteString -> Maybe TrackType
+parseTrackType h
+    | h == trackTypeDouble = Just ZDouble
+    | h == trackTypeInt    = Just ZInt
+    | otherwise            = Nothing
 
 readDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
 readDataRateType = do

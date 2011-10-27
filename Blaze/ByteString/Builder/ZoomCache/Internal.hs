@@ -71,8 +71,8 @@ fromTrackNo :: TrackNo -> Builder
 fromTrackNo = fromInt32be . fromIntegral
 
 fromTrackType :: TrackType -> Builder
-fromTrackType ZDouble = fromInt16be 0
-fromTrackType ZInt    = fromInt16be 1
+fromTrackType ZDouble = fromLazyByteString trackTypeDouble
+fromTrackType ZInt    = fromLazyByteString trackTypeInt
 
 fromVersion :: Version -> Builder
 fromVersion (Version vMaj vMin) = mconcat
