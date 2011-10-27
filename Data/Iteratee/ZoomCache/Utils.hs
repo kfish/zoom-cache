@@ -13,7 +13,7 @@
 ----------------------------------------------------------------------
 
 module Data.Iteratee.ZoomCache.Utils (
-    -- * Raw data iteratees
+    -- * Raw data reading iteratees
       readInt16be
     , readInt32be
     , readInt64be
