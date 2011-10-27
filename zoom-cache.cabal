@@ -25,6 +25,12 @@ Description:
     .
     What's neat about this format and library? Glad you asked!
     .
+        * Data can be stored at variable or constant rates. For variable rate
+    data, a timestamp is explicitly written into the file for every value,
+    which is useful for recording events that occur at unpredictable times.
+    Constant rate is useful for regularly sampled data, like most digital
+    audio and video recordings.
+    .
         * While writing a file, summary blocks (such as minimum, maximum,
     mean and RMS values) are written out every n samples. The summary blocks
     are hierarchical, such that after two have been written, a new one
