@@ -19,7 +19,6 @@
 module Data.ZoomCache.Types (
     -- * Classes
       ZoomReadable(..)
-    , RawData()
     , ZoomWritable(..)
 
     , ZoomRaw(..)
@@ -73,12 +72,9 @@ summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 ------------------------------------------------------------
 -- Read
 
--- | A codec instance must specify 'RawData' and 'SummaryData' types,
+-- | A codec instance must specify a 'SummaryData' type,
 -- and implement all methods of this class.
 class ZoomReadable a where
-    -- | The basic data type that you are encoding.
-    data RawData a  :: *
-
     -- | Summaries of a subsequence of values of type 'a'. In the default
     -- instances for 'Int' and 'Double', this is a record containing values
     -- such as the maximum, minimum and mean of the subsequence.
@@ -93,17 +89,14 @@ class ZoomReadable a where
     readSummary        :: (Functor m, MonadIO m)
                        => Iteratee [Word8] m (SummaryData a)
 
-    -- | Converting from lists of 'a' to 'RawData a'.
-    fromList        :: [a] -> RawData a
-
-    -- | Pretty printing, used for dumping values of type 'RawData a'.
-    prettyRawData      :: RawData a -> [String]
+    -- | Pretty printing, used for dumping values of type 'a'.
+    prettyRawData      :: a -> String
 
     -- | Pretty printing for values of type 'SummaryData a'.
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
-data ZoomRaw = forall a . ZoomReadable a => ZoomRaw (RawData a)
+data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
 data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 

@@ -49,8 +49,7 @@ Field encoding formats:
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Int (
-      RawData(..)
-    , SummaryData(..)
+      SummaryData(..)
     , SummaryWork(..)
 )where
 
@@ -68,11 +67,6 @@ import Data.ZoomCache.Codec
 -- Read
 
 instance ZoomReadable Int where
-    data RawData Int = RDInt [Int]
-
-    readRaw  = readInt32be
-    fromList = RDInt
-
     data SummaryData Int = SummaryInt
         { summaryIntEntry :: Int
         , summaryIntExit  :: Int
@@ -82,13 +76,14 @@ instance ZoomReadable Int where
         , summaryIntRMS   :: Double
         }
 
+    readRaw     = readInt32be
     readSummary = readSummaryInt
 
     prettyRawData  = prettyPacketInt
     prettySummaryData = prettySummaryInt
 
-prettyPacketInt :: RawData Int -> [String]
-prettyPacketInt (RDInt ds) = map show ds
+prettyPacketInt :: Int -> String
+prettyPacketInt = show
 
 readSummaryInt :: (Functor m, MonadIO m)
                => Iteratee [Word8] m (SummaryData Int)

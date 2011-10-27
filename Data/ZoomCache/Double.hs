@@ -55,8 +55,7 @@ Field encoding formats:
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Double (
-      RawData(..)
-    , SummaryData(..)
+      SummaryData(..)
     , SummaryWork(..)
 )where
 
@@ -75,11 +74,6 @@ import Numeric.FloatMinMax
 -- Read
 
 instance ZoomReadable Double where
-    data RawData Double = RDDouble [Double]
-
-    readRaw  = readDouble64be
-    fromList = RDDouble
-
     data SummaryData Double = SummaryDouble
         { summaryDoubleEntry :: Double
         , summaryDoubleExit  :: Double
@@ -89,13 +83,14 @@ instance ZoomReadable Double where
         , summaryDoubleRMS   :: Double
         }
 
+    readRaw     = readDouble64be
     readSummary = readSummaryDouble
 
     prettyRawData     = prettyPacketDouble
     prettySummaryData = prettySummaryDouble
 
-prettyPacketDouble :: RawData Double -> [String]
-prettyPacketDouble (RDDouble ds) = map (printf "%.3f") ds
+prettyPacketDouble :: Double -> String
+prettyPacketDouble = printf "%.3f"
 
 readSummaryDouble :: (Functor m, MonadIO m)
                   => Iteratee [Word8] m (SummaryData Double)

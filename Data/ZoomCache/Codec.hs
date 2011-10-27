@@ -12,7 +12,7 @@
 -- This module re-exports the required interfaces and some useful
 -- functions for developing zoom-cache codecs.
 --
--- To implement a codec, specify 'RawData' and 'SummaryData' types, and
+-- To implement a codec, specify 'SummaryData' and 'SummaryWork' types, and
 -- implement the methods of the ZoomReadable and ZoomWritable classes.
 --
 -- For sample implementations, read the source of the provided instances
@@ -22,7 +22,6 @@
 module Data.ZoomCache.Codec (
     -- * Required interfaces
       ZoomReadable(..)
-    , RawData()
     , SummaryData()
     , ZoomWritable(..)
     , ZoomWrite(..)
