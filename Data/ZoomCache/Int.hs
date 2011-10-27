@@ -3,18 +3,49 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
--- |
--- Module      : Data.ZoomCache.Int
--- Copyright   : Conrad Parker
--- License     : BSD3-style (see LICENSE)
---
--- Maintainer  : Conrad Parker <conrad@metadecks.org>
--- Stability   : unstable
--- Portability : unknown
---
--- Default codec implementation for values of type Int. This module
--- implements the interfaces documented in "Data.ZoomCache.Codec".
--- View the module source for enlightenment.
+{- |
+   Module      : Data.ZoomCache.Int
+   Copyright   : Conrad Parker
+   License     : BSD3-style (see LICENSE)
+
+   Maintainer  : Conrad Parker <conrad@metadecks.org>
+   Stability   : unstable
+   Portability : unknown
+
+Default codec implementation for values of type Int. This module
+implements the interfaces documented in "Data.ZoomCache.Codec".
+View the module source for enlightenment.
+
+The table below describes the encoding of SummaryData for Int.
+
+@
+   | ...                                                           |   -35
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Entry (int32)                                                 | 36-39
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Exit (int32)                                                  | 40-43
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Min (int32)                                                   | 44-47
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Max (int32)                                                   | 48-51
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Avg (double)                                                  | 52-55
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 56-59
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | RMS (double)                                                  | 60-63
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 64-67
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+@
+
+Field encoding formats:
+
+  @int32@:  32bit big endian
+
+  @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
+
+-}
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Int (
