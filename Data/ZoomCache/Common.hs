@@ -13,26 +13,26 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Common (
-  -- * Types
-    TimeStamp(..)
-  , TrackType(..)
-  , DataRateType(..)
-  , TrackNo
+    -- * Types
+      TimeStamp(..)
+    , TrackType(..)
+    , DataRateType(..)
+    , TrackNo
 
-  -- * Global header
-  , Global(..)
+    -- * Global header
+    , Global(..)
 
-  -- * CacheFile
-  , CacheFile(..)
-  , mkCacheFile
-  , fiFull
+    -- * CacheFile
+    , CacheFile(..)
+    , mkCacheFile
+    , fiFull
 
-  -- * Version
-  , Version(..)
+    -- * Version
+    , Version(..)
 
-  -- * Track specification
-  , TrackMap
-  , TrackSpec(..)
+    -- * Track specification
+    , TrackMap
+    , TrackSpec(..)
 ) where
 
 import qualified Data.ByteString.Lazy as L

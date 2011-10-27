@@ -15,20 +15,19 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Format (
+    -- * Global header
+      globalHeader
+    , versionMajor
+    , versionMinor
 
-  -- * Global header
-    globalHeader
-  , versionMajor
-  , versionMinor
+    -- * Track header
+    , trackHeader
 
-  -- * Track header
-  , trackHeader
+    -- * Packet header
+    , packetHeader
 
-  -- * Packet header
-  , packetHeader
-
-  -- * Summary header
-  , summaryHeader
+    -- * Summary header
+    , summaryHeader
 ) where
 
 import qualified Data.ByteString.Lazy as L
