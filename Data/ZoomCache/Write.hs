@@ -284,8 +284,8 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     , fromIntegral32be trackNo
     , fromTimeStamp twEntryTime
     , fromTimeStamp twExitTime
-    , fromIntegral32be (len twBuilder + len twTSBuilder)
     , fromIntegral32be twCount
+    , fromIntegral32be (len twBuilder + len twTSBuilder)
     , twBuilder
     , twTSBuilder
     ]

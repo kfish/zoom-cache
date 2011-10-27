@@ -186,8 +186,8 @@ readPacket specs = do
     trackNo <- zReadInt32
     entryTime <- TS <$> zReadInt64
     exitTime <- TS <$> zReadInt64
-    byteLength <- zReadInt32
     count <- zReadInt32
+    byteLength <- zReadInt32
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readTS = readTimeStamps specDRType count entryTime
