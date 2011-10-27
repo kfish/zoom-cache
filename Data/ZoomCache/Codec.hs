@@ -9,40 +9,42 @@
 -- Stability   : unstable
 -- Portability : unknown
 --
--- Interface for implementing ZoomCache codec instances.
--- This module re-exports the interfaces required for developing
--- zoom-cache codecs.
+-- This module re-exports the required interfaces and some useful
+-- functions for developing zoom-cache codecs.
+--
+-- To implement a codec, specify 'RawData' and 'SummaryData' types, and
+-- implement the methods of the ZoomReadable and ZoomWritable classes.
 --
 -- For sample implementations, read the source of the provided instances
 -- "Data.ZoomCache.Int" and "Data.ZoomCache.Double".
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Codec (
-    -- * Interfaces
+    -- * Required interfaces
       ZoomReadable(..)
     , RawData()
     , SummaryData()
     , ZoomWritable(..)
     , ZoomWrite(..)
 
-    -- * ZoomCache Types
-    , TimeStamp(..)
-
-    -- * Raw data iteratees
+    -- * Raw data reading iteratees
     , zReadInt16
     , zReadInt32
     , zReadInt64
     , zReadFloat64be
     , readRational64
 
-    -- * Binary data helpers
+    -- * ZoomWrite instance helpers
+    , writeData
+    , writeDataVBR
+
+    -- * Builders
     , fromRational64
     , fromIntegral32be
     , fromDouble
 
-    -- * Write instance helpers
-    , writeData
-    , writeDataVBR
+    -- * ZoomCache Types
+    , TimeStamp(..)
 ) where
 
 import Blaze.ByteString.Builder.ZoomCache

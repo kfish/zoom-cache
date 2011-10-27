@@ -73,17 +73,33 @@ summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 ------------------------------------------------------------
 -- Read
 
+-- | A codec instance must specify 'RawData' and 'SummaryData' types,
+-- and implement all methods of this class.
 class ZoomReadable a where
+    -- | The basic data type that you are encoding.
     data RawData a  :: *
+
+    -- | Summaries of a subsequence of values of type 'a'. In the default
+    -- instances for 'Int' and 'Double', this is a record containing values
+    -- such as the maximum, minimum and mean of the subsequence.
+    data SummaryData a :: *
+
+    -- | An iteratee to read one value of type 'a' from a stream of '[Word8]'.
     readRaw         :: (Functor m, MonadIO m)
                     => Iteratee [Word8] m a
-    fromList        :: [a] -> RawData a
 
-    data SummaryData a :: *
+    -- | An iteratee to read one value of type 'SummaryData a' from a stream
+    -- of '[Word8]'.
     readSummary        :: (Functor m, MonadIO m)
                        => Iteratee [Word8] m (SummaryData a)
 
+    -- | Converting from lists of 'a' to 'RawData a'.
+    fromList        :: [a] -> RawData a
+
+    -- | Pretty printing, used for dumping values of type 'RawData a'.
     prettyRawData      :: RawData a -> [String]
+
+    -- | Pretty printing for values of type 'SummaryData a'.
     prettySummaryData  :: SummaryData a -> String
     -- typeOfSummaryData :: SummaryData a -> TypeRep
 
@@ -94,17 +110,30 @@ data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 ------------------------------------------------------------
 -- Write
 
+-- | A codec instance must additionally specify a 'SummaryWork' type
 class ZoomWritable a where
+    -- | Intermediate calculations
     data SummaryWork a :: *
 
+    -- | Serialize a value of type 'a'
     fromRaw            :: a -> Builder
+
+    -- | Serialize a 'SummaryData a'
     fromSummaryData    :: SummaryData a -> Builder
 
+    -- | Generate a new 'SummaryWork a', given an initial timestamp.
     initSummaryWork    :: TimeStamp -> SummaryWork a
-    toSummaryData      :: Double -> SummaryWork a -> SummaryData a
+
+    -- | Update a 'SummaryData' with the value of 'a' occuring at the
+    -- given 'TimeStamp'.
     updateSummaryData  :: Int -> TimeStamp -> a
                        -> SummaryWork a
                        -> SummaryWork a
+
+    -- | Finalize a 'SummaryWork a', generating a 'SummaryData a'.
+    toSummaryData      :: Double -> SummaryWork a -> SummaryData a
+
+    -- | Append two 'SummaryData'
     appendSummaryData  :: Double -> SummaryData a
                        -> Double -> SummaryData a
                        -> SummaryData a
