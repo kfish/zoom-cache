@@ -79,7 +79,7 @@ instance ZoomReadable Int where
     readRaw     = readInt32be
     readSummary = readSummaryInt
 
-    prettyRawData  = prettyPacketInt
+    prettyRaw         = prettyPacketInt
     prettySummaryData = prettySummaryInt
 
 prettyPacketInt :: Int -> String

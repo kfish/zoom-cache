@@ -90,7 +90,7 @@ class ZoomReadable a where
                        => Iteratee [Word8] m (SummaryData a)
 
     -- | Pretty printing, used for dumping values of type 'a'.
-    prettyRawData      :: a -> String
+    prettyRaw          :: a -> String
 
     -- | Pretty printing for values of type 'SummaryData a'.
     prettySummaryData  :: SummaryData a -> String

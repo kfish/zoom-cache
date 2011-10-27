@@ -86,7 +86,7 @@ instance ZoomReadable Double where
     readRaw     = readDouble64be
     readSummary = readSummaryDouble
 
-    prettyRawData     = prettyPacketDouble
+    prettyRaw         = prettyPacketDouble
     prettySummaryData = prettySummaryDouble
 
 prettyPacketDouble :: Double -> String
