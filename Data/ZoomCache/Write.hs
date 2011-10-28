@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -73,7 +74,7 @@ class ZoomWrite t where
 
 data ZoomWHandle = ZoomWHandle
     { whHandle    :: Handle
-    , whTrackWork :: IntMap TrackWork
+    , whTrackWork :: !(IntMap TrackWork)
     , whDeferred  :: IntMap Builder
     , whWriteData :: Bool
     }
@@ -82,11 +83,11 @@ data TrackWork = TrackWork
     { twSpec      :: TrackSpec
     , twBuilder   :: Builder
     , twTSBuilder :: Builder
-    , twCount     :: Int
-    , twWatermark :: Int
-    , twEntryTime :: TimeStamp
-    , twExitTime  :: TimeStamp
     , twWriter    :: Maybe ZoomWork
+    , twCount     :: {-# UNPACK #-}!Int
+    , twWatermark :: {-# UNPACK #-}!Int
+    , twEntryTime :: {-# UNPACK #-}!TimeStamp
+    , twExitTime  :: {-# UNPACK #-}!TimeStamp
     }
 
 ----------------------------------------------------------------------
@@ -154,7 +155,8 @@ openWrite trackMap doRaw path = do
 
 -- | Create a track map for a stream of a given type, as track no. 1
 oneTrack :: TrackType -> DataRateType -> Rational -> L.ByteString -> TrackMap
-oneTrack zType drType rate name = IM.singleton 1 (TrackSpec zType drType rate name)
+oneTrack !zType !drType !rate !name = IM.singleton 1 (TrackSpec zType drType rate name)
+{-# INLINABLE oneTrack #-}
 
 -- | Query the maximum number of data points to buffer for a given track before
 -- forcing a flush of all buffered data and summaries.
@@ -293,7 +295,7 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
         len = L.length . toLazyByteString
 
 mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
-mkTrackWork spec entry w = TrackWork
+mkTrackWork !spec !entry !w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
         , twTSBuilder = mempty
@@ -315,11 +317,11 @@ updateWork :: (Typeable b, ZoomWritable b)
            -> Maybe ZoomWork
            -> Maybe ZoomWork
 
-updateWork count t d Nothing = Just (ZoomWork IM.empty (Just cw))
+updateWork !count !t !d Nothing = Just (ZoomWork IM.empty (Just cw))
     where
         cw = updateSummaryData count t d (initSummaryWork t)
 
-updateWork count t d (Just (ZoomWork l Nothing)) =
+updateWork !count !t !d (Just (ZoomWork l Nothing)) =
     case cw'm of
         Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
@@ -328,7 +330,7 @@ updateWork count t d (Just (ZoomWork l Nothing)) =
             Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
             Nothing -> Nothing
 
-updateWork count t d (Just (ZoomWork l (Just cw))) =
+updateWork !count !t !d (Just (ZoomWork l (Just cw))) =
     case cw'm of
         Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
