@@ -235,9 +235,9 @@ writeData trackNo d = do
     when doRaw $
         modifyTrack trackNo $ \z -> z { twBuilder = twBuilder z <> fromRaw d }
 
-    modifyTrack trackNo $ \z -> z
-        { twCount = twCount z + 1
-        , twWriter = updateWork (twCount z) (twExitTime z) d (twWriter z)
+    modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
+        { twCount = c + 1
+        , twWriter = updateWork c (twExitTime z) d (twWriter z)
         }
     flushIfNeeded trackNo
 
@@ -253,9 +253,9 @@ writeDataVBR trackNo (t, d) = do
             , twTSBuilder = twTSBuilder z <> fromTimeStamp t
             }
 
-    modifyTrack trackNo $ \z -> z
-        { twCount = twCount z + 1
-        , twWriter = updateWork (twCount z) t d (twWriter z)
+    modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
+        { twCount = c + 1
+        , twWriter = updateWork c t d (twWriter z)
         }
     flushIfNeeded trackNo
 
