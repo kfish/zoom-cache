@@ -38,6 +38,7 @@ module Data.ZoomCache.Types (
 import Blaze.ByteString.Builder
 import Control.Monad.Trans (MonadIO)
 import Data.Dynamic
+import Data.Int
 import Data.IntMap (IntMap)
 import Data.Iteratee (Iteratee)
 import Data.Word
@@ -66,7 +67,7 @@ data Summary a = Summary
     }
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
-summaryDuration :: Summary a -> Integer
+summaryDuration :: Summary a -> Int64
 summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
 ------------------------------------------------------------

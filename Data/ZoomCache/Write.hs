@@ -200,7 +200,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
 -- Data
 
 incTimeStamp :: TimeStamp -> TimeStamp
-incTimeStamp (TS t) = TS (t+1)
+incTimeStamp (TS t) = let t' = (t+1) in t' `seq` (TS t')
 
 incTime :: TrackNo -> ZoomW ()
 incTime trackNo = modifyTrack trackNo $ \tw -> tw

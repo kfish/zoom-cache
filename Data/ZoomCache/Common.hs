@@ -36,6 +36,7 @@ module Data.ZoomCache.Common (
 ) where
 
 import qualified Data.ByteString.Lazy as L
+import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 
@@ -43,7 +44,7 @@ import qualified Data.IntMap as IM
 
 type TrackNo = Int
 
-data TimeStamp = TS { unTS :: !Integer }
+data TimeStamp = TS { unTS :: {-# UNPACK #-}!Int64 }
     deriving (Eq, Ord, Show)
 
 data Version = Version !Int !Int
