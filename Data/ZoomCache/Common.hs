@@ -46,7 +46,7 @@ type TrackNo = Int
 data TimeStamp = TS { unTS :: !Integer }
     deriving (Eq, Ord, Show)
 
-data Version = Version Int Int
+data Version = Version !Int !Int
     deriving (Eq, Show)
 
 data Global = Global
@@ -63,10 +63,10 @@ type TrackMap = IntMap TrackSpec
 
 -- | A specification of the type and name of each track
 data TrackSpec = TrackSpec
-    { specType   :: TrackType
-    , specDRType :: DataRateType
-    , specRate   :: Rational
-    , specName   :: L.ByteString
+    { specType   :: !TrackType
+    , specDRType :: !DataRateType
+    , specRate   :: {-# UNPACK #-}!Rational
+    , specName   :: !L.ByteString
     }
     deriving (Show)
 
