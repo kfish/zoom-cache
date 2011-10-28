@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -45,11 +46,13 @@ readInt32be = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
         u32_to_s32 = fromIntegral
 
 -- | Read 8 bytes as a big-endian Integer
-readInt64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Integer
+readInt64be :: (Functor m, MonadIO m, Integral a) => Iteratee [Word8] m a
 readInt64be = fromIntegral . u64_to_s64 <$> I.endianRead8 I.MSB
     where
         u64_to_s64 :: Word64 -> Int64
         u64_to_s64 = fromIntegral
+{-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
+{-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int64 #-}
 
 -- | Read 8 bytes as a big-endian Double
 readDouble64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double
@@ -61,10 +64,10 @@ readDouble64be = do
 -- big endian numerator followed by an 8 byte big endian denominator.
 readRational64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Rational
 readRational64be = do
-    num <- readInt64be
-    den <- readInt64be
+    (num :: Integer) <- readInt64be
+    (den :: Integer) <- readInt64be
     if (den == 0)
         then return 0
-        else return $ (fromIntegral num) % (fromIntegral den)
+        else return (num % den)
 
 

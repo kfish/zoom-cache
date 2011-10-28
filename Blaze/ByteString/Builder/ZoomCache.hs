@@ -38,6 +38,7 @@ import Data.ZoomCache.Common
 -- | Serialize a 'TimeStamp' in 64bit big endian format.
 fromTimeStamp :: TimeStamp -> Builder
 fromTimeStamp = fromInt64be . fromIntegral . unTS
+{-# INLINE fromTimeStamp #-}
 
 ----------------------------------------------------------------------
 -- Creating builders from numeric types used by ZoomCache.
@@ -49,10 +50,13 @@ fromDouble = fromWord64be . toWord64
     where
         toWord64 :: Double -> Word64
         toWord64 = unsafeCoerce
+{-# INLINE fromDouble #-}
 
 -- | Serialize an 'Integral' in 32bit big endian format.
 fromIntegral32be :: forall a . (Integral a) => a -> Builder
 fromIntegral32be = fromInt32be . fromIntegral
+{-# SPECIALIZE INLINE fromIntegral32be :: Int -> Builder #-}
+{-# SPECIALIZE INLINE fromIntegral32be :: Integer -> Builder #-}
 
 -- | Serialize a 'Rational' as a sequence of two 64bit big endian format
 -- integers.
@@ -61,4 +65,4 @@ fromRational64 r = mconcat
     [ fromInt64be . fromIntegral . numerator $ r
     , fromInt64be . fromIntegral . denominator $ r
     ]
-
+{-# INLINE fromRational64 #-}
