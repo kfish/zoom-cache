@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -75,12 +76,12 @@ import Numeric.FloatMinMax
 
 instance ZoomReadable Double where
     data SummaryData Double = SummaryDouble
-        { summaryDoubleEntry :: Double
-        , summaryDoubleExit  :: Double
-        , summaryDoubleMin   :: Double
-        , summaryDoubleMax   :: Double
-        , summaryDoubleAvg   :: Double
-        , summaryDoubleRMS   :: Double
+        { summaryDoubleEntry :: {-# UNPACK #-}!Double
+        , summaryDoubleExit  :: {-# UNPACK #-}!Double
+        , summaryDoubleMin   :: {-# UNPACK #-}!Double
+        , summaryDoubleMax   :: {-# UNPACK #-}!Double
+        , summaryDoubleAvg   :: {-# UNPACK #-}!Double
+        , summaryDoubleRMS   :: {-# UNPACK #-}!Double
         }
 
     readRaw     = readDouble64be
@@ -126,13 +127,13 @@ instance ZoomWrite (TimeStamp, Double) where
 
 instance ZoomWritable Double where
     data SummaryWork Double = SummaryWorkDouble
-        { ztsdTime  :: TimeStamp
-        , ztsdEntry :: Double
-        , ztsdExit  :: Double
-        , ztsdMin   :: Double
-        , ztsdMax   :: Double
-        , ztsdSum   :: Double
-        , ztsdSumSq :: Double
+        { ztsdTime  :: {-# UNPACK #-}!TimeStamp
+        , ztsdEntry :: {-# UNPACK #-}!Double
+        , ztsdExit  :: {-# UNPACK #-}!Double
+        , ztsdMin   :: {-# UNPACK #-}!Double
+        , ztsdMax   :: {-# UNPACK #-}!Double
+        , ztsdSum   :: {-# UNPACK #-}!Double
+        , ztsdSumSq :: {-# UNPACK #-}!Double
         }
     fromRaw           = fromDouble
     fromSummaryData   = fromSummaryDouble

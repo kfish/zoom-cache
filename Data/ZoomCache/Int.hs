@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -68,12 +69,12 @@ import Data.ZoomCache.Codec
 
 instance ZoomReadable Int where
     data SummaryData Int = SummaryInt
-        { summaryIntEntry :: Int
-        , summaryIntExit  :: Int
-        , summaryIntMin   :: Int
-        , summaryIntMax   :: Int
-        , summaryIntAvg   :: Double
-        , summaryIntRMS   :: Double
+        { summaryIntEntry :: {-# UNPACK #-}!Int
+        , summaryIntExit  :: {-# UNPACK #-}!Int
+        , summaryIntMin   :: {-# UNPACK #-}!Int
+        , summaryIntMax   :: {-# UNPACK #-}!Int
+        , summaryIntAvg   :: {-# UNPACK #-}!Double
+        , summaryIntRMS   :: {-# UNPACK #-}!Double
         }
 
     readRaw     = readInt32be
@@ -120,13 +121,13 @@ instance ZoomWrite (TimeStamp, Int) where
 
 instance ZoomWritable Int where
     data SummaryWork Int = SummaryWorkInt
-        { ztsiTime  :: TimeStamp
-        , ztsiEntry :: Int
-        , ztsiExit  :: Int
-        , ztsiMin   :: Int
-        , ztsiMax   :: Int
-        , ztsiSum   :: Int
-        , ztsiSumSq :: Double
+        { ztsiTime  :: {-# UNPACK #-}!TimeStamp
+        , ztsiEntry :: {-# UNPACK #-}!Int
+        , ztsiExit  :: {-# UNPACK #-}!Int
+        , ztsiMin   :: {-# UNPACK #-}!Int
+        , ztsiMax   :: {-# UNPACK #-}!Int
+        , ztsiSum   :: {-# UNPACK #-}!Int
+        , ztsiSumSq :: {-# UNPACK #-}!Double
         }
 
     fromRaw           = fromIntegral32be
