@@ -182,7 +182,7 @@ updateSummaryInt count t i SummaryWorkInt{..} = SummaryWorkInt
     , ztsiSumSq = ztsiSumSq + fromIntegral (i*i * dur)
     }
     where
-        dur = fromIntegral $ (unTS t) - (unTS ztsiTime)
+        !dur = fromIntegral $ (unTS t) - (unTS ztsiTime)
 
 appendSummaryInt :: Double -> SummaryData Int
                  -> Double -> SummaryData Int
@@ -200,5 +200,5 @@ appendSummaryInt dur1 s1 dur2 s2 = SummaryInt
                              durSum
     }
     where
-        durSum = dur1 + dur2
+        !durSum = dur1 + dur2
 

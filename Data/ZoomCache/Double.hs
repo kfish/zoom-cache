@@ -186,7 +186,7 @@ updateSummaryDouble count t d SummaryWorkDouble{..} = SummaryWorkDouble
     , ztsdSumSq = ztsdSumSq + (d*d * dur)
     }
     where
-        dur = fromIntegral $ (unTS t) - (unTS ztsdTime)
+        !dur = fromIntegral $ (unTS t) - (unTS ztsdTime)
 
 appendSummaryDouble :: Double -> SummaryData Double
                     -> Double -> SummaryData Double
@@ -204,5 +204,5 @@ appendSummaryDouble dur1 s1 dur2 s2 = SummaryDouble
                                 durSum
     }
     where
-        durSum = dur1 + dur2
+        !durSum = dur1 + dur2
 
