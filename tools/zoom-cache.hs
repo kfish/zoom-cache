@@ -137,7 +137,7 @@ zoomWriteFile Config{..} (path:_)
 ------------------------------------------------------------
 
 doubles :: [Double]
-doubles = take 1000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
+doubles = take 10000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
 
 ints :: [Int]
 ints = map round doubles
