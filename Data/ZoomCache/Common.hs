@@ -15,7 +15,7 @@
 module Data.ZoomCache.Common (
     -- * Types
       TimeStamp(..)
-    , TrackType(..)
+    , TrackType
     , DataRateType(..)
     , TrackNo
 
@@ -71,8 +71,7 @@ data TrackSpec = TrackSpec
     }
     deriving (Show)
 
-data TrackType = ZDouble | ZInt
-    deriving (Eq, Show)
+type TrackType = L.ByteString
 
 -- | Constant or Variable datarate.
 -- For constant datarate, timestamps are implied as incrementing by 1/datarate

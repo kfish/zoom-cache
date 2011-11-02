@@ -192,7 +192,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
         [ trackHeader
         , toLazyByteString $ mconcat
             [ fromTrackNo trackNo
-            , fromTrackType specType
+            , fromLazyByteString specType
             , fromDataRateType specDRType
             , fromRational64 specRate
             , fromIntegral32be . LC.length $ specName

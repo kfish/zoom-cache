@@ -18,6 +18,8 @@ import UI.Command
 import Data.ZoomCache
 import Data.ZoomCache.Dump
 
+import Data.ZoomCache.Format (trackTypeDouble, trackTypeInt)
+
 ------------------------------------------------------------
 
 data Config = Config
@@ -119,8 +121,8 @@ zoomGenHandler = do
 zoomWriteFile :: Config -> [FilePath] -> IO ()
 zoomWriteFile _          []       = return ()
 zoomWriteFile Config{..} (path:_)
-    | intData   = w ZInt ints path
-    | otherwise = w ZDouble doubles path
+    | intData   = w trackTypeInt ints path
+    | otherwise = w trackTypeDouble doubles path
     where
     w :: (ZoomWrite a, ZoomWrite (TimeStamp, a))
       => TrackType -> [a] -> FilePath -> IO ()

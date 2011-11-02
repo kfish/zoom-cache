@@ -191,14 +191,14 @@ readPacket specs = do
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readTS = readTimeStamps specDRType count entryTime
-            case specType of
-                ZDouble -> do
+            if specType == trackTypeDouble
+                then do -- XXX: Double
                     (d :: [Double]) <- replicateM count readRaw
                     ts <- readTS
                     return . Just $
                         (Packet trackNo entryTime exitTime count
                             (ZoomRaw d) ts)
-                ZInt -> do
+                else do -- XXX: Int
                     (d :: [Int]) <- replicateM count readRaw
                     ts <- readTS
                     return . Just $
@@ -230,12 +230,12 @@ readSummaryBlock specs = do
 
     summary <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
-            case specType of
-                ZDouble -> do
+            if specType == trackTypeDouble
+                then do -- XXX: Double
                     (sd :: SummaryData Double) <- readSummary
                     return . Just . ZoomSummary $
                         Summary trackNo lvl entryTime exitTime sd
-                ZInt -> do
+                else do -- XXX: Int
                     (sd :: SummaryData Int) <- readSummary
                     return . Just . ZoomSummary $
                         Summary trackNo lvl entryTime exitTime sd
@@ -281,15 +281,7 @@ readVersion = do
     return $ Version vMaj vMin
 
 readTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
-readTrackType = do
-    tt <- I.joinI $ I.takeUpTo 8 I.stream2list
-    maybe (error "Unknown track type") return (parseTrackType . L.pack $ tt)
-
-parseTrackType :: L.ByteString -> Maybe TrackType
-parseTrackType h
-    | h == trackTypeDouble = Just ZDouble
-    | h == trackTypeInt    = Just ZInt
-    | otherwise            = Nothing
+readTrackType = L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
 
 readDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
 readDataRateType = do

@@ -16,7 +16,7 @@ module Data.ZoomCache (
     -- * Types
       TimeStamp(..)
     , TrackNo
-    , TrackType(..)
+    , TrackType
     , DataRateType(..)
 
     , CacheFile(..)
