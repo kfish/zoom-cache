@@ -158,9 +158,12 @@ closeWrite :: ZoomWHandle -> IO ()
 closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
-oneTrack :: TrackType -> DataRateType -> Rational -> L.ByteString -> TrackMap
-oneTrack !zType !drType !rate !name = IM.singleton 1 (TrackSpec zType drType rate name)
+oneTrack :: (ZoomReadable a) => a -> DataRateType -> Rational -> L.ByteString -> TrackMap
+oneTrack a !drType !rate !name = IM.singleton 1 (mkTrackSpec a drType rate name)
 {-# INLINABLE oneTrack #-}
+
+mkTrackSpec :: (ZoomReadable a) => a -> DataRateType -> Rational -> L.ByteString -> TrackSpec
+mkTrackSpec a = TrackSpec (trackIdentifier a)
 
 -- | Query the maximum number of data points to buffer for a given track before
 -- forcing a flush of all buffered data and summaries.

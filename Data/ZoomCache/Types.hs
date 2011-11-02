@@ -112,7 +112,7 @@ data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 -- Write
 
 -- | A codec instance must additionally specify a 'SummaryWork' type
-class ZoomWritable a where
+class ZoomReadable a => ZoomWritable a where
     -- | Intermediate calculations
     data SummaryWork a :: *
 
