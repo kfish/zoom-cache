@@ -40,6 +40,11 @@ module Data.ZoomCache (
     , withFileWrite
     , flush
 
+    -- * ZoomWHandle IO functions
+    , ZoomWHandle
+    , openWrite
+    , closeWrite
+
     -- * Watermarks
     , watermark
     , setWatermark

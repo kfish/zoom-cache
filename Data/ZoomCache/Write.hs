@@ -34,6 +34,7 @@ module Data.ZoomCache.Write (
     -- * ZoomWHandle IO functions
     , ZoomWHandle
     , openWrite
+    , closeWrite
 
     -- * Watermarks
     , watermark
@@ -152,6 +153,9 @@ openWrite trackMap doRaw path = do
         addTrack trackNo spec = IM.insert trackNo trackState
             where
                 trackState = mkTrackWork spec (TS 0) 1024
+
+closeWrite :: ZoomWHandle -> IO ()
+closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
 oneTrack :: TrackType -> DataRateType -> Rational -> L.ByteString -> TrackMap
