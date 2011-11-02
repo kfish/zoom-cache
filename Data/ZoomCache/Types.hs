@@ -37,6 +37,7 @@ module Data.ZoomCache.Types (
 
 import Blaze.ByteString.Builder
 import Control.Monad.Trans (MonadIO)
+import qualified Data.ByteString.Lazy as L
 import Data.Dynamic
 import Data.Int
 import Data.IntMap (IntMap)
@@ -80,6 +81,12 @@ class ZoomReadable a where
     -- instances for 'Int' and 'Double', this is a record containing values
     -- such as the maximum, minimum and mean of the subsequence.
     data SummaryData a :: *
+
+    -- | The track identifier used for streams of type 'a'.
+    -- The /value/ of the argument should be ignored by any instance of
+    -- 'ZoomReadable', so that is safe to pass 'undefined' as the
+    -- argument.
+    trackIdentifier :: a -> L.ByteString
 
     -- | An iteratee to read one value of type 'a' from a stream of '[Word8]'.
     readRaw         :: (Functor m, MonadIO m)

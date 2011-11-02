@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
@@ -57,12 +58,19 @@ module Data.ZoomCache.Int (
 import Blaze.ByteString.Builder
 import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
+import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
 import Data.Monoid
 import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
+
+----------------------------------------------------------------------
+
+-- Identifier for track headers
+trackTypeInt :: L.ByteString
+trackTypeInt = "ZOOMi32b"
 
 ----------------------------------------------------------------------
 -- Read
@@ -76,6 +84,8 @@ instance ZoomReadable Int where
         , summaryIntAvg   :: {-# UNPACK #-}!Double
         , summaryIntRMS   :: {-# UNPACK #-}!Double
         }
+
+    trackIdentifier = const trackTypeInt
 
     readRaw     = readInt32be
     readSummary = readSummaryInt
