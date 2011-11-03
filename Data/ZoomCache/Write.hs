@@ -244,7 +244,7 @@ writeData trackNo d = do
 
     modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
         { twCount = c + 1
-        , twWriter = updateWork c (twExitTime z) d (twWriter z)
+        , twWriter = updateWork (twExitTime z) d (twWriter z)
         }
     flushIfNeeded trackNo
 
@@ -262,7 +262,7 @@ writeDataVBR trackNo (t, d) = do
 
     modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
         { twCount = c + 1
-        , twWriter = updateWork c t d (twWriter z)
+        , twWriter = updateWork t d (twWriter z)
         }
     flushIfNeeded trackNo
 
@@ -320,30 +320,30 @@ clearWork :: ZoomWork -> ZoomWork
 clearWork (ZoomWork l _) = ZoomWork l Nothing
 
 updateWork :: (Typeable b, ZoomWritable b)
-           => Int -> TimeStamp -> b
+           => TimeStamp -> b
            -> Maybe ZoomWork
            -> Maybe ZoomWork
 
-updateWork !count !t !d Nothing = Just (ZoomWork IM.empty (Just cw))
+updateWork !t !d Nothing = Just (ZoomWork IM.empty (Just cw))
     where
-        cw = updateSummaryData count t d (initSummaryWork t)
+        cw = updateSummaryData t d (initSummaryWork t)
 
-updateWork !count !t !d (Just (ZoomWork l Nothing)) =
+updateWork !t !d (Just (ZoomWork l Nothing)) =
     case cw'm of
         Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
     where
         cw'm = case (fromDynamic . toDyn $ d) of
-            Just d' -> Just (updateSummaryData count t d' (initSummaryWork t))
+            Just d' -> Just (updateSummaryData t d' (initSummaryWork t))
             Nothing -> Nothing
 
-updateWork !count !t !d (Just (ZoomWork l (Just cw))) =
+updateWork !t !d (Just (ZoomWork l (Just cw))) =
     case cw'm of
         Just _  -> Just (ZoomWork l cw'm)
         Nothing -> Nothing
     where
         cw'm = case (fromDynamic . toDyn $ d) of
-            Just d' -> Just (updateSummaryData count t d' cw)
+            Just d' -> Just (updateSummaryData t d' cw)
             Nothing -> Nothing
 
 ----------------------------------------------------------------------

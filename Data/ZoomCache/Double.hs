@@ -185,9 +185,9 @@ fromSummaryDouble SummaryDouble{..} = mconcat $ map fromDouble
     , summaryDoubleRMS
     ]
 
-updateSummaryDouble :: Int -> TimeStamp -> Double -> SummaryWork Double
+updateSummaryDouble :: TimeStamp -> Double -> SummaryWork Double
                     -> SummaryWork Double
-updateSummaryDouble _ t d SummaryWorkDouble{..} = SummaryWorkDouble
+updateSummaryDouble t d SummaryWorkDouble{..} = SummaryWorkDouble
     { swDoubleTime = t
     , swDoubleEntry = Just $ fromMaybe d swDoubleEntry
     , swDoubleExit = d

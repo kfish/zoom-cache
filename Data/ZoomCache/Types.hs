@@ -127,7 +127,7 @@ class ZoomReadable a => ZoomWritable a where
 
     -- | Update a 'SummaryData' with the value of 'a' occuring at the
     -- given 'TimeStamp'.
-    updateSummaryData  :: Int -> TimeStamp -> a
+    updateSummaryData  :: TimeStamp -> a
                        -> SummaryWork a
                        -> SummaryWork a
 

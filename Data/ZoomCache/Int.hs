@@ -181,9 +181,9 @@ fromSummaryInt SummaryInt{..} = mconcat $ map fromIntegral32be
     , summaryIntRMS
     ]
 
-updateSummaryInt :: Int -> TimeStamp  -> Int -> SummaryWork Int
+updateSummaryInt :: TimeStamp  -> Int -> SummaryWork Int
                  -> SummaryWork Int
-updateSummaryInt _ t i SummaryWorkInt{..} = SummaryWorkInt
+updateSummaryInt t i SummaryWorkInt{..} = SummaryWorkInt
     { swIntTime = t
     , swIntEntry = Just $ fromMaybe i swIntEntry
     , swIntExit = i
