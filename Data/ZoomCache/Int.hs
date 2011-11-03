@@ -60,6 +60,7 @@ import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
+import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Data.Word
 import Text.Printf
@@ -132,7 +133,7 @@ instance ZoomWrite (TimeStamp, Int) where
 instance ZoomWritable Int where
     data SummaryWork Int = SummaryWorkInt
         { swIntTime  :: {-# UNPACK #-}!TimeStamp
-        , swIntEntry :: {-# UNPACK #-}!Int
+        , swIntEntry :: !(Maybe Int)
         , swIntExit  :: {-# UNPACK #-}!Int
         , swIntMin   :: {-# UNPACK #-}!Int
         , swIntMax   :: {-# UNPACK #-}!Int
@@ -151,7 +152,7 @@ instance ZoomWritable Int where
 initSummaryInt :: TimeStamp -> SummaryWork Int
 initSummaryInt entry = SummaryWorkInt
     { swIntTime = entry
-    , swIntEntry = 0
+    , swIntEntry = Nothing
     , swIntExit = 0
     , swIntMin = maxBound
     , swIntMax = minBound
@@ -161,7 +162,7 @@ initSummaryInt entry = SummaryWorkInt
 
 mkSummaryInt :: Double -> SummaryWork Int -> SummaryData Int
 mkSummaryInt dur SummaryWorkInt{..} = SummaryInt
-    { summaryIntEntry = swIntEntry
+    { summaryIntEntry = fromMaybe 0 swIntEntry
     , summaryIntExit = swIntExit
     , summaryIntMin = swIntMin
     , summaryIntMax = swIntMax
@@ -182,9 +183,9 @@ fromSummaryInt SummaryInt{..} = mconcat $ map fromIntegral32be
 
 updateSummaryInt :: Int -> TimeStamp  -> Int -> SummaryWork Int
                  -> SummaryWork Int
-updateSummaryInt count t i SummaryWorkInt{..} = SummaryWorkInt
+updateSummaryInt _ t i SummaryWorkInt{..} = SummaryWorkInt
     { swIntTime = t
-    , swIntEntry = if count == 0 then i else swIntEntry
+    , swIntEntry = Just $ fromMaybe i swIntEntry
     , swIntExit = i
     , swIntMin = min swIntMin i
     , swIntMax = max swIntMax i

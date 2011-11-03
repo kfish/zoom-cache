@@ -66,6 +66,7 @@ import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
+import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Data.Word
 import Text.Printf
@@ -138,7 +139,7 @@ instance ZoomWrite (TimeStamp, Double) where
 instance ZoomWritable Double where
     data SummaryWork Double = SummaryWorkDouble
         { swDoubleTime  :: {-# UNPACK #-}!TimeStamp
-        , swDoubleEntry :: {-# UNPACK #-}!Double
+        , swDoubleEntry :: !(Maybe Double)
         , swDoubleExit  :: {-# UNPACK #-}!Double
         , swDoubleMin   :: {-# UNPACK #-}!Double
         , swDoubleMax   :: {-# UNPACK #-}!Double
@@ -156,7 +157,7 @@ instance ZoomWritable Double where
 initSummaryDouble :: TimeStamp -> SummaryWork Double
 initSummaryDouble entry = SummaryWorkDouble
     { swDoubleTime = entry
-    , swDoubleEntry = 0.0
+    , swDoubleEntry = Nothing
     , swDoubleExit = 0.0
     , swDoubleMin = floatMax
     , swDoubleMax = negate floatMax
@@ -166,7 +167,7 @@ initSummaryDouble entry = SummaryWorkDouble
 
 mkSummaryDouble :: Double -> SummaryWork Double -> SummaryData Double
 mkSummaryDouble dur SummaryWorkDouble{..} = SummaryDouble
-    { summaryDoubleEntry = swDoubleEntry
+    { summaryDoubleEntry = fromMaybe 0.0 swDoubleEntry
     , summaryDoubleExit = swDoubleExit
     , summaryDoubleMin = swDoubleMin
     , summaryDoubleMax = swDoubleMax
@@ -186,9 +187,9 @@ fromSummaryDouble SummaryDouble{..} = mconcat $ map fromDouble
 
 updateSummaryDouble :: Int -> TimeStamp -> Double -> SummaryWork Double
                     -> SummaryWork Double
-updateSummaryDouble count t d SummaryWorkDouble{..} = SummaryWorkDouble
+updateSummaryDouble _ t d SummaryWorkDouble{..} = SummaryWorkDouble
     { swDoubleTime = t
-    , swDoubleEntry = if count == 0 then d else swDoubleEntry
+    , swDoubleEntry = Just $ fromMaybe d swDoubleEntry
     , swDoubleExit = d
     , swDoubleMin = min swDoubleMin d
     , swDoubleMax = max swDoubleMax d
