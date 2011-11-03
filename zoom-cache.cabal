@@ -94,15 +94,15 @@ Executable zoom-cache
   Main-is:             zoom-cache.hs
   Hs-Source-Dirs:      ., tools
   Build-Depends:
-    base < 5,
+    base                      >= 3       && < 6,
     blaze-builder,
-    bytestring,
-    containers,
+    bytestring                >= 0.9     && < 0.10,
+    containers                >= 0.2     && < 0.5,
     data-default,
-    iteratee >= 0.8.6.0,
+    iteratee                  >= 0.8.6.0 && < 0.9,
     ListLike                  >= 1.0     && < 4,
-    MonadCatchIO-transformers,
-    mtl >= 2.0.0.0 && < 3,
+    MonadCatchIO-transformers >  0.2     && < 0.3,
+    mtl                       >= 2.0.0.0 && < 3,
     ui-command
 
 ------------------------------------------------------------------------
