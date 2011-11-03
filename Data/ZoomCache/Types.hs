@@ -49,22 +49,22 @@ import Data.ZoomCache.Common
 ------------------------------------------------------------
 
 data Packet = Packet
-    { packetTrack      :: TrackNo
-    , packetEntryTime  :: TimeStamp
-    , packetExitTime   :: TimeStamp
-    , packetCount      :: Int
-    , packetData       :: ZoomRaw
-    , packetTimeStamps :: [TimeStamp]
+    { packetTrack      :: {-# UNPACK #-}!TrackNo
+    , packetEntryTime  :: {-# UNPACK #-}!TimeStamp
+    , packetExitTime   :: {-# UNPACK #-}!TimeStamp
+    , packetCount      :: {-# UNPACK #-}!Int
+    , packetData       :: !ZoomRaw
+    , packetTimeStamps :: ![TimeStamp]
     }
 
 ------------------------------------------------------------
 -- | A recorded block of summary data
 data Summary a = Summary
-    { summaryTrack :: TrackNo
-    , summaryLevel :: Int
-    , summaryEntryTime :: TimeStamp
-    , summaryExitTime :: TimeStamp
-    , summaryData :: SummaryData a
+    { summaryTrack     :: {-# UNPACK #-}!TrackNo
+    , summaryLevel     :: {-# UNPACK #-}!Int
+    , summaryEntryTime :: {-# UNPACK #-}!TimeStamp
+    , summaryExitTime  :: {-# UNPACK #-}!TimeStamp
+    , summaryData      :: !(SummaryData a)
     }
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
