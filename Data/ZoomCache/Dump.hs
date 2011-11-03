@@ -24,6 +24,8 @@ module Data.ZoomCache.Dump (
 ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad.Trans (MonadIO)
+import Data.ByteString (ByteString)
 import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
@@ -34,16 +36,26 @@ import Data.ZoomCache
 ------------------------------------------------------------
 
 zoomInfoFile :: FilePath -> IO ()
-zoomInfoFile path = I.fileDriverRandom iterHeaders path >>= info
+zoomInfoFile path = I.fileDriverRandom iterHeadersBS path >>= info
 
 zoomDumpFile :: TrackNo -> FilePath -> IO ()
-zoomDumpFile trackNo = I.fileDriverRandom (mapStream (dumpData trackNo))
+zoomDumpFile trackNo = I.fileDriverRandom (mapStreamBS (dumpData trackNo))
 
 zoomDumpSummary :: TrackNo -> FilePath -> IO ()
-zoomDumpSummary trackNo = I.fileDriverRandom (mapStream (dumpSummary trackNo))
+zoomDumpSummary trackNo = I.fileDriverRandom (mapStreamBS (dumpSummary trackNo))
 
 zoomDumpSummaryLevel :: TrackNo -> Int -> FilePath -> IO ()
-zoomDumpSummaryLevel trackNo lvl = I.fileDriverRandom (mapStream (dumpSummaryLevel trackNo lvl))
+zoomDumpSummaryLevel trackNo lvl = I.fileDriverRandom (mapStreamBS (dumpSummaryLevel trackNo lvl))
+
+----------------------------------------------------------------------
+
+iterHeadersBS :: I.Iteratee ByteString IO CacheFile
+iterHeadersBS = iterHeaders
+
+mapStreamBS :: (Functor m, MonadIO m)
+            => (Stream -> m ())
+            -> I.Iteratee ByteString m ()
+mapStreamBS = mapStream
 
 ----------------------------------------------------------------------
 

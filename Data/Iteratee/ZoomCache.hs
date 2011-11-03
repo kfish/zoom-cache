@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes #-}
@@ -42,7 +43,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
-import qualified Data.Iteratee.ListLike as LL
+import qualified Data.ListLike as LL
 import Data.Maybe
 import Data.Word
 
@@ -70,11 +71,11 @@ data Stream =
         }
     | StreamNull
 
-instance LL.Nullable Stream where
+instance I.Nullable Stream where
     nullC StreamNull = True
     nullC _          = False
 
-instance LL.NullPoint Stream where
+instance I.NullPoint Stream where
     empty = StreamNull
 
 ----------------------------------------------------------------------
@@ -82,22 +83,22 @@ instance LL.NullPoint Stream where
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
 -- 'CacheFile' visible in the 'Stream' elements.
-enumCacheFile :: (Functor m, MonadIO m)
-              => I.Enumeratee [Word8] Stream m a
+enumCacheFile :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+              => I.Enumeratee s Stream m a
 enumCacheFile iter = do
     fi <- iterHeaders
     enumStream fi iter
 
 -- | An enumeratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
-enumStream :: (Functor m, MonadIO m)
+enumStream :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
             => CacheFile
-            -> I.Enumeratee [Word8] Stream m a
+            -> I.Enumeratee s Stream m a
 enumStream = I.unfoldConvStream go
     where
-        go :: (Functor m, MonadIO m)
+        go :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
            => CacheFile
-           -> Iteratee [Word8] m (CacheFile, Stream)
+           -> Iteratee s m (CacheFile, Stream)
         go cf = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
@@ -126,21 +127,21 @@ parseHeader h
 
 -- | Parse only the global and track headers of a zoom-cache file, returning
 -- a 'CacheFile'
-iterHeaders :: (Functor m, MonadIO m)
-            => I.Iteratee [Word8] m CacheFile
+iterHeaders :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+            => I.Iteratee s m CacheFile
 iterHeaders = iterGlobal >>= go
     where
-        iterGlobal :: (Functor m, MonadIO m)
-                   => Iteratee [Word8] m CacheFile
+        iterGlobal :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                   => Iteratee s m CacheFile
         iterGlobal = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
                 Just GlobalHeader -> mkCacheFile <$> readGlobalHeader
                 _                 -> error "No global header"
 
-        go :: (Functor m, MonadIO m)
+        go :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
            => CacheFile
-           -> Iteratee [Word8] m CacheFile
+           -> Iteratee s m CacheFile
         go fi = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
@@ -152,7 +153,7 @@ iterHeaders = iterGlobal >>= go
                         else go fi'
                 _ -> return fi
 
-readGlobalHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m Global
+readGlobalHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m Global
 readGlobalHeader = do
     v <- readVersion
     n <- readInt32be
@@ -161,7 +162,7 @@ readGlobalHeader = do
     _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
     return $ Global v n p b Nothing
 
-readTrackHeader :: (Functor m, MonadIO m) => Iteratee [Word8] m (TrackNo, TrackSpec)
+readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m (TrackNo, TrackSpec)
 readTrackHeader = do
     trackNo <- readInt32be
     trackType <- readTrackType
@@ -179,9 +180,9 @@ readTrackHeader = do
 ------------------------------------------------------------
 -- Packet, Summary reading
 
-readPacket :: (Functor m, MonadIO m)
+readPacket :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
            => IntMap TrackSpec
-           -> Iteratee [Word8] m (TrackNo, Maybe Packet)
+           -> Iteratee s m (TrackNo, Maybe Packet)
 readPacket specs = do
     trackNo <- readInt32be
     entryTime <- TS <$> readInt64be
@@ -209,18 +210,18 @@ readPacket specs = do
             return Nothing
     return (trackNo, packet)
     where
-        readTimeStamps :: (Functor m, MonadIO m)
+        readTimeStamps :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                        => DataRateType -> Int -> TimeStamp
-                       -> Iteratee [Word8] m [TimeStamp]
+                       -> Iteratee s m [TimeStamp]
         readTimeStamps drType count entry = map TS <$> case drType of
             ConstantDR -> do
                 return $ take count [unTS entry ..]
             VariableDR -> do
                 replicateM count readInt64be
 
-readSummaryBlock :: (Functor m, MonadIO m)
+readSummaryBlock :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                  => IntMap TrackSpec
-                 -> Iteratee [Word8] m (TrackNo, Maybe ZoomSummary)
+                 -> Iteratee s m (TrackNo, Maybe ZoomSummary)
 readSummaryBlock specs = do
     trackNo <- readInt32be
     lvl <- readInt32be
@@ -248,24 +249,24 @@ readSummaryBlock specs = do
 -- Convenience functions
 
 -- | Map a monadic 'Stream' processing function over an entire zoom-cache file.
-mapStream :: (Functor m, MonadIO m)
+mapStream :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
           => (Stream -> m ())
-          -> Iteratee [Word8] m ()
+          -> Iteratee s m ()
 mapStream = I.joinI . enumCacheFile . I.mapChunksM_
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
-mapPackets :: (Functor m, MonadIO m)
+mapPackets :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
            => (Packet -> m ())
-           -> Iteratee [Word8] m ()
+           -> Iteratee s m ()
 mapPackets f = mapStream process
     where
         process StreamPacket{..} = f strmPacket
         process _                = return ()
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
-mapSummaries :: (Functor m, MonadIO m)
+mapSummaries :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
              => (ZoomSummary -> m ())
-             -> Iteratee [Word8] m ()
+             -> Iteratee s m ()
 mapSummaries f = mapStream process
     where
         process StreamSummary{..} = f strmSummary
@@ -274,16 +275,16 @@ mapSummaries f = mapStream process
 ----------------------------------------------------------------------
 -- zoom-cache datatype parsers
 
-readVersion :: (Functor m, MonadIO m) => Iteratee [Word8] m Version
+readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m Version
 readVersion = do
     vMaj <- readInt16be
     vMin <- readInt16be
     return $ Version vMaj vMin
 
-readTrackType :: (Functor m, MonadIO m) => Iteratee [Word8] m TrackType
+readTrackType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m TrackType
 readTrackType = L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
 
-readDataRateType :: (Functor m, MonadIO m) => Iteratee [Word8] m DataRateType
+readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m DataRateType
 readDataRateType = do
     n <- readInt16be
     case n of

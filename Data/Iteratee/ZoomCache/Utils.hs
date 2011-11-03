@@ -77,7 +77,8 @@ readDouble64be = do
 
 -- | Read 16 bytes as a big-endian Rational, encoded as an 8 byte
 -- big endian numerator followed by an 8 byte big endian denominator.
-readRational64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Rational
+readRational64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                 => Iteratee s m Rational
 readRational64be = do
     (num :: Integer) <- readInt64be
     (den :: Integer) <- readInt64be
