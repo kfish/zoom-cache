@@ -34,9 +34,9 @@ module Data.Iteratee.ZoomCache (
     , mapSummaries
 ) where
 
-import Control.Applicative ((<$>))
+import Control.Applicative
 import Control.Monad (replicateM)
-import Control.Monad.Trans (MonadIO)
+import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Data.ByteString.Lazy as L
 import Data.Int
 import Data.IntMap (IntMap)
@@ -153,29 +153,28 @@ iterHeaders = iterGlobal >>= go
                         else go fi'
                 _ -> return fi
 
-readGlobalHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m Global
+readGlobalHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                 => Iteratee s m Global
 readGlobalHeader = do
     v <- readVersion
+    liftIO $ print v
     n <- readInt32be
     p <- readRational64be
     b <- readRational64be
     _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
     return $ Global v n p b Nothing
 
-readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m (TrackNo, TrackSpec)
+readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                => Iteratee s m (TrackNo, TrackSpec)
 readTrackHeader = do
     trackNo <- readInt32be
     trackType <- readTrackType
     drType <- readDataRateType
-
     rate <- readRational64be
-
     byteLength <- readInt32be
     name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
 
-    let spec = TrackSpec trackType drType rate name
-
-    return (trackNo, spec)
+    return (trackNo, TrackSpec trackType drType rate name)
 
 ------------------------------------------------------------
 -- Packet, Summary reading
@@ -275,16 +274,16 @@ mapSummaries f = mapStream process
 ----------------------------------------------------------------------
 -- zoom-cache datatype parsers
 
-readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m Version
-readVersion = do
-    vMaj <- readInt16be
-    vMin <- readInt16be
-    return $ Version vMaj vMin
+readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+            => Iteratee s m Version
+readVersion = Version <$> readInt16be <*> readInt16be
 
-readTrackType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m TrackType
+readTrackType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+              => Iteratee s m TrackType
 readTrackType = L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
 
-readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m) => Iteratee s m DataRateType
+readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                 => Iteratee s m DataRateType
 readDataRateType = do
     n <- readInt16be
     case n of
