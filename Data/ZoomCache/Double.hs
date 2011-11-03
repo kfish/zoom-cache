@@ -137,13 +137,13 @@ instance ZoomWrite (TimeStamp, Double) where
 
 instance ZoomWritable Double where
     data SummaryWork Double = SummaryWorkDouble
-        { ztsdTime  :: {-# UNPACK #-}!TimeStamp
-        , ztsdEntry :: {-# UNPACK #-}!Double
-        , ztsdExit  :: {-# UNPACK #-}!Double
-        , ztsdMin   :: {-# UNPACK #-}!Double
-        , ztsdMax   :: {-# UNPACK #-}!Double
-        , ztsdSum   :: {-# UNPACK #-}!Double
-        , ztsdSumSq :: {-# UNPACK #-}!Double
+        { swDoubleTime  :: {-# UNPACK #-}!TimeStamp
+        , swDoubleEntry :: {-# UNPACK #-}!Double
+        , swDoubleExit  :: {-# UNPACK #-}!Double
+        , swDoubleMin   :: {-# UNPACK #-}!Double
+        , swDoubleMax   :: {-# UNPACK #-}!Double
+        , swDoubleSum   :: {-# UNPACK #-}!Double
+        , swDoubleSumSq :: {-# UNPACK #-}!Double
         }
     fromRaw           = fromDouble
     fromSummaryData   = fromSummaryDouble
@@ -155,23 +155,23 @@ instance ZoomWritable Double where
 
 initSummaryDouble :: TimeStamp -> SummaryWork Double
 initSummaryDouble entry = SummaryWorkDouble
-    { ztsdTime = entry
-    , ztsdEntry = 0.0
-    , ztsdExit = 0.0
-    , ztsdMin = floatMax
-    , ztsdMax = negate floatMax
-    , ztsdSum = 0.0
-    , ztsdSumSq = 0.0
+    { swDoubleTime = entry
+    , swDoubleEntry = 0.0
+    , swDoubleExit = 0.0
+    , swDoubleMin = floatMax
+    , swDoubleMax = negate floatMax
+    , swDoubleSum = 0.0
+    , swDoubleSumSq = 0.0
     }
 
 mkSummaryDouble :: Double -> SummaryWork Double -> SummaryData Double
 mkSummaryDouble dur SummaryWorkDouble{..} = SummaryDouble
-    { summaryDoubleEntry = ztsdEntry
-    , summaryDoubleExit = ztsdExit
-    , summaryDoubleMin = ztsdMin
-    , summaryDoubleMax = ztsdMax
-    , summaryDoubleAvg = ztsdSum / dur
-    , summaryDoubleRMS = sqrt $ ztsdSumSq / dur
+    { summaryDoubleEntry = swDoubleEntry
+    , summaryDoubleExit = swDoubleExit
+    , summaryDoubleMin = swDoubleMin
+    , summaryDoubleMax = swDoubleMax
+    , summaryDoubleAvg = swDoubleSum / dur
+    , summaryDoubleRMS = sqrt $ swDoubleSumSq / dur
     }
 
 fromSummaryDouble :: SummaryData Double -> Builder
@@ -187,16 +187,16 @@ fromSummaryDouble SummaryDouble{..} = mconcat $ map fromDouble
 updateSummaryDouble :: Int -> TimeStamp -> Double -> SummaryWork Double
                     -> SummaryWork Double
 updateSummaryDouble count t d SummaryWorkDouble{..} = SummaryWorkDouble
-    { ztsdTime = t
-    , ztsdEntry = if count == 0 then d else ztsdEntry
-    , ztsdExit = d
-    , ztsdMin = min ztsdMin d
-    , ztsdMax = max ztsdMax d
-    , ztsdSum = ztsdSum + (d * dur)
-    , ztsdSumSq = ztsdSumSq + (d*d * dur)
+    { swDoubleTime = t
+    , swDoubleEntry = if count == 0 then d else swDoubleEntry
+    , swDoubleExit = d
+    , swDoubleMin = min swDoubleMin d
+    , swDoubleMax = max swDoubleMax d
+    , swDoubleSum = swDoubleSum + (d * dur)
+    , swDoubleSumSq = swDoubleSumSq + (d*d * dur)
     }
     where
-        !dur = fromIntegral $ (unTS t) - (unTS ztsdTime)
+        !dur = fromIntegral $ (unTS t) - (unTS swDoubleTime)
 
 appendSummaryDouble :: Double -> SummaryData Double
                     -> Double -> SummaryData Double

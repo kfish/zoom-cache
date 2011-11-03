@@ -131,13 +131,13 @@ instance ZoomWrite (TimeStamp, Int) where
 
 instance ZoomWritable Int where
     data SummaryWork Int = SummaryWorkInt
-        { ztsiTime  :: {-# UNPACK #-}!TimeStamp
-        , ztsiEntry :: {-# UNPACK #-}!Int
-        , ztsiExit  :: {-# UNPACK #-}!Int
-        , ztsiMin   :: {-# UNPACK #-}!Int
-        , ztsiMax   :: {-# UNPACK #-}!Int
-        , ztsiSum   :: {-# UNPACK #-}!Int
-        , ztsiSumSq :: {-# UNPACK #-}!Double
+        { swIntTime  :: {-# UNPACK #-}!TimeStamp
+        , swIntEntry :: {-# UNPACK #-}!Int
+        , swIntExit  :: {-# UNPACK #-}!Int
+        , swIntMin   :: {-# UNPACK #-}!Int
+        , swIntMax   :: {-# UNPACK #-}!Int
+        , swIntSum   :: {-# UNPACK #-}!Int
+        , swIntSumSq :: {-# UNPACK #-}!Double
         }
 
     fromRaw           = fromIntegral32be
@@ -150,23 +150,23 @@ instance ZoomWritable Int where
 
 initSummaryInt :: TimeStamp -> SummaryWork Int
 initSummaryInt entry = SummaryWorkInt
-    { ztsiTime = entry
-    , ztsiEntry = 0
-    , ztsiExit = 0
-    , ztsiMin = maxBound
-    , ztsiMax = minBound
-    , ztsiSum = 0
-    , ztsiSumSq = 0
+    { swIntTime = entry
+    , swIntEntry = 0
+    , swIntExit = 0
+    , swIntMin = maxBound
+    , swIntMax = minBound
+    , swIntSum = 0
+    , swIntSumSq = 0
     }
 
 mkSummaryInt :: Double -> SummaryWork Int -> SummaryData Int
 mkSummaryInt dur SummaryWorkInt{..} = SummaryInt
-    { summaryIntEntry = ztsiEntry
-    , summaryIntExit = ztsiExit
-    , summaryIntMin = ztsiMin
-    , summaryIntMax = ztsiMax
-    , summaryIntAvg = fromIntegral ztsiSum / dur
-    , summaryIntRMS = sqrt $ ztsiSumSq / dur
+    { summaryIntEntry = swIntEntry
+    , summaryIntExit = swIntExit
+    , summaryIntMin = swIntMin
+    , summaryIntMax = swIntMax
+    , summaryIntAvg = fromIntegral swIntSum / dur
+    , summaryIntRMS = sqrt $ swIntSumSq / dur
     }
 
 fromSummaryInt :: SummaryData Int -> Builder
@@ -183,16 +183,16 @@ fromSummaryInt SummaryInt{..} = mconcat $ map fromIntegral32be
 updateSummaryInt :: Int -> TimeStamp  -> Int -> SummaryWork Int
                  -> SummaryWork Int
 updateSummaryInt count t i SummaryWorkInt{..} = SummaryWorkInt
-    { ztsiTime = t
-    , ztsiEntry = if count == 0 then i else ztsiEntry
-    , ztsiExit = i
-    , ztsiMin = min ztsiMin i
-    , ztsiMax = max ztsiMax i
-    , ztsiSum = ztsiSum + (i * dur)
-    , ztsiSumSq = ztsiSumSq + fromIntegral (i*i * dur)
+    { swIntTime = t
+    , swIntEntry = if count == 0 then i else swIntEntry
+    , swIntExit = i
+    , swIntMin = min swIntMin i
+    , swIntMax = max swIntMax i
+    , swIntSum = swIntSum + (i * dur)
+    , swIntSumSq = swIntSumSq + fromIntegral (i*i * dur)
     }
     where
-        !dur = fromIntegral $ (unTS t) - (unTS ztsiTime)
+        !dur = fromIntegral $ (unTS t) - (unTS swIntTime)
 
 appendSummaryInt :: Double -> SummaryData Int
                  -> Double -> SummaryData Int
