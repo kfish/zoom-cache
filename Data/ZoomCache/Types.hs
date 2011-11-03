@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -42,6 +43,8 @@ import Data.Dynamic
 import Data.Int
 import Data.IntMap (IntMap)
 import Data.Iteratee (Iteratee)
+import qualified Data.Iteratee as I
+import qualified Data.ListLike as LL
 import Data.Word
 
 import Data.ZoomCache.Common
@@ -88,14 +91,15 @@ class ZoomReadable a where
     -- argument.
     trackIdentifier :: a -> L.ByteString
 
-    -- | An iteratee to read one value of type 'a' from a stream of '[Word8]'.
-    readRaw         :: (Functor m, MonadIO m)
-                    => Iteratee [Word8] m a
+    -- | An iteratee to read one value of type 'a' from a stream of something
+    -- like '[Word8]' or 'ByteString'.
+    readRaw         :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                    => Iteratee s m a
 
     -- | An iteratee to read one value of type 'SummaryData a' from a stream
-    -- of '[Word8]'.
-    readSummary        :: (Functor m, MonadIO m)
-                       => Iteratee [Word8] m (SummaryData a)
+    -- of something like '[Word8]' or 'ByteString'.
+    readSummary        :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                       => Iteratee s m (SummaryData a)
 
     -- | Pretty printing, used for dumping values of type 'a'.
     prettyRaw          :: a -> String

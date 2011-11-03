@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -58,8 +59,11 @@ module Data.ZoomCache.Int (
 import Blaze.ByteString.Builder
 import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
+import qualified Data.Iteratee as I
+import qualified Data.ListLike as LL
 import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Data.Word
@@ -97,12 +101,14 @@ instance ZoomReadable Int where
 prettyPacketInt :: Int -> String
 prettyPacketInt = show
 
-readSummaryInt :: (Functor m, MonadIO m)
-               => Iteratee [Word8] m (SummaryData Int)
+readSummaryInt :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+               => Iteratee s m (SummaryData Int)
 readSummaryInt = do
     [en,ex,mn,mx] <- replicateM 4 readInt32be
     [avg,rms] <- replicateM 2 readDouble64be
     return (SummaryInt en ex mn mx avg rms)
+{-# SPECIALIZE INLINE readSummaryInt :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int) #-}
+{-# SPECIALIZE INLINE readSummaryInt :: (Functor m, MonadIO m) => Iteratee B.ByteString m (SummaryData Int) #-}
 
 prettySummaryInt :: SummaryData Int -> String
 prettySummaryInt SummaryInt{..} = concat

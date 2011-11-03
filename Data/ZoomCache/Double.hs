@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -64,8 +65,11 @@ module Data.ZoomCache.Double (
 import Blaze.ByteString.Builder
 import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
+import qualified Data.Iteratee as I
+import qualified Data.ListLike as LL
 import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Data.Word
@@ -104,11 +108,13 @@ instance ZoomReadable Double where
 prettyPacketDouble :: Double -> String
 prettyPacketDouble = printf "%.3f"
 
-readSummaryDouble :: (Functor m, MonadIO m)
-                  => Iteratee [Word8] m (SummaryData Double)
+readSummaryDouble :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                  => Iteratee s m (SummaryData Double)
 readSummaryDouble = do
     [en,ex,mn,mx,avg,rms] <- replicateM 6 readDouble64be
     return (SummaryDouble en ex mn mx avg rms)
+{-# SPECIALIZE INLINE readSummaryDouble :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Double) #-}
+{-# SPECIALIZE INLINE readSummaryDouble :: (Functor m, MonadIO m) => Iteratee B.ByteString m (SummaryData Double) #-}
 
 prettySummaryDouble :: SummaryData Double -> String
 prettySummaryDouble SummaryDouble{..} = concat
