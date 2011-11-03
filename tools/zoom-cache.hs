@@ -107,7 +107,7 @@ zoomGen = defCmd {
           cmdName = "gen"
         , cmdHandler = zoomGenHandler
         , cmdCategory = "Writing"
-        , cmdShortDesc = "Generate floating-point zoom-cache data"
+        , cmdShortDesc = "Generate zoom-cache data"
         , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
         }
 
