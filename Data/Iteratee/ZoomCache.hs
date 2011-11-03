@@ -191,24 +191,25 @@ readPacket specs = do
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readTS = readTimeStamps specDRType count entryTime
-            if specType == trackTypeDouble
-                then do -- XXX: Double
-                    (d :: [Double]) <- replicateM count readRaw
-                    ts <- readTS
-                    return . Just $
-                        (Packet trackNo entryTime exitTime count
-                            (ZoomRaw d) ts)
-                else do -- XXX: Int
-                    (d :: [Int]) <- replicateM count readRaw
-                    ts <- readTS
-                    return . Just $
-                        (Packet trackNo entryTime exitTime count
-                            (ZoomRaw d) ts)
+            d <- readRawTT specType count
+            ts <- readTS
+            return . Just $
+                (Packet trackNo entryTime exitTime count d ts)
         Nothing -> do
             I.drop byteLength
             return Nothing
     return (trackNo, packet)
     where
+        readRawTT :: (I.Nullable s, LL.ListLike s Word8,
+                      Functor m, MonadIO m)
+                  => TrackType -> Int -> Iteratee s m ZoomRaw
+        readRawTT (TT a) count = ZoomRaw <$> replicateM count (readRawAs a)
+
+        readRawAs :: (ZoomReadable a, I.Nullable s, LL.ListLike s Word8,
+                      Functor m, MonadIO m)
+                  => a -> Iteratee s m a
+        readRawAs = const readRaw
+
         readTimeStamps :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                        => DataRateType -> Int -> TimeStamp
                        -> Iteratee s m [TimeStamp]
@@ -230,19 +231,25 @@ readSummaryBlock specs = do
 
     summary <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
-            if specType == trackTypeDouble
-                then do -- XXX: Double
-                    (sd :: SummaryData Double) <- readSummary
-                    return . Just . ZoomSummary $
-                        Summary trackNo lvl entryTime exitTime sd
-                else do -- XXX: Int
-                    (sd :: SummaryData Int) <- readSummary
-                    return . Just . ZoomSummary $
-                        Summary trackNo lvl entryTime exitTime sd
+            sd <- readSummaryTT specType trackNo lvl entryTime exitTime
+            return $ Just sd
         Nothing -> do
             I.drop byteLength
             return Nothing
     return (trackNo, summary)
+    where
+        readSummaryTT :: (I.Nullable s, LL.ListLike s Word8,
+                          Functor m, MonadIO m)
+                      => TrackType -> TrackNo -> Int -> TimeStamp -> TimeStamp
+                      -> Iteratee s m ZoomSummary
+        readSummaryTT (TT a) trackNo lvl entryTime exitTime = do
+            ZoomSummary <$> (Summary trackNo lvl entryTime exitTime <$> readSummaryAs a)
+
+        readSummaryAs :: (ZoomReadable a, I.Nullable s, LL.ListLike s Word8,
+                          Functor m, MonadIO m)
+                      => a -> Iteratee s m (SummaryData a)
+        readSummaryAs = const readSummary
+
 
 ----------------------------------------------------------------------
 -- Convenience functions
@@ -280,7 +287,15 @@ readVersion = Version <$> readInt16be <*> readInt16be
 
 readTrackType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
               => Iteratee s m TrackType
-readTrackType = L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
+readTrackType = do
+    tt <- L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
+    maybe (error "Unknown track type") return (parseTrackType tt)
+
+parseTrackType :: L.ByteString -> Maybe TrackType
+parseTrackType h
+    | h == trackTypeDouble = Just (TT (undefined :: Double))
+    | h == trackTypeInt    = Just (TT (undefined :: Int))
+    | otherwise            = Nothing
 
 readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                  => Iteratee s m DataRateType

@@ -18,8 +18,13 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Types (
+    -- * Track types and specification
+      TrackType(..)
+    , TrackMap
+    , TrackSpec(..)
+
     -- * Classes
-      ZoomReadable(..)
+    , ZoomReadable(..)
     , ZoomWritable(..)
 
     , ZoomRaw(..)
@@ -34,6 +39,12 @@ module Data.ZoomCache.Types (
     , SummaryData()
 
     , summaryDuration
+
+    -- * CacheFile
+    , CacheFile(..)
+    , mkCacheFile
+    , fiFull
+
 ) where
 
 import Blaze.ByteString.Builder
@@ -42,12 +53,47 @@ import qualified Data.ByteString.Lazy as L
 import Data.Dynamic
 import Data.Int
 import Data.IntMap (IntMap)
+import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
 import Data.Word
 
 import Data.ZoomCache.Common
+
+------------------------------------------------------------
+-- | A map of all track numbers to their 'TrackSpec'
+type TrackMap = IntMap TrackSpec
+
+-- | A specification of the type and name of each track
+data TrackSpec = TrackSpec
+    { specType   :: !TrackType
+    , specDRType :: !DataRateType
+    , specRate   :: {-# UNPACK #-}!Rational
+    , specName   :: !L.ByteString
+    }
+    deriving (Show)
+
+data TrackType = forall a . ZoomReadable a => TT a
+
+instance Show TrackType where
+    show = const "<<TrackType>>"
+
+------------------------------------------------------------
+
+-- | Global and track headers for a zoom-cache file
+data CacheFile = CacheFile
+    { cfGlobal :: Global
+    , cfSpecs  :: IntMap TrackSpec
+    }
+
+-- | Create an empty 'CacheFile' using the given 'Global'
+mkCacheFile :: Global -> CacheFile
+mkCacheFile g = CacheFile g IM.empty
+
+-- | Determine whether all tracks of a 'CacheFile' are specified
+fiFull :: CacheFile -> Bool
+fiFull (CacheFile g specs) = IM.size specs == noTracks g
 
 ------------------------------------------------------------
 
@@ -79,7 +125,7 @@ summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
 -- | A codec instance must specify a 'SummaryData' type,
 -- and implement all methods of this class.
-class ZoomReadable a where
+class Typeable a => ZoomReadable a where
     -- | Summaries of a subsequence of values of type 'a'. In the default
     -- instances for 'Int' and 'Double', this is a record containing values
     -- such as the maximum, minimum and mean of the subsequence.

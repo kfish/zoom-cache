@@ -20,6 +20,7 @@ module Blaze.ByteString.Builder.ZoomCache.Internal (
     , fromGlobal
     , fromSummary
     , fromTrackNo
+    , fromTrackType
 ) where
 
 import Blaze.ByteString.Builder
@@ -68,6 +69,9 @@ fromSummaryHeader s = mconcat
 
 fromTrackNo :: TrackNo -> Builder
 fromTrackNo = fromInt32be . fromIntegral
+
+fromTrackType :: TrackType -> Builder
+fromTrackType (TT a) = fromLazyByteString $ trackIdentifier a
 
 fromVersion :: Version -> Builder
 fromVersion (Version vMaj vMin) = mconcat
