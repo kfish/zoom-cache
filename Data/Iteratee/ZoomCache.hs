@@ -21,11 +21,16 @@ module Data.Iteratee.ZoomCache (
     -- * Types
       Stream(..)
 
+    -- * Identifier mappings
+    , defaultMappings
+    , ttMapping
+
     -- * Parsing iteratees
     , iterHeaders
 
     -- * Enumeratee
     , enumCacheFile
+    , enumCacheFileDefaults
     , enumStream
 
     -- * Iteratee maps
@@ -35,7 +40,7 @@ module Data.Iteratee.ZoomCache (
 ) where
 
 import Control.Applicative
-import Control.Monad (replicateM)
+import Control.Monad (msum, replicateM)
 import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Data.ByteString.Lazy as L
 import Data.Int
@@ -80,13 +85,18 @@ instance I.NullPoint Stream where
 
 ----------------------------------------------------------------------
 
+enumCacheFileDefaults :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                      => I.Enumeratee s Stream m a
+enumCacheFileDefaults = enumCacheFile defaultMappings
+
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
 -- 'CacheFile' visible in the 'Stream' elements.
 enumCacheFile :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-              => I.Enumeratee s Stream m a
-enumCacheFile iter = do
-    fi <- iterHeaders
+              => [L.ByteString -> Maybe TrackType]
+              -> I.Enumeratee s Stream m a
+enumCacheFile mappings iter = do
+    fi <- iterHeaders mappings
     enumStream fi iter
 
 -- | An enumeratee of zoom-cache data, after global and track headers
@@ -128,8 +138,9 @@ parseHeader h
 -- | Parse only the global and track headers of a zoom-cache file, returning
 -- a 'CacheFile'
 iterHeaders :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-            => I.Iteratee s m CacheFile
-iterHeaders = iterGlobal >>= go
+            => [L.ByteString -> Maybe TrackType]
+            -> I.Iteratee s m CacheFile
+iterHeaders mappings = iterGlobal >>= go
     where
         iterGlobal :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                    => Iteratee s m CacheFile
@@ -146,7 +157,7 @@ iterHeaders = iterGlobal >>= go
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (L.pack header) of
                 Just TrackHeader -> do
-                    (trackNo, spec) <- readTrackHeader
+                    (trackNo, spec) <- readTrackHeader mappings
                     let fi' = fi{cfSpecs = IM.insert trackNo spec (cfSpecs fi)}
                     if (fiFull fi')
                         then return fi'
@@ -165,10 +176,11 @@ readGlobalHeader = do
     return $ Global v n p b Nothing
 
 readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-                => Iteratee s m (TrackNo, TrackSpec)
-readTrackHeader = do
+                => [L.ByteString -> Maybe TrackType]
+                -> Iteratee s m (TrackNo, TrackSpec)
+readTrackHeader mappings = do
     trackNo <- readInt32be
-    trackType <- readTrackType
+    trackType <- readTrackType mappings
     drType <- readDataRateType
     rate <- readRational64be
     byteLength <- readInt32be
@@ -256,24 +268,27 @@ readSummaryBlock specs = do
 
 -- | Map a monadic 'Stream' processing function over an entire zoom-cache file.
 mapStream :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-          => (Stream -> m ())
+          => [L.ByteString -> Maybe TrackType]
+          -> (Stream -> m ())
           -> Iteratee s m ()
-mapStream = I.joinI . enumCacheFile . I.mapChunksM_
+mapStream mappings = I.joinI . enumCacheFile mappings . I.mapChunksM_
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
 mapPackets :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-           => (Packet -> m ())
+           => [L.ByteString -> Maybe TrackType]
+           -> (Packet -> m ())
            -> Iteratee s m ()
-mapPackets f = mapStream process
+mapPackets mappings f = mapStream mappings process
     where
         process StreamPacket{..} = f strmPacket
         process _                = return ()
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
 mapSummaries :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-             => (ZoomSummary -> m ())
+             => [L.ByteString -> Maybe TrackType]
+             -> (ZoomSummary -> m ())
              -> Iteratee s m ()
-mapSummaries f = mapStream process
+mapSummaries mappings f = mapStream mappings process
     where
         process StreamSummary{..} = f strmSummary
         process _                 = return ()
@@ -286,16 +301,25 @@ readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
 readVersion = Version <$> readInt16be <*> readInt16be
 
 readTrackType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-              => Iteratee s m TrackType
-readTrackType = do
+              => [L.ByteString -> Maybe TrackType]
+              -> Iteratee s m TrackType
+readTrackType mappings = do
     tt <- L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
-    maybe (error "Unknown track type") return (parseTrackType tt)
+    maybe (error "Unknown track type") return (parseTrackType mappings tt)
 
-parseTrackType :: L.ByteString -> Maybe TrackType
-parseTrackType h
-    | h == trackTypeDouble = Just (TT (undefined :: Double))
-    | h == trackTypeInt    = Just (TT (undefined :: Int))
-    | otherwise            = Nothing
+ttMapping :: ZoomReadable a => a -> L.ByteString -> Maybe TrackType
+ttMapping a h
+    | h == trackIdentifier a = Just (TT a)
+    | otherwise              = Nothing
+
+parseTrackType :: [L.ByteString -> Maybe TrackType] -> L.ByteString -> Maybe TrackType
+parseTrackType mappings h = msum . map ($ h) $ mappings
+
+defaultMappings :: [L.ByteString -> Maybe TrackType]
+defaultMappings =
+    [ ttMapping (undefined :: Double)
+    , ttMapping (undefined :: Int)
+    ]
 
 readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                  => Iteratee s m DataRateType

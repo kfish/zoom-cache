@@ -26,6 +26,7 @@ module Data.ZoomCache.Dump (
 import Control.Applicative ((<$>))
 import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy as L
 import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
@@ -35,25 +36,35 @@ import Data.ZoomCache
 
 ------------------------------------------------------------
 
-zoomInfoFile :: FilePath -> IO ()
-zoomInfoFile path = I.fileDriverRandom iterHeadersBS path >>= info
+zoomInfoFile :: [L.ByteString -> Maybe TrackType]
+             -> FilePath -> IO ()
+zoomInfoFile mappings path =
+    I.fileDriverRandom (iterHeadersBS mappings) path >>= info
 
-zoomDumpFile :: TrackNo -> FilePath -> IO ()
-zoomDumpFile trackNo = I.fileDriverRandom (mapStreamBS (dumpData trackNo))
+zoomDumpFile :: [L.ByteString -> Maybe TrackType]
+             -> TrackNo -> FilePath -> IO ()
+zoomDumpFile mappings trackNo =
+    I.fileDriverRandom (mapStreamBS mappings (dumpData trackNo))
 
-zoomDumpSummary :: TrackNo -> FilePath -> IO ()
-zoomDumpSummary trackNo = I.fileDriverRandom (mapStreamBS (dumpSummary trackNo))
+zoomDumpSummary :: [L.ByteString -> Maybe TrackType]
+                -> TrackNo -> FilePath -> IO ()
+zoomDumpSummary mappings trackNo =
+    I.fileDriverRandom (mapStreamBS mappings (dumpSummary trackNo))
 
-zoomDumpSummaryLevel :: TrackNo -> Int -> FilePath -> IO ()
-zoomDumpSummaryLevel trackNo lvl = I.fileDriverRandom (mapStreamBS (dumpSummaryLevel trackNo lvl))
+zoomDumpSummaryLevel :: [L.ByteString -> Maybe TrackType]
+                     -> TrackNo -> Int -> FilePath -> IO ()
+zoomDumpSummaryLevel mappings trackNo lvl =
+    I.fileDriverRandom (mapStreamBS mappings (dumpSummaryLevel trackNo lvl))
 
 ----------------------------------------------------------------------
 
-iterHeadersBS :: I.Iteratee ByteString IO CacheFile
+iterHeadersBS :: [L.ByteString -> Maybe TrackType]
+              -> I.Iteratee ByteString IO CacheFile
 iterHeadersBS = iterHeaders
 
 mapStreamBS :: (Functor m, MonadIO m)
-            => (Stream -> m ())
+            => [L.ByteString -> Maybe TrackType]
+            -> (Stream -> m ())
             -> I.Iteratee ByteString m ()
 mapStreamBS = mapStream
 
