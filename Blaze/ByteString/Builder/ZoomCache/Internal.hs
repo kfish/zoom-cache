@@ -24,8 +24,8 @@ module Blaze.ByteString.Builder.ZoomCache.Internal (
 ) where
 
 import Blaze.ByteString.Builder
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LC
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 import Data.Monoid
 
 import Blaze.ByteString.Builder.ZoomCache
@@ -49,14 +49,14 @@ fromGlobal Global{..} = mconcat
         , fromRational64 presentationTime
         , fromRational64 baseTime
         ]
-    , fromLazyByteString $ LC.pack (replicate 20 '\0') -- UTCTime
+    , fromByteString $ C.pack (replicate 20 '\0') -- UTCTime
     ]
 
 fromSummary :: ZoomWritable a => Summary a -> Builder
 fromSummary s@Summary{..} = mconcat [ fromSummaryHeader s, l, d]
     where
         d = fromSummaryData summaryData
-        l = fromIntegral32be . L.length . toLazyByteString $ d
+        l = fromIntegral32be . B.length . toByteString $ d
 
 fromSummaryHeader :: Summary a -> Builder
 fromSummaryHeader s = mconcat
@@ -71,7 +71,7 @@ fromTrackNo :: TrackNo -> Builder
 fromTrackNo = fromInt32be . fromIntegral
 
 fromTrackType :: TrackType -> Builder
-fromTrackType (TT a) = fromLazyByteString $ trackIdentifier a
+fromTrackType (TT a) = fromByteString $ trackIdentifier a
 
 fromVersion :: Version -> Builder
 fromVersion (Version vMaj vMin) = mconcat

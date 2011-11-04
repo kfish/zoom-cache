@@ -42,6 +42,8 @@ module Data.Iteratee.ZoomCache (
 import Control.Applicative
 import Control.Monad (msum, replicateM)
 import Control.Monad.Trans (liftIO, MonadIO)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Int
 import Data.IntMap (IntMap)
@@ -93,7 +95,7 @@ enumCacheFileDefaults = enumCacheFile defaultMappings
 -- The global and track headers will be transparently read, and the 
 -- 'CacheFile' visible in the 'Stream' elements.
 enumCacheFile :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-              => [L.ByteString -> Maybe TrackType]
+              => [ByteString -> Maybe TrackType]
               -> I.Enumeratee s Stream m a
 enumCacheFile mappings iter = do
     fi <- iterHeaders mappings
@@ -138,7 +140,7 @@ parseHeader h
 -- | Parse only the global and track headers of a zoom-cache file, returning
 -- a 'CacheFile'
 iterHeaders :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-            => [L.ByteString -> Maybe TrackType]
+            => [ByteString -> Maybe TrackType]
             -> I.Iteratee s m CacheFile
 iterHeaders mappings = iterGlobal >>= go
     where
@@ -176,7 +178,7 @@ readGlobalHeader = do
     return $ Global v n p b Nothing
 
 readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-                => [L.ByteString -> Maybe TrackType]
+                => [ByteString -> Maybe TrackType]
                 -> Iteratee s m (TrackNo, TrackSpec)
 readTrackHeader mappings = do
     trackNo <- readInt32be
@@ -184,7 +186,7 @@ readTrackHeader mappings = do
     drType <- readDataRateType
     rate <- readRational64be
     byteLength <- readInt32be
-    name <- L.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
+    name <- B.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
 
     return (trackNo, TrackSpec trackType drType rate name)
 
@@ -268,14 +270,14 @@ readSummaryBlock specs = do
 
 -- | Map a monadic 'Stream' processing function over an entire zoom-cache file.
 mapStream :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-          => [L.ByteString -> Maybe TrackType]
+          => [ByteString -> Maybe TrackType]
           -> (Stream -> m ())
           -> Iteratee s m ()
 mapStream mappings = I.joinI . enumCacheFile mappings . I.mapChunksM_
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
 mapPackets :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-           => [L.ByteString -> Maybe TrackType]
+           => [ByteString -> Maybe TrackType]
            -> (Packet -> m ())
            -> Iteratee s m ()
 mapPackets mappings f = mapStream mappings process
@@ -285,7 +287,7 @@ mapPackets mappings f = mapStream mappings process
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
 mapSummaries :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-             => [L.ByteString -> Maybe TrackType]
+             => [ByteString -> Maybe TrackType]
              -> (ZoomSummary -> m ())
              -> Iteratee s m ()
 mapSummaries mappings f = mapStream mappings process
@@ -301,21 +303,21 @@ readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
 readVersion = Version <$> readInt16be <*> readInt16be
 
 readTrackType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-              => [L.ByteString -> Maybe TrackType]
+              => [ByteString -> Maybe TrackType]
               -> Iteratee s m TrackType
 readTrackType mappings = do
-    tt <- L.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
+    tt <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
     maybe (error "Unknown track type") return (parseTrackType mappings tt)
 
-ttMapping :: ZoomReadable a => a -> L.ByteString -> Maybe TrackType
+ttMapping :: ZoomReadable a => a -> ByteString -> Maybe TrackType
 ttMapping a h
     | h == trackIdentifier a = Just (TT a)
     | otherwise              = Nothing
 
-parseTrackType :: [L.ByteString -> Maybe TrackType] -> L.ByteString -> Maybe TrackType
+parseTrackType :: [ByteString -> Maybe TrackType] -> ByteString -> Maybe TrackType
 parseTrackType mappings h = msum . map ($ h) $ mappings
 
-defaultMappings :: [L.ByteString -> Maybe TrackType]
+defaultMappings :: [ByteString -> Maybe TrackType]
 defaultMappings =
     [ ttMapping (undefined :: Double)
     , ttMapping (undefined :: Int)

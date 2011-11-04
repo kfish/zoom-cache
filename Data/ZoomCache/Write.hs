@@ -47,7 +47,9 @@ module Data.ZoomCache.Write (
 import Blaze.ByteString.Builder hiding (flush)
 import Control.Applicative ((<$>))
 import Control.Monad.State
-import qualified Data.ByteString.Lazy as L
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Dynamic
 import qualified Data.Foldable as Fold
@@ -119,10 +121,10 @@ flush = do
     tracks <- gets whTrackWork
     doRaw <- gets whWriteData
     when doRaw $
-        liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
+        liftIO $ Fold.mapM_ (B.hPut h) $ IM.mapWithKey bsFromTrack tracks
     mapM_ (uncurry flushSummary) (IM.assocs tracks)
     pending <- mconcat . IM.elems <$> gets whDeferred
-    liftIO . L.hPut h . toLazyByteString $ pending
+    liftIO . B.hPut h . toByteString $ pending
     modify $ \z -> z
         { whTrackWork = IM.map flushTrack (whTrackWork z)
         , whDeferred = IM.empty
@@ -158,11 +160,11 @@ closeWrite :: ZoomWHandle -> IO ()
 closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
-oneTrack :: (ZoomReadable a) => a -> DataRateType -> Rational -> L.ByteString -> TrackMap
+oneTrack :: (ZoomReadable a) => a -> DataRateType -> Rational -> ByteString -> TrackMap
 oneTrack a !drType !rate !name = IM.singleton 1 (mkTrackSpec a drType rate name)
 {-# INLINABLE oneTrack #-}
 
-mkTrackSpec :: (ZoomReadable a) => a -> DataRateType -> Rational -> L.ByteString -> TrackSpec
+mkTrackSpec :: (ZoomReadable a) => a -> DataRateType -> Rational -> ByteString -> TrackSpec
 mkTrackSpec a = TrackSpec (TT a)
 
 -- | Query the maximum number of data points to buffer for a given track before
@@ -184,21 +186,21 @@ setWatermark trackNo w = modifyTrack trackNo f
 -- Global header
 
 writeGlobalHeader :: Handle -> Global -> IO ()
-writeGlobalHeader h = L.hPut h . toLazyByteString . fromGlobal
+writeGlobalHeader h = B.hPut h . toByteString . fromGlobal
 
 ----------------------------------------------------------------------
 -- Track header
 
 writeTrackHeader :: Handle -> Int -> TrackSpec -> IO ()
 writeTrackHeader h trackNo TrackSpec{..} = do
-    L.hPut h . mconcat $
-        [ trackHeader
-        , toLazyByteString $ mconcat
+    B.hPut h . mconcat $
+        [ C.pack . LC.unpack $ trackHeader
+        , toByteString $ mconcat
             [ fromTrackNo trackNo
             , fromTrackType specType
             , fromDataRateType specDRType
             , fromRational64 specRate
-            , fromIntegral32be . LC.length $ specName
+            , fromIntegral32be . C.length $ specName
             ]
         , specName
         ]
@@ -287,8 +289,8 @@ modifyTracks f = modify (\z -> z { whTrackWork = f (whTrackWork z) })
 modifyTrack :: TrackNo -> (TrackWork -> TrackWork) -> ZoomW ()
 modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
-bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
-bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
+bsFromTrack :: TrackNo -> TrackWork -> ByteString
+bsFromTrack trackNo TrackWork{..} = toByteString $ mconcat
     [ fromLazyByteString packetHeader
     , fromIntegral32be trackNo
     , fromTimeStamp twEntryTime
@@ -299,7 +301,7 @@ bsFromTrack trackNo TrackWork{..} = toLazyByteString $ mconcat
     , twTSBuilder
     ]
     where
-        len = L.length . toLazyByteString
+        len = B.length . toByteString
 
 mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
 mkTrackWork !spec !entry !w = TrackWork

@@ -65,8 +65,8 @@ module Data.ZoomCache.Double (
 import Blaze.ByteString.Builder
 import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as L
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
@@ -81,7 +81,7 @@ import Numeric.FloatMinMax
 ----------------------------------------------------------------------
 
 -- Identifier for track headers
-trackTypeDouble :: L.ByteString
+trackTypeDouble :: ByteString
 trackTypeDouble = "ZOOMf64b"
 
 ----------------------------------------------------------------------

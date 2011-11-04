@@ -49,7 +49,7 @@ module Data.ZoomCache.Types (
 
 import Blaze.ByteString.Builder
 import Control.Monad.Trans (MonadIO)
-import qualified Data.ByteString.Lazy as L
+import Data.ByteString (ByteString)
 import Data.Dynamic
 import Data.Int
 import Data.IntMap (IntMap)
@@ -70,7 +70,7 @@ data TrackSpec = TrackSpec
     { specType   :: !TrackType
     , specDRType :: !DataRateType
     , specRate   :: {-# UNPACK #-}!Rational
-    , specName   :: !L.ByteString
+    , specName   :: !ByteString
     }
     deriving (Show)
 
@@ -135,7 +135,7 @@ class Typeable a => ZoomReadable a where
     -- The /value/ of the argument should be ignored by any instance of
     -- 'ZoomReadable', so that is safe to pass 'undefined' as the
     -- argument.
-    trackIdentifier :: a -> L.ByteString
+    trackIdentifier :: a -> ByteString
 
     -- | An iteratee to read one value of type 'a' from a stream of something
     -- like '[Word8]' or 'ByteString'.

@@ -20,7 +20,7 @@ module Data.ZoomCache.Pretty (
     , prettySummary
 ) where
 
-import qualified Data.ByteString.Lazy.Char8 as LC
+import qualified Data.ByteString.Char8 as C
 import Data.Ratio
 import Text.Printf
 
@@ -45,7 +45,7 @@ prettyGlobal Global{..} = unlines
 prettyTrackSpec :: TrackNo -> TrackSpec -> String
 prettyTrackSpec trackNo TrackSpec{..} = unlines
     [ "Track " ++ show trackNo ++ ":"
-    , "\tName:\t" ++ LC.unpack specName
+    , "\tName:\t" ++ C.unpack specName
     , "\tType:\t" ++ show specType
     , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
     ]
