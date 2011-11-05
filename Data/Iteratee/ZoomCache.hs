@@ -26,7 +26,6 @@ module Data.Iteratee.ZoomCache (
 
     -- * Enumeratee
     , enumCacheFile
-    , enumCacheFileDefaults
     , enumStream
 
     -- * Iteratee maps
@@ -53,7 +52,6 @@ import Data.Word
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
-import Data.ZoomCache.Identify (standardIdentifiers)
 import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
@@ -79,10 +77,6 @@ instance I.NullPoint Stream where
     empty = StreamNull
 
 ----------------------------------------------------------------------
-
-enumCacheFileDefaults :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-                      => I.Enumeratee s Stream m a
-enumCacheFileDefaults = enumCacheFile standardIdentifiers
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 

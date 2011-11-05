@@ -70,3 +70,18 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Identify
 import Data.ZoomCache.Pretty
 import Data.ZoomCache.Types
+
+-- Track Types
+import Data.ZoomCache.Double()
+import Data.ZoomCache.Int()
+import Data.ZoomCache.Unit()
+
+----------------------------------------------------------------------
+
+standardIdentifiers :: [IdentifyTrack]
+standardIdentifiers =
+    [ identifyTrackType (undefined :: Double)
+    , identifyTrackType (undefined :: Int)
+    , identifyTrackType (undefined :: ())
+    ]
+

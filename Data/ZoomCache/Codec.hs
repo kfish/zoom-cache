@@ -26,6 +26,9 @@ module Data.ZoomCache.Codec (
     , ZoomWritable(..)
     , ZoomWrite(..)
 
+    -- * Identification
+    , identifyTrackType
+
     -- * Raw data reading iteratees
     , readInt16be
     , readInt32be
@@ -49,5 +52,6 @@ module Data.ZoomCache.Codec (
 import Blaze.ByteString.Builder.ZoomCache
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
+import Data.ZoomCache.Identify
 import Data.ZoomCache.Types
 import Data.ZoomCache.Write
