@@ -21,10 +21,6 @@ module Data.Iteratee.ZoomCache (
     -- * Types
       Stream(..)
 
-    -- * Identifier mappings
-    , defaultMappings
-    , ttMapping
-
     -- * Parsing iteratees
     , iterHeaders
 
@@ -57,12 +53,8 @@ import Data.Word
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
+import Data.ZoomCache.Identify (defaultMappings)
 import Data.ZoomCache.Types
-
--- XXX: Remove these
-import Data.ZoomCache.Double()
-import Data.ZoomCache.Int()
-import Data.ZoomCache.Unit()
 
 ----------------------------------------------------------------------
 
@@ -310,20 +302,8 @@ readTrackType mappings = do
     tt <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
     maybe (error "Unknown track type") return (parseTrackType mappings tt)
 
-ttMapping :: ZoomReadable a => a -> ByteString -> Maybe TrackType
-ttMapping a h
-    | h == trackIdentifier a = Just (TT a)
-    | otherwise              = Nothing
-
 parseTrackType :: [ByteString -> Maybe TrackType] -> ByteString -> Maybe TrackType
 parseTrackType mappings h = msum . map ($ h) $ mappings
-
-defaultMappings :: [ByteString -> Maybe TrackType]
-defaultMappings =
-    [ ttMapping (undefined :: Double)
-    , ttMapping (undefined :: Int)
-    , ttMapping (undefined :: ())
-    ]
 
 readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                  => Iteratee s m DataRateType

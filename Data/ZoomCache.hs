@@ -52,6 +52,9 @@ module Data.ZoomCache (
     -- * TrackSpec helpers
     , oneTrack
 
+    -- * Standard identifiers
+    , defaultMappings
+
     -- * Iteratee parsers
     , module Data.Iteratee.ZoomCache
 
@@ -63,5 +66,6 @@ import Data.ZoomCache.Write
 
 import Data.Iteratee.ZoomCache
 import Data.ZoomCache.Common
+import Data.ZoomCache.Identify
 import Data.ZoomCache.Pretty
 import Data.ZoomCache.Types

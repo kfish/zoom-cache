@@ -90,6 +90,7 @@ Library
     Data.ZoomCache.Double
     Data.ZoomCache.Dump
     Data.ZoomCache.Format
+    Data.ZoomCache.Identify
     Data.ZoomCache.Int
     Data.ZoomCache.Pretty
     Data.ZoomCache.Types
