@@ -93,6 +93,7 @@ Library
     Data.ZoomCache.Int
     Data.ZoomCache.Pretty
     Data.ZoomCache.Types
+    Data.ZoomCache.Unit
     Data.ZoomCache.Write
     Data.Iteratee.ZoomCache
     Data.Iteratee.ZoomCache.Utils

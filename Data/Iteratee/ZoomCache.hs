@@ -62,6 +62,7 @@ import Data.ZoomCache.Types
 -- XXX: Remove these
 import Data.ZoomCache.Double()
 import Data.ZoomCache.Int()
+import Data.ZoomCache.Unit()
 
 ----------------------------------------------------------------------
 
@@ -321,6 +322,7 @@ defaultMappings :: [ByteString -> Maybe TrackType]
 defaultMappings =
     [ ttMapping (undefined :: Double)
     , ttMapping (undefined :: Int)
+    , ttMapping (undefined :: ())
     ]
 
 readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
