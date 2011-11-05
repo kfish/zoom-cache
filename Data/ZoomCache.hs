@@ -17,6 +17,7 @@ module Data.ZoomCache (
       TimeStamp(..)
     , TrackNo
     , TrackType
+    , IdentifyTrack
     , DataRateType(..)
 
     , CacheFile(..)
@@ -53,7 +54,7 @@ module Data.ZoomCache (
     , oneTrack
 
     -- * Standard identifiers
-    , defaultMappings
+    , standardIdentifiers
 
     -- * Iteratee parsers
     , module Data.Iteratee.ZoomCache

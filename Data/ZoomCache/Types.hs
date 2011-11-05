@@ -22,6 +22,7 @@ module Data.ZoomCache.Types (
       TrackType(..)
     , TrackMap
     , TrackSpec(..)
+    , IdentifyTrack
 
     -- * Classes
     , ZoomReadable(..)
@@ -78,6 +79,8 @@ data TrackType = forall a . ZoomReadable a => TT a
 
 instance Show TrackType where
     show = const "<<TrackType>>"
+
+type IdentifyTrack = ByteString -> Maybe TrackType
 
 ------------------------------------------------------------
 

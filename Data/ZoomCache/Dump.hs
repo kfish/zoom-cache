@@ -35,34 +35,34 @@ import Data.ZoomCache
 
 ------------------------------------------------------------
 
-zoomInfoFile :: [ByteString -> Maybe TrackType]
+zoomInfoFile :: [IdentifyTrack]
              -> FilePath -> IO ()
 zoomInfoFile mappings path =
     I.fileDriverRandom (iterHeadersBS mappings) path >>= info
 
-zoomDumpFile :: [ByteString -> Maybe TrackType]
+zoomDumpFile :: [IdentifyTrack]
              -> TrackNo -> FilePath -> IO ()
 zoomDumpFile mappings trackNo =
     I.fileDriverRandom (mapStreamBS mappings (dumpData trackNo))
 
-zoomDumpSummary :: [ByteString -> Maybe TrackType]
+zoomDumpSummary :: [IdentifyTrack]
                 -> TrackNo -> FilePath -> IO ()
 zoomDumpSummary mappings trackNo =
     I.fileDriverRandom (mapStreamBS mappings (dumpSummary trackNo))
 
-zoomDumpSummaryLevel :: [ByteString -> Maybe TrackType]
+zoomDumpSummaryLevel :: [IdentifyTrack]
                      -> TrackNo -> Int -> FilePath -> IO ()
 zoomDumpSummaryLevel mappings trackNo lvl =
     I.fileDriverRandom (mapStreamBS mappings (dumpSummaryLevel trackNo lvl))
 
 ----------------------------------------------------------------------
 
-iterHeadersBS :: [ByteString -> Maybe TrackType]
+iterHeadersBS :: [IdentifyTrack]
               -> I.Iteratee ByteString IO CacheFile
 iterHeadersBS = iterHeaders
 
 mapStreamBS :: (Functor m, MonadIO m)
-            => [ByteString -> Maybe TrackType]
+            => [IdentifyTrack]
             -> (Stream -> m ())
             -> I.Iteratee ByteString m ()
 mapStreamBS = mapStream
