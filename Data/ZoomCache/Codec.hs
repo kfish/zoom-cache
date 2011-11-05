@@ -47,6 +47,7 @@ module Data.ZoomCache.Codec (
 
     -- * ZoomCache Types
     , TimeStamp(..)
+    , TrackType
 ) where
 
 import Blaze.ByteString.Builder.ZoomCache
