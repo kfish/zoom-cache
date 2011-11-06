@@ -19,6 +19,7 @@ module Blaze.ByteString.Builder.ZoomCache (
       fromTimeStamp
 
     -- * Creating builders from numeric types used by ZoomCache
+    , fromFloat
     , fromDouble
     , fromIntegral32be
     , fromRational64
@@ -42,6 +43,15 @@ fromTimeStamp = fromInt64be . fromIntegral . unTS
 
 ----------------------------------------------------------------------
 -- Creating builders from numeric types used by ZoomCache.
+
+-- | Serialize a 'Float' in big-endian IEEE 754-2008 binary32 format
+-- (IEEE 754-1985 single format).
+fromFloat :: Float -> Builder
+fromFloat = fromWord32be . toWord32
+    where
+        toWord32 :: Float -> Word32
+        toWord32 = unsafeCoerce
+{-# INLINE fromFloat #-}
 
 -- | Serialize a 'Double' in big-endian IEEE 754-2008 binary64 format
 -- (IEEE 754-1985 double format).

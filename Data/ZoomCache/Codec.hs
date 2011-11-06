@@ -44,6 +44,7 @@ module Data.ZoomCache.Codec (
     -- * Builders
     , fromRational64
     , fromIntegral32be
+    , fromFloat
     , fromDouble
 
     -- * ZoomCache Types
