@@ -19,6 +19,7 @@ module Data.Iteratee.ZoomCache.Utils (
       readInt16be
     , readInt32be
     , readInt64be
+    , readFloat32be
     , readDouble64be
     , readRational64be
 ) where
@@ -65,6 +66,15 @@ readInt64be = fromIntegral . u64_to_s64 <$> I.endianRead8 I.MSB
 {-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int64 #-}
 {-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
 {-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
+
+-- | Read 4 bytes as a big-endian Float
+readFloat32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+               => Iteratee s m Float
+readFloat32be = do
+    n <- I.endianRead4 I.MSB
+    return (unsafeCoerce n :: Float)
+{-# SPECIALIZE INLINE readFloat32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Float #-}
+{-# SPECIALIZE INLINE readFloat32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Float #-}
 
 -- | Read 8 bytes as a big-endian Double
 readDouble64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
