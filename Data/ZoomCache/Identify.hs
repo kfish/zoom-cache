@@ -21,6 +21,7 @@ import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 
+-- | Generate an 'IdentifyTrack' function for a given type.
 identifyTrackType :: ZoomReadable a => a -> IdentifyTrack
 identifyTrackType a h
     | h == trackIdentifier a = Just (TT a)

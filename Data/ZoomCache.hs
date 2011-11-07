@@ -78,6 +78,8 @@ import Data.ZoomCache.Unit()
 
 ----------------------------------------------------------------------
 
+-- | 'IdentifyTrack' functions provided for standard codecs provided
+-- by the zoom-cache library.
 standardIdentifiers :: [IdentifyTrack]
 standardIdentifiers =
     [ identifyTrackType (undefined :: Double)

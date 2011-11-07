@@ -80,6 +80,18 @@ data TrackType = forall a . ZoomReadable a => TT a
 instance Show TrackType where
     show = const "<<TrackType>>"
 
+-- | Identify the tracktype corresponding to a given Codec Identifier.
+-- When parsing a zoom-cache file, the zoom-cache library will try each
+-- of a given list ['IdentifyTrack'].
+--
+-- The standard zoom-cache instances are provided in 'standardIdentifiers'.
+--
+-- When developing your own codecs it is not necessary to build a composite
+-- 'IdentifyTrack' functions; it is sufficient to generate one for each new
+-- codec type. A library of related zoom-cache codecs should export its own
+-- ['IdentifyTrack'] functions, usually called something like mylibIdentifiers.
+--
+-- These can be generated with 'identifyTrackType'.
 type IdentifyTrack = ByteString -> Maybe TrackType
 
 ------------------------------------------------------------
