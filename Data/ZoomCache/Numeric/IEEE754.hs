@@ -76,6 +76,7 @@ import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
+import Data.ZoomCache.Numeric.Internal
 import Data.ZoomCache.Numeric.Types
 
 ----------------------------------------------------------------------
@@ -104,6 +105,9 @@ instance ZoomReadable Double where
 
     prettyRaw         = prettyPacketDouble
     prettySummaryData = prettySummaryDouble
+
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Double) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Double) #-}
 
 prettyPacketDouble :: Double -> String
 prettyPacketDouble = printf "%.3f"
@@ -180,6 +184,11 @@ instance ZoomNum Double where
 
     numMkSummary = SummaryDouble
     numMkSummaryWork = SummaryWorkDouble
+
+{-# SPECIALIZE fromSummaryNum :: SummaryData Double -> Builder #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Double -> SummaryData Double #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Double -> TimeStampDiff -> SummaryData Double -> SummaryData Double #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Double -> SummaryWork Double -> SummaryWork Double #-}
 
 initSummaryDouble :: TimeStamp -> SummaryWork Double
 initSummaryDouble entry = SummaryWorkDouble
