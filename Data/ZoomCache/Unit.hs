@@ -35,7 +35,6 @@ The table below describes the encoding of SummaryData for ().
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Count (int32)                                                 | 36-39
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
 @
 
 Field encoding formats:
