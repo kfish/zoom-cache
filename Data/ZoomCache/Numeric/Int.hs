@@ -64,12 +64,12 @@ import qualified Data.ByteString as B
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
-import Data.Maybe (fromMaybe)
-import Data.Monoid
 import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
+import Data.ZoomCache.Numeric.Internal
+import Data.ZoomCache.Numeric.Types
 
 ----------------------------------------------------------------------
 
@@ -117,16 +117,6 @@ prettySummaryInt SummaryInt{..} = concat
     , printf "avg: %.3f\trms: %.3f" summaryIntAvg summaryIntRMS
     ]
 
-{-
-    typeOfSummaryData = typeOfSummaryInt
-
-typeOfSummaryInt :: SummaryData Int -> TypeRep
-typeOfSummaryInt _ = mkTyConApp tyCon [i,i,i,i]
-    where
-        tyCon = mkTyCon3 "zoom-cache" "Data.ZoomCache.Types" "SummaryInt"
-        i = typeOf (undefined :: Int)
--}
-
 ----------------------------------------------------------------------
 -- Write
 
@@ -143,81 +133,41 @@ instance ZoomWritable Int where
         , swIntExit  :: {-# UNPACK #-}!Int
         , swIntMin   :: {-# UNPACK #-}!Int
         , swIntMax   :: {-# UNPACK #-}!Int
-        , swIntSum   :: {-# UNPACK #-}!Int
+        , swIntSum   :: {-# UNPACK #-}!Double
         , swIntSumSq :: {-# UNPACK #-}!Double
         }
 
-    fromRaw           = fromIntegral32be
-    fromSummaryData   = fromSummaryInt
+    fromRaw           = numFromRaw
+    fromSummaryData   = fromSummaryNum
 
-    initSummaryWork   = initSummaryInt
-    toSummaryData     = mkSummaryInt
-    updateSummaryData = updateSummaryInt
-    appendSummaryData = appendSummaryInt
+    initSummaryWork   = initSummaryNumBounded
+    toSummaryData     = mkSummaryNum
+    updateSummaryData = updateSummaryNum
+    appendSummaryData = appendSummaryNum
 
-initSummaryInt :: TimeStamp -> SummaryWork Int
-initSummaryInt entry = SummaryWorkInt
-    { swIntTime = entry
-    , swIntEntry = Nothing
-    , swIntExit = 0
-    , swIntMin = maxBound
-    , swIntMax = minBound
-    , swIntSum = 0
-    , swIntSumSq = 0
-    }
+instance ZoomNum Int where
+    numFromRaw = fromIntegral32be
 
-mkSummaryInt :: TimeStampDiff -> SummaryWork Int -> SummaryData Int
-mkSummaryInt (TSDiff dur) SummaryWorkInt{..} = SummaryInt
-    { summaryIntEntry = fromMaybe 0 swIntEntry
-    , summaryIntExit = swIntExit
-    , summaryIntMin = swIntMin
-    , summaryIntMax = swIntMax
-    , summaryIntAvg = fromIntegral swIntSum / fromIntegral dur
-    , summaryIntRMS = sqrt $ swIntSumSq / fromIntegral dur
-    }
+    numEntry = summaryIntEntry
+    numExit = summaryIntExit
+    numMin = summaryIntMin
+    numMax = summaryIntMax
+    numAvg = summaryIntAvg
+    numRMS = summaryIntRMS
 
-fromSummaryInt :: SummaryData Int -> Builder
-fromSummaryInt SummaryInt{..} = mconcat $ map fromIntegral32be
-    [ summaryIntEntry
-    , summaryIntExit
-    , summaryIntMin
-    , summaryIntMax
-    ] ++ map fromDouble
-    [ summaryIntAvg
-    , summaryIntRMS
-    ]
+    numWorkTime = swIntTime
+    numWorkEntry = swIntEntry
+    numWorkExit = swIntExit
+    numWorkMin = swIntMin
+    numWorkMax = swIntMax
+    numWorkSum = swIntSum
+    numWorkSumSq = swIntSumSq
 
-updateSummaryInt :: TimeStamp  -> Int -> SummaryWork Int
-                 -> SummaryWork Int
-updateSummaryInt t i SummaryWorkInt{..} = SummaryWorkInt
-    { swIntTime = t
-    , swIntEntry = Just $ fromMaybe i swIntEntry
-    , swIntExit = i
-    , swIntMin = min swIntMin i
-    , swIntMax = max swIntMax i
-    , swIntSum = swIntSum + (i * fromIntegral dur)
-    , swIntSumSq = swIntSumSq + fromIntegral (i*i * fromIntegral dur)
-    }
-    where
-        !(TSDiff dur) = timeStampDiff t swIntTime
+    numMkSummary = SummaryInt
+    numMkSummaryWork = SummaryWorkInt
 
-appendSummaryInt :: TimeStampDiff -> SummaryData Int
-                 -> TimeStampDiff -> SummaryData Int
-                 -> SummaryData Int
-appendSummaryInt (TSDiff dur1) s1 (TSDiff dur2) s2 = SummaryInt
-    { summaryIntEntry = summaryIntEntry s1
-    , summaryIntExit = summaryIntExit s2
-    , summaryIntMin = min (summaryIntMin s1) (summaryIntMin s2)
-    , summaryIntMax = max (summaryIntMax s1) (summaryIntMax s2)
-    , summaryIntAvg = ((summaryIntAvg s1 * fromIntegral dur1) +
-                       (summaryIntAvg s2 * fromIntegral dur2)) /
-                      fromIntegral durSum
-    , summaryIntRMS = sqrt $ ((summaryIntRMS s1 * summaryIntRMS s1 *
-                               fromIntegral dur1) +
-                              (summaryIntRMS s2 * summaryIntRMS s2 *
-                               fromIntegral dur2)) /
-                             fromIntegral durSum
-    }
-    where
-        !durSum = dur1 + dur2
-
+{-# SPECIALIZE fromSummaryNum :: SummaryData Int -> Builder #-}
+{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int -> TimeStampDiff -> SummaryData Int -> SummaryData Int #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int -> SummaryWork Int -> SummaryWork Int #-}
