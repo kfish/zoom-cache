@@ -50,6 +50,7 @@ module Data.ZoomCache.Unit (
 )where
 
 import Blaze.ByteString.Builder
+import Control.Applicative ((<$>))
 import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -89,15 +90,12 @@ prettyPacketUnit = const "."
 
 readSummaryUnit :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                => Iteratee s m (SummaryData ())
-readSummaryUnit = do
-    count <- readInt32be
-    return (SummaryUnit count)
+readSummaryUnit = SummaryUnit <$> readInt32be
 {-# SPECIALIZE INLINE readSummaryUnit :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData ()) #-}
 {-# SPECIALIZE INLINE readSummaryUnit :: (Functor m, MonadIO m) => Iteratee B.ByteString m (SummaryData ()) #-}
 
 prettySummaryUnit :: SummaryData () -> String
-prettySummaryUnit SummaryUnit{..} =
-    printf "count: %d" summaryUnitCount
+prettySummaryUnit SummaryUnit{..} = printf "count: %d" summaryUnitCount
 
 ----------------------------------------------------------------------
 -- Write
