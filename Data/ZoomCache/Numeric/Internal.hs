@@ -85,8 +85,8 @@ updateSummaryNum t d sw =
                        d
                        (min (numWorkMin sw) d)
                        (max (numWorkMax sw) d)
-                       ((numWorkSum sw) + realToFrac (d * dur))
-                       ((numWorkSumSq sw) + realToFrac (d*d * dur))
+                       ((numWorkSum sw) + realToFrac (d * fromIntegral dur))
+                       ((numWorkSumSq sw) + realToFrac (d*d * fromIntegral dur))
     where
-        !dur = fromIntegral $ (unTS t) - (unTS (numWorkTime sw))
+        !(TSDiff dur) = timeStampDiff t (numWorkTime sw)
 {-# INLINEABLE updateSummaryNum #-}
