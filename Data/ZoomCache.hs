@@ -72,6 +72,7 @@ import Data.ZoomCache.Pretty
 import Data.ZoomCache.Types
 
 -- Track Types
+import Data.ZoomCache.Bool()
 import Data.ZoomCache.Double()
 import Data.ZoomCache.Int()
 import Data.ZoomCache.Unit()
@@ -85,5 +86,6 @@ standardIdentifiers =
     [ identifyCodec (undefined :: Double)
     , identifyCodec (undefined :: Int)
     , identifyCodec (undefined :: ())
+    , identifyCodec (undefined :: Bool)
     ]
 
