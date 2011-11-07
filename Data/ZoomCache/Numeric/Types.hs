@@ -7,15 +7,12 @@ module Data.ZoomCache.Numeric.Types (
       ZoomNum(..)
 ) where
 
-import Blaze.ByteString.Builder
 import Data.ZoomCache.Codec
 
 ----------------------------------------------------------------------
 -- ZoomNum
 
 class (Ord a, Real a, ZoomReadable a, ZoomWritable a) => ZoomNum a where
-    numFromRaw :: a -> Builder
-
     numEntry :: SummaryData a -> a
     numExit  :: SummaryData a -> a
     numMin   :: SummaryData a -> a

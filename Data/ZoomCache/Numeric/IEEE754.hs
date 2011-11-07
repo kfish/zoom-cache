@@ -132,7 +132,7 @@ instance ZoomWritable Double where
         , swDoubleSum   :: {-# UNPACK #-}!Double
         , swDoubleSumSq :: {-# UNPACK #-}!Double
         }
-    fromRaw           = numFromRaw
+    fromRaw           = fromDouble
     fromSummaryData   = fromSummaryNum
 
     initSummaryWork   = initSummaryDouble
@@ -141,8 +141,6 @@ instance ZoomWritable Double where
     appendSummaryData = appendSummaryNum
 
 instance ZoomNum Double where
-    numFromRaw = fromDouble
-
     numEntry = summaryDoubleEntry
     numExit  = summaryDoubleExit
     numMin   = summaryDoubleMin

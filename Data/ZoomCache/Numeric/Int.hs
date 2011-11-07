@@ -137,7 +137,7 @@ instance ZoomWritable Int where
         , swIntSumSq :: {-# UNPACK #-}!Double
         }
 
-    fromRaw           = numFromRaw
+    fromRaw           = fromIntegral32be
     fromSummaryData   = fromSummaryNum
 
     initSummaryWork   = initSummaryNumBounded
@@ -146,8 +146,6 @@ instance ZoomWritable Int where
     appendSummaryData = appendSummaryNum
 
 instance ZoomNum Int where
-    numFromRaw = fromIntegral32be
-
     numEntry = summaryIntEntry
     numExit = summaryIntExit
     numMin = summaryIntMin
