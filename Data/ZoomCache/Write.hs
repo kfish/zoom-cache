@@ -164,7 +164,7 @@ oneTrack a !drType !rate !name = IM.singleton 1 (mkTrackSpec a drType rate name)
 {-# INLINABLE oneTrack #-}
 
 mkTrackSpec :: (ZoomReadable a) => a -> DataRateType -> Rational -> ByteString -> TrackSpec
-mkTrackSpec a = TrackSpec (TT a)
+mkTrackSpec a = TrackSpec (Codec a)
 
 -- | Query the maximum number of data points to buffer for a given track before
 -- forcing a flush of all buffered data and summaries.
@@ -196,7 +196,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
         [ trackHeader
         , toByteString $ mconcat
             [ fromTrackNo trackNo
-            , fromTrackType specType
+            , fromCodec specType
             , fromDataRateType specDRType
             , fromRational64 specRate
             , fromIntegral32be . C.length $ specName

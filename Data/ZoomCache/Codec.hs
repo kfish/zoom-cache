@@ -27,7 +27,7 @@ module Data.ZoomCache.Codec (
     , ZoomWrite(..)
 
     -- * Identification
-    , identifyTrackType
+    , identifyCodec
 
     -- * Raw data reading iteratees
     , readInt16be
@@ -49,7 +49,7 @@ module Data.ZoomCache.Codec (
 
     -- * ZoomCache Types
     , TimeStamp(..)
-    , TrackType
+    , Codec
 ) where
 
 import Blaze.ByteString.Builder.ZoomCache

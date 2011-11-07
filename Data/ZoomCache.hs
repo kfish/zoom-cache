@@ -16,8 +16,8 @@ module Data.ZoomCache (
     -- * Types
       TimeStamp(..)
     , TrackNo
-    , TrackType
-    , IdentifyTrack
+    , Codec
+    , IdentifyCodec
     , DataRateType(..)
 
     , CacheFile(..)
@@ -80,10 +80,10 @@ import Data.ZoomCache.Unit()
 
 -- | 'IdentifyTrack' functions provided for standard codecs provided
 -- by the zoom-cache library.
-standardIdentifiers :: [IdentifyTrack]
+standardIdentifiers :: [IdentifyCodec]
 standardIdentifiers =
-    [ identifyTrackType (undefined :: Double)
-    , identifyTrackType (undefined :: Int)
-    , identifyTrackType (undefined :: ())
+    [ identifyCodec (undefined :: Double)
+    , identifyCodec (undefined :: Int)
+    , identifyCodec (undefined :: ())
     ]
 

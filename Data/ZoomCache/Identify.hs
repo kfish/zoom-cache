@@ -14,7 +14,7 @@
 
 module Data.ZoomCache.Identify (
     -- * Identification
-      identifyTrackType
+      identifyCodec
 ) where
 
 import Data.ZoomCache.Types
@@ -22,8 +22,8 @@ import Data.ZoomCache.Types
 ----------------------------------------------------------------------
 
 -- | Generate an 'IdentifyTrack' function for a given type.
-identifyTrackType :: ZoomReadable a => a -> IdentifyTrack
-identifyTrackType a h
-    | h == trackIdentifier a = Just (TT a)
+identifyCodec :: ZoomReadable a => a -> IdentifyCodec
+identifyCodec a h
+    | h == trackIdentifier a = Just (Codec a)
     | otherwise              = Nothing
 

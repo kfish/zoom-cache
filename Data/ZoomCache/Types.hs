@@ -19,10 +19,10 @@
 
 module Data.ZoomCache.Types (
     -- * Track types and specification
-      TrackType(..)
+      Codec(..)
     , TrackMap
     , TrackSpec(..)
-    , IdentifyTrack
+    , IdentifyCodec
 
     -- * Classes
     , ZoomReadable(..)
@@ -68,17 +68,17 @@ type TrackMap = IntMap TrackSpec
 
 -- | A specification of the type and name of each track
 data TrackSpec = TrackSpec
-    { specType   :: !TrackType
+    { specType   :: !Codec
     , specDRType :: !DataRateType
     , specRate   :: {-# UNPACK #-}!Rational
     , specName   :: !ByteString
     }
     deriving (Show)
 
-data TrackType = forall a . ZoomReadable a => TT a
+data Codec = forall a . ZoomReadable a => Codec a
 
-instance Show TrackType where
-    show = const "<<TrackType>>"
+instance Show Codec where
+    show = const "<<Codec>>"
 
 -- | Identify the tracktype corresponding to a given Codec Identifier.
 -- When parsing a zoom-cache file, the zoom-cache library will try each
@@ -91,8 +91,8 @@ instance Show TrackType where
 -- codec type. A library of related zoom-cache codecs should export its own
 -- ['IdentifyTrack'] functions, usually called something like mylibIdentifiers.
 --
--- These can be generated with 'identifyTrackType'.
-type IdentifyTrack = ByteString -> Maybe TrackType
+-- These can be generated with 'identifyCodec'.
+type IdentifyCodec = ByteString -> Maybe Codec
 
 ------------------------------------------------------------
 
