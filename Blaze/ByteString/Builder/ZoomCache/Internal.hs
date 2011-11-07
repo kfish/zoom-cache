@@ -42,7 +42,7 @@ fromDataRateType VariableDR = fromInt16be 1
 
 fromGlobal :: Global -> Builder
 fromGlobal Global{..} = mconcat
-    [ fromLazyByteString globalHeader
+    [ fromByteString globalHeader
     , mconcat $
         [ fromVersion version
         , fromIntegral32be noTracks
@@ -60,7 +60,7 @@ fromSummary s@Summary{..} = mconcat [ fromSummaryHeader s, l, d]
 
 fromSummaryHeader :: Summary a -> Builder
 fromSummaryHeader s = mconcat
-    [ fromLazyByteString summaryHeader
+    [ fromByteString summaryHeader
     , fromIntegral32be . summaryTrack $ s
     , fromIntegral32be . summaryLevel $ s
     , fromTimeStamp . summaryEntryTime $ s

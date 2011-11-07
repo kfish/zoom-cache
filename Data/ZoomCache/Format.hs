@@ -37,8 +37,8 @@ module Data.ZoomCache.Format (
     , summaryHeader
 ) where
 
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LC
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as C
 
 {- |
 
@@ -86,8 +86,8 @@ Global header:
 -}
 
 -- Magic identifier at the beginning of a zoom-cache file.
-globalHeader :: L.ByteString
-globalHeader = LC.pack "\xe5ZXhe4d\0"
+globalHeader :: ByteString
+globalHeader = C.pack "\xe5ZXhe4d\0"
 
 -- | The major version encoded by this library
 versionMajor :: Int
@@ -135,8 +135,8 @@ Datarate: numerator 0 indicates variable bitrate (all data values are timestampe
 -}
 
 -- Identifier for track headers
-trackHeader :: L.ByteString
-trackHeader = LC.pack "\xe5ZXtRcK\0"
+trackHeader :: ByteString
+trackHeader = C.pack "\xe5ZXtRcK\0"
 
 {- |
 
@@ -179,8 +179,8 @@ Timestamps block is only present if VBR (datarate numerator is 0)
 TS = 28 + (COUNT * sizeof(Type))
 -}
 -- Identifier for packet headers
-packetHeader :: L.ByteString
-packetHeader = LC.pack "\xe5ZXp4ck\0"
+packetHeader :: ByteString
+packetHeader = C.pack "\xe5ZXp4ck\0"
 
 
 {- |
@@ -218,6 +218,6 @@ Some default encodings of Summary Data are provided in modules
 -}
 
 -- Identifier for summary headers
-summaryHeader :: L.ByteString
-summaryHeader = LC.pack "\xe5ZX5umm\0"
+summaryHeader :: ByteString
+summaryHeader = C.pack "\xe5ZX5umm\0"
 

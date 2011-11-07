@@ -37,8 +37,8 @@ module Data.Iteratee.ZoomCache (
 import Control.Applicative
 import Control.Monad (msum, replicateM)
 import Control.Monad.Trans (liftIO, MonadIO)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as L
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
@@ -99,7 +99,7 @@ enumStream = I.unfoldConvStream go
            -> Iteratee s m (CacheFile, Stream)
         go cf = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (L.pack header) of
+            case parseHeader (B.pack header) of
                 Just PacketHeader -> do
                     (trackNo, packet) <- readPacket (cfSpecs cf)
                     return (cf, StreamPacket cf trackNo (fromJust packet))
@@ -112,7 +112,7 @@ enumStream = I.unfoldConvStream go
 
 data HeaderType = GlobalHeader | TrackHeader | PacketHeader | SummaryHeader
 
-parseHeader :: L.ByteString -> Maybe HeaderType
+parseHeader :: ByteString -> Maybe HeaderType
 parseHeader h
     | h == globalHeader  = Just GlobalHeader
     | h == trackHeader   = Just TrackHeader
@@ -134,7 +134,7 @@ iterHeaders mappings = iterGlobal >>= go
                    => Iteratee s m CacheFile
         iterGlobal = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (L.pack header) of
+            case parseHeader (B.pack header) of
                 Just GlobalHeader -> mkCacheFile <$> readGlobalHeader
                 _                 -> error "No global header"
 
@@ -143,7 +143,7 @@ iterHeaders mappings = iterGlobal >>= go
            -> Iteratee s m CacheFile
         go fi = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (L.pack header) of
+            case parseHeader (B.pack header) of
                 Just TrackHeader -> do
                     (trackNo, spec) <- readTrackHeader mappings
                     let fi' = fi{cfSpecs = IM.insert trackNo spec (cfSpecs fi)}
@@ -160,7 +160,7 @@ readGlobalHeader = do
     n <- readInt32be
     p <- readRational64be
     b <- readRational64be
-    _u <- L.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
+    _u <- B.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
     return $ Global v n p b Nothing
 
 readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)

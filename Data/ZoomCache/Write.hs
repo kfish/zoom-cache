@@ -50,7 +50,6 @@ import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
-import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Dynamic
 import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
@@ -194,7 +193,7 @@ writeGlobalHeader h = B.hPut h . toByteString . fromGlobal
 writeTrackHeader :: Handle -> Int -> TrackSpec -> IO ()
 writeTrackHeader h trackNo TrackSpec{..} = do
     B.hPut h . mconcat $
-        [ C.pack . LC.unpack $ trackHeader
+        [ trackHeader
         , toByteString $ mconcat
             [ fromTrackNo trackNo
             , fromTrackType specType
@@ -291,7 +290,7 @@ modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
 bsFromTrack :: TrackNo -> TrackWork -> ByteString
 bsFromTrack trackNo TrackWork{..} = toByteString $ mconcat
-    [ fromLazyByteString packetHeader
+    [ fromByteString packetHeader
     , fromIntegral32be trackNo
     , fromTimeStamp twEntryTime
     , fromTimeStamp twExitTime
