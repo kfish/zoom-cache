@@ -129,8 +129,8 @@ initSummaryBool entry = SummaryWorkBool
     }
 
 mkSummaryBool :: TimeStampDiff -> SummaryWork Bool -> SummaryData Bool
-mkSummaryBool dur SummaryWorkBool{..} = SummaryBool
-    { summaryBoolExpected = fromIntegral swBoolTrueTime / fromIntegral (unTSDiff dur)
+mkSummaryBool (TSDiff dur) SummaryWorkBool{..} = SummaryBool
+    { summaryBoolExpected = fromIntegral swBoolTrueTime / fromIntegral dur
     }
 
 fromSummaryBool :: SummaryData Bool -> Builder

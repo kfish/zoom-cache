@@ -167,13 +167,13 @@ initSummaryInt entry = SummaryWorkInt
     }
 
 mkSummaryInt :: TimeStampDiff -> SummaryWork Int -> SummaryData Int
-mkSummaryInt dur SummaryWorkInt{..} = SummaryInt
+mkSummaryInt (TSDiff dur) SummaryWorkInt{..} = SummaryInt
     { summaryIntEntry = fromMaybe 0 swIntEntry
     , summaryIntExit = swIntExit
     , summaryIntMin = swIntMin
     , summaryIntMax = swIntMax
-    , summaryIntAvg = fromIntegral swIntSum / fromIntegral (unTSDiff dur)
-    , summaryIntRMS = sqrt $ swIntSumSq / fromIntegral (unTSDiff dur)
+    , summaryIntAvg = fromIntegral swIntSum / fromIntegral dur
+    , summaryIntRMS = sqrt $ swIntSumSq / fromIntegral dur
     }
 
 fromSummaryInt :: SummaryData Int -> Builder
