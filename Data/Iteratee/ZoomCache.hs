@@ -260,6 +260,7 @@ mapStream :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
           -> (Stream -> m ())
           -> Iteratee s m ()
 mapStream mappings = I.joinI . enumCacheFile mappings . I.mapChunksM_
+{-# INLINABLE mapStream #-}
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
 mapPackets :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
@@ -270,6 +271,7 @@ mapPackets mappings f = mapStream mappings process
     where
         process StreamPacket{..} = f strmPacket
         process _                = return ()
+{-# INLINABLE mapPackets #-}
 
 -- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
 mapSummaries :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
@@ -280,6 +282,7 @@ mapSummaries mappings f = mapStream mappings process
     where
         process StreamSummary{..} = f strmSummary
         process _                 = return ()
+{-# INLINABLE mapSummaries #-}
 
 ----------------------------------------------------------------------
 -- zoom-cache datatype parsers
