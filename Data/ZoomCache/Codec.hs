@@ -52,6 +52,9 @@ module Data.ZoomCache.Codec (
     , TimeStamp(..)
     , TimeStampDiff(..)
     , timeStampDiff
+
+    -- * Minimum and maximum floating point
+    , module Data.ZoomCache.Numeric.FloatMinMax
 ) where
 
 import Blaze.ByteString.Builder.ZoomCache
@@ -60,3 +63,4 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Identify
 import Data.ZoomCache.Types
 import Data.ZoomCache.Write
+import Data.ZoomCache.Numeric.FloatMinMax
