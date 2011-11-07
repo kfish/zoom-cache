@@ -76,7 +76,7 @@ import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
-import Numeric.FloatMinMax
+import Data.ZoomCache.Numeric.FloatMinMax
 
 ----------------------------------------------------------------------
 

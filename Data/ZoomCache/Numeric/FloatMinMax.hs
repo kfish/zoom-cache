@@ -1,6 +1,6 @@
 -- | The minimum and maximum positive, finite floats.
 
-module Numeric.FloatMinMax
+module Data.ZoomCache.Numeric.FloatMinMax
 ( floatMin
 , floatMaxDenorm
 , floatMinNorm
