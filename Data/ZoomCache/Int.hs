@@ -201,20 +201,22 @@ updateSummaryInt t i SummaryWorkInt{..} = SummaryWorkInt
     where
         !dur = fromIntegral $ (unTS t) - (unTS swIntTime)
 
-appendSummaryInt :: Double -> SummaryData Int
-                 -> Double -> SummaryData Int
+appendSummaryInt :: TimeStampDiff -> SummaryData Int
+                 -> TimeStampDiff -> SummaryData Int
                  -> SummaryData Int
-appendSummaryInt dur1 s1 dur2 s2 = SummaryInt
+appendSummaryInt (TSDiff dur1) s1 (TSDiff dur2) s2 = SummaryInt
     { summaryIntEntry = summaryIntEntry s1
     , summaryIntExit = summaryIntExit s2
     , summaryIntMin = min (summaryIntMin s1) (summaryIntMin s2)
     , summaryIntMax = max (summaryIntMax s1) (summaryIntMax s2)
-    , summaryIntAvg = ((summaryIntAvg s1 * dur1) +
-                       (summaryIntAvg s2 * dur2)) /
-                      durSum
-    , summaryIntRMS = sqrt $ ((summaryIntRMS s1 * summaryIntRMS s1 * dur1) +
-                              (summaryIntRMS s2 * summaryIntRMS s2 * dur2)) /
-                             durSum
+    , summaryIntAvg = ((summaryIntAvg s1 * fromIntegral dur1) +
+                       (summaryIntAvg s2 * fromIntegral dur2)) /
+                      fromIntegral durSum
+    , summaryIntRMS = sqrt $ ((summaryIntRMS s1 * summaryIntRMS s1 *
+                               fromIntegral dur1) +
+                              (summaryIntRMS s2 * summaryIntRMS s2 *
+                               fromIntegral dur2)) /
+                             fromIntegral durSum
     }
     where
         !durSum = dur1 + dur2

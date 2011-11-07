@@ -400,7 +400,7 @@ appendSummary s1 s2 = Summary
                                       (dur s2) (summaryData s2)
     }
     where
-        dur = fromIntegral . summaryDuration
+        dur = summaryDuration
 
 ------------------------------------------------------------
 

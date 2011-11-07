@@ -205,20 +205,22 @@ updateSummaryDouble t d SummaryWorkDouble{..} = SummaryWorkDouble
     where
         !dur = fromIntegral $ (unTS t) - (unTS swDoubleTime)
 
-appendSummaryDouble :: Double -> SummaryData Double
-                    -> Double -> SummaryData Double
+appendSummaryDouble :: TimeStampDiff -> SummaryData Double
+                    -> TimeStampDiff -> SummaryData Double
                     -> SummaryData Double
-appendSummaryDouble dur1 s1 dur2 s2 = SummaryDouble
+appendSummaryDouble (TSDiff dur1) s1 (TSDiff dur2) s2 = SummaryDouble
     { summaryDoubleEntry = summaryDoubleEntry s1
     , summaryDoubleExit = summaryDoubleExit s2
     , summaryDoubleMin = min (summaryDoubleMin s1) (summaryDoubleMin s2)
     , summaryDoubleMax = max (summaryDoubleMax s1) (summaryDoubleMax s2)
-    , summaryDoubleAvg = ((summaryDoubleAvg s1 * dur1) +
-                          (summaryDoubleAvg s2 * dur2)) /
-                         durSum
-    , summaryDoubleRMS = sqrt $ ((summaryDoubleRMS s1 * summaryDoubleRMS s1 * dur1) +
-                                 (summaryDoubleRMS s2 * summaryDoubleRMS s2 * dur2)) /
-                                durSum
+    , summaryDoubleAvg = ((summaryDoubleAvg s1 * fromIntegral dur1) +
+                          (summaryDoubleAvg s2 * fromIntegral dur2)) /
+                         fromIntegral durSum
+    , summaryDoubleRMS = sqrt $ ((summaryDoubleRMS s1 * summaryDoubleRMS s1 *
+                                  fromIntegral dur1) +
+                                 (summaryDoubleRMS s2 * summaryDoubleRMS s2 *
+                                  fromIntegral dur2)) /
+                                fromIntegral durSum
     }
     where
         !durSum = dur1 + dur2

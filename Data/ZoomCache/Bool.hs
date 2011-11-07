@@ -146,13 +146,13 @@ updateSummaryBool t True SummaryWorkBool{..} = SummaryWorkBool
     where
         !dur = (unTS t) - (unTS swBoolTime)
 
-appendSummaryBool :: Double -> SummaryData Bool
-                  -> Double -> SummaryData Bool
+appendSummaryBool :: TimeStampDiff -> SummaryData Bool
+                  -> TimeStampDiff -> SummaryData Bool
                   -> SummaryData Bool
-appendSummaryBool dur1 s1 dur2 s2 = SummaryBool
-    { summaryBoolExpected = ((summaryBoolExpected s1 * dur1) +
-                             (summaryBoolExpected s2 * dur2)) /
-                            durSum
+appendSummaryBool (TSDiff dur1) s1 (TSDiff dur2) s2 = SummaryBool
+    { summaryBoolExpected = ((summaryBoolExpected s1 * fromIntegral dur1) +
+                             (summaryBoolExpected s2 * fromIntegral dur2)) /
+                            fromIntegral durSum
     }
     where
         !durSum = dur1 + dur2

@@ -132,8 +132,8 @@ data Summary a = Summary
     }
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
-summaryDuration :: Summary a -> Int64
-summaryDuration s = (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
+summaryDuration :: Summary a -> TimeStampDiff
+summaryDuration s = TSDiff $ (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
 
 ------------------------------------------------------------
 -- Read
@@ -200,8 +200,8 @@ class ZoomReadable a => ZoomWritable a where
     toSummaryData      :: TimeStampDiff -> SummaryWork a -> SummaryData a
 
     -- | Append two 'SummaryData'
-    appendSummaryData  :: Double -> SummaryData a
-                       -> Double -> SummaryData a
+    appendSummaryData  :: TimeStampDiff -> SummaryData a
+                       -> TimeStampDiff -> SummaryData a
                        -> SummaryData a
 
 data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork

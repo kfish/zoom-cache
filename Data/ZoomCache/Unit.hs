@@ -140,8 +140,8 @@ updateSummaryUnit _t _ SummaryWorkUnit{..} = SummaryWorkUnit
     { swUnitCount = swUnitCount + 1
     }
 
-appendSummaryUnit :: Double -> SummaryData ()
-                  -> Double -> SummaryData ()
+appendSummaryUnit :: TimeStampDiff -> SummaryData ()
+                  -> TimeStampDiff -> SummaryData ()
                   -> SummaryData ()
 appendSummaryUnit _dur1 s1 _dur2 s2 = SummaryUnit
     { summaryUnitCount = summaryUnitCount s1 + summaryUnitCount s2
