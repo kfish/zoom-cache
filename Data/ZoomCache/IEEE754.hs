@@ -7,7 +7,7 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 {- |
-   Module      : Data.ZoomCache.Double
+   Module      : Data.ZoomCache.IEEE754
    Copyright   : Conrad Parker
    License     : BSD3-style (see LICENSE)
 
@@ -57,7 +57,7 @@ Field encoding formats:
 -}
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.Double (
+module Data.ZoomCache.IEEE754 (
       SummaryData(..)
     , SummaryWork(..)
 )where

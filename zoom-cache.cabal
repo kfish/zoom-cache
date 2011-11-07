@@ -88,10 +88,10 @@ Library
     Data.ZoomCache.Bool
     Data.ZoomCache.Codec
     Data.ZoomCache.Common
-    Data.ZoomCache.Double
     Data.ZoomCache.Dump
     Data.ZoomCache.Format
     Data.ZoomCache.Identify
+    Data.ZoomCache.IEEE754
     Data.ZoomCache.Int
     Data.ZoomCache.Pretty
     Data.ZoomCache.Types
