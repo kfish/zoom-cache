@@ -48,9 +48,10 @@ module Data.ZoomCache.Codec (
     , fromDouble
 
     -- * ZoomCache Types
+    , Codec
     , TimeStamp(..)
     , TimeStampDiff(..)
-    , Codec
+    , timeStampDiff
 ) where
 
 import Blaze.ByteString.Builder.ZoomCache

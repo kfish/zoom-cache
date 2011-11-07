@@ -199,11 +199,11 @@ updateSummaryDouble t d SummaryWorkDouble{..} = SummaryWorkDouble
     , swDoubleExit = d
     , swDoubleMin = min swDoubleMin d
     , swDoubleMax = max swDoubleMax d
-    , swDoubleSum = swDoubleSum + (d * dur)
-    , swDoubleSumSq = swDoubleSumSq + (d*d * dur)
+    , swDoubleSum = swDoubleSum + (d * fromIntegral dur)
+    , swDoubleSumSq = swDoubleSumSq + (d*d * fromIntegral dur)
     }
     where
-        !dur = fromIntegral $ (unTS t) - (unTS swDoubleTime)
+        !(TSDiff dur) = timeStampDiff t swDoubleTime
 
 appendSummaryDouble :: TimeStampDiff -> SummaryData Double
                     -> TimeStampDiff -> SummaryData Double

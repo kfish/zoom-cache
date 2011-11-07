@@ -144,7 +144,7 @@ updateSummaryBool t True SummaryWorkBool{..} = SummaryWorkBool
     , swBoolTrueTime = swBoolTrueTime + dur
     }
     where
-        !dur = (unTS t) - (unTS swBoolTime)
+        !(TSDiff dur) = timeStampDiff t swBoolTime
 
 appendSummaryBool :: TimeStampDiff -> SummaryData Bool
                   -> TimeStampDiff -> SummaryData Bool

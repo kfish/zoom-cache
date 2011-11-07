@@ -14,9 +14,12 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Common (
-    -- * Types
+    -- * TimeStamps
       TimeStamp(..)
     , TimeStampDiff(..)
+    , timeStampDiff
+
+    -- * Types
     , DataRateType(..)
     , TrackNo
 
@@ -38,6 +41,10 @@ data TimeStamp = TS { unTS :: {-# UNPACK #-}!Int64 }
 
 data TimeStampDiff = TSDiff { unTSDiff :: {-# UNPACK #-}!Int64 }
     deriving (Eq, Ord, Show)
+
+-- | @timeStampDiff (TS t1) (TS t2) = TSDiff (t1 - t2)@
+timeStampDiff :: TimeStamp -> TimeStamp -> TimeStampDiff
+timeStampDiff (TS t1) (TS t2) = TSDiff (t1 - t2)
 
 data Version = Version !Int !Int
     deriving (Eq, Show)

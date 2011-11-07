@@ -195,11 +195,11 @@ updateSummaryInt t i SummaryWorkInt{..} = SummaryWorkInt
     , swIntExit = i
     , swIntMin = min swIntMin i
     , swIntMax = max swIntMax i
-    , swIntSum = swIntSum + (i * dur)
-    , swIntSumSq = swIntSumSq + fromIntegral (i*i * dur)
+    , swIntSum = swIntSum + (i * fromIntegral dur)
+    , swIntSumSq = swIntSumSq + fromIntegral (i*i * fromIntegral dur)
     }
     where
-        !dur = fromIntegral $ (unTS t) - (unTS swIntTime)
+        !(TSDiff dur) = timeStampDiff t swIntTime
 
 appendSummaryInt :: TimeStampDiff -> SummaryData Int
                  -> TimeStampDiff -> SummaryData Int
