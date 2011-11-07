@@ -29,8 +29,6 @@ module Data.ZoomCache.Format (
 
     -- * Track header
     , trackHeader
-    , trackTypeDouble
-    , trackTypeInt
 
     -- * Packet header
     , packetHeader
@@ -139,12 +137,6 @@ Datarate: numerator 0 indicates variable bitrate (all data values are timestampe
 -- Identifier for track headers
 trackHeader :: L.ByteString
 trackHeader = LC.pack "\xe5ZXtRcK\0"
-
-trackTypeDouble :: L.ByteString
-trackTypeDouble = LC.pack "ZOOMf64b"
-
-trackTypeInt :: L.ByteString
-trackTypeInt = LC.pack "ZOOMi32b"
 
 {- |
 
