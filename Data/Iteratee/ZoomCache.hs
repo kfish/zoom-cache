@@ -37,7 +37,6 @@ module Data.Iteratee.ZoomCache (
 import Control.Applicative
 import Control.Monad (msum, replicateM)
 import Control.Monad.Trans (liftIO, MonadIO)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Int
