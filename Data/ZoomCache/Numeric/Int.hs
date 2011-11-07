@@ -57,13 +57,9 @@ module Data.ZoomCache.Numeric.Int (
 )where
 
 import Blaze.ByteString.Builder
-import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import Data.Iteratee (Iteratee)
-import qualified Data.Iteratee as I
-import qualified Data.ListLike as LL
 import Data.Word
 import Text.Printf
 
@@ -93,28 +89,22 @@ instance ZoomReadable Int where
     trackIdentifier = const trackTypeInt
 
     readRaw     = readInt32be
-    readSummary = readSummaryInt
+    readSummary = readSummaryNum
 
-    prettyRaw         = prettyPacketInt
+    prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-prettyPacketInt :: Int -> String
-prettyPacketInt = show
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int) #-}
 
-readSummaryInt :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-               => Iteratee s m (SummaryData Int)
-readSummaryInt = do
-    [en,ex,mn,mx] <- replicateM 4 readInt32be
-    [avg,rms] <- replicateM 2 readDouble64be
-    return (SummaryInt en ex mn mx avg rms)
-{-# SPECIALIZE INLINE readSummaryInt :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int) #-}
-{-# SPECIALIZE INLINE readSummaryInt :: (Functor m, MonadIO m) => Iteratee B.ByteString m (SummaryData Int) #-}
+----------------------------------------------------------------------
 
-prettySummaryInt :: SummaryData Int -> String
-prettySummaryInt SummaryInt{..} = concat
+prettySummaryInt :: (PrintfArg a, ZoomNum a)
+                 => SummaryData a -> String
+prettySummaryInt s = concat
     [ printf "\tentry: %d\texit: %df\tmin: %d\tmax: %d\t"
-          summaryIntEntry summaryIntExit summaryIntMin summaryIntMax
-    , printf "avg: %.3f\trms: %.3f" summaryIntAvg summaryIntRMS
+          (numEntry s) (numExit s) (numMin s) (numMax s)
+    , printf "avg: %.3f\trms: %.3f" (numAvg s) (numRMS s)
     ]
 
 ----------------------------------------------------------------------
