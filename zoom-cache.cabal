@@ -96,6 +96,8 @@ Library
     Data.ZoomCache.Numeric.FloatMinMax
     Data.ZoomCache.Numeric.IEEE754
     Data.ZoomCache.Numeric.Int
+    Data.ZoomCache.Numeric.Internal
+    Data.ZoomCache.Numeric.Types
     Data.ZoomCache.Pretty
     Data.ZoomCache.Types
     Data.ZoomCache.Unit
