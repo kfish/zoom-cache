@@ -7,7 +7,7 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 {- |
-   Module      : Data.ZoomCache.Int
+   Module      : Data.ZoomCache.Numeric.Int
    Copyright   : Conrad Parker
    License     : BSD3-style (see LICENSE)
 
@@ -51,7 +51,7 @@ Field encoding formats:
 -}
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.Int (
+module Data.ZoomCache.Numeric.Int (
       SummaryData(..)
     , SummaryWork(..)
 )where

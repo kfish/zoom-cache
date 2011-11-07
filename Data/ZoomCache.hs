@@ -73,9 +73,9 @@ import Data.ZoomCache.Types
 
 -- Track Types
 import Data.ZoomCache.Bool()
-import Data.ZoomCache.IEEE754()
-import Data.ZoomCache.Int()
 import Data.ZoomCache.Unit()
+import Data.ZoomCache.Numeric.IEEE754()
+import Data.ZoomCache.Numeric.Int()
 
 ----------------------------------------------------------------------
 

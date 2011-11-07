@@ -84,6 +84,8 @@ Library
 
   Exposed-modules:
     Blaze.ByteString.Builder.ZoomCache
+    Data.Iteratee.ZoomCache
+    Data.Iteratee.ZoomCache.Utils
     Data.ZoomCache
     Data.ZoomCache.Bool
     Data.ZoomCache.Codec
@@ -91,14 +93,12 @@ Library
     Data.ZoomCache.Dump
     Data.ZoomCache.Format
     Data.ZoomCache.Identify
-    Data.ZoomCache.IEEE754
-    Data.ZoomCache.Int
+    Data.ZoomCache.Numeric.IEEE754
+    Data.ZoomCache.Numeric.Int
     Data.ZoomCache.Pretty
     Data.ZoomCache.Types
     Data.ZoomCache.Unit
     Data.ZoomCache.Write
-    Data.Iteratee.ZoomCache
-    Data.Iteratee.ZoomCache.Utils
 
   Other-modules:
     Blaze.ByteString.Builder.ZoomCache.Internal
