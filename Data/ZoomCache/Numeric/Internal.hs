@@ -40,7 +40,7 @@ readSummaryNum = do
 fromSummaryNum :: ZoomNum a
                => SummaryData a -> Builder
 fromSummaryNum s = mconcat $
-    map numFromRaw [numMin s, numMax s] ++
+    map numFromRaw [numEntry s, numExit s, numMin s, numMax s] ++
     map fromDouble [numAvg s, numRMS s]
 {-# INLINABLE fromSummaryNum #-}
 
