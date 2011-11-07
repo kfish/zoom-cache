@@ -124,7 +124,7 @@ initSummaryUnit _ = SummaryWorkUnit
     { swUnitCount = 0
     }
 
-mkSummaryUnit :: Double -> SummaryWork () -> SummaryData ()
+mkSummaryUnit :: TimeStampDiff -> SummaryWork () -> SummaryData ()
 mkSummaryUnit _dur SummaryWorkUnit{..} = SummaryUnit
     { summaryUnitCount = swUnitCount
     }

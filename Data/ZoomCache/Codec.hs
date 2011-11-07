@@ -49,6 +49,7 @@ module Data.ZoomCache.Codec (
 
     -- * ZoomCache Types
     , TimeStamp(..)
+    , TimeStampDiff(..)
     , Codec
 ) where
 

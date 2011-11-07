@@ -197,7 +197,7 @@ class ZoomReadable a => ZoomWritable a where
                        -> SummaryWork a
 
     -- | Finalize a 'SummaryWork a', generating a 'SummaryData a'.
-    toSummaryData      :: Double -> SummaryWork a -> SummaryData a
+    toSummaryData      :: TimeStampDiff -> SummaryWork a -> SummaryData a
 
     -- | Append two 'SummaryData'
     appendSummaryData  :: Double -> SummaryData a

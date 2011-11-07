@@ -16,6 +16,7 @@
 module Data.ZoomCache.Common (
     -- * Types
       TimeStamp(..)
+    , TimeStampDiff(..)
     , DataRateType(..)
     , TrackNo
 
@@ -33,6 +34,9 @@ import Data.Int
 type TrackNo = Int
 
 data TimeStamp = TS { unTS :: {-# UNPACK #-}!Int64 }
+    deriving (Eq, Ord, Show)
+
+data TimeStampDiff = TSDiff { unTSDiff :: {-# UNPACK #-}!Int64 }
     deriving (Eq, Ord, Show)
 
 data Version = Version !Int !Int

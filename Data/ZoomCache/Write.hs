@@ -372,7 +372,7 @@ flushWork trackNo entryTime exitTime (ZoomWork l (Just cw))  =
             , summaryExitTime = exitTime
             , summaryData = toSummaryData dur cw
             }
-        dur = fromIntegral $ (unTS exitTime) - (unTS entryTime)
+        dur = TSDiff $ (unTS exitTime) - (unTS entryTime)
 
 pushSummary :: (ZoomWritable a)
             => Summary a

@@ -171,14 +171,14 @@ initSummaryDouble entry = SummaryWorkDouble
     , swDoubleSumSq = 0.0
     }
 
-mkSummaryDouble :: Double -> SummaryWork Double -> SummaryData Double
+mkSummaryDouble :: TimeStampDiff -> SummaryWork Double -> SummaryData Double
 mkSummaryDouble dur SummaryWorkDouble{..} = SummaryDouble
     { summaryDoubleEntry = fromMaybe 0.0 swDoubleEntry
     , summaryDoubleExit = swDoubleExit
     , summaryDoubleMin = swDoubleMin
     , summaryDoubleMax = swDoubleMax
-    , summaryDoubleAvg = swDoubleSum / dur
-    , summaryDoubleRMS = sqrt $ swDoubleSumSq / dur
+    , summaryDoubleAvg = swDoubleSum / fromIntegral (unTSDiff dur)
+    , summaryDoubleRMS = sqrt $ swDoubleSumSq / fromIntegral (unTSDiff dur)
     }
 
 fromSummaryDouble :: SummaryData Double -> Builder
