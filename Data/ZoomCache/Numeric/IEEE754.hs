@@ -76,6 +76,7 @@ import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
+import Data.ZoomCache.Numeric.Types
 
 ----------------------------------------------------------------------
 
@@ -158,6 +159,27 @@ instance ZoomWritable Double where
     toSummaryData     = mkSummaryDouble
     updateSummaryData = updateSummaryDouble
     appendSummaryData = appendSummaryDouble
+
+instance ZoomNum Double where
+    numFromRaw = fromDouble
+
+    numEntry = summaryDoubleEntry
+    numExit  = summaryDoubleExit
+    numMin   = summaryDoubleMin
+    numMax   = summaryDoubleMax
+    numAvg   = summaryDoubleAvg
+    numRMS   = summaryDoubleRMS
+
+    numWorkTime  = swDoubleTime
+    numWorkEntry = swDoubleEntry
+    numWorkExit  = swDoubleExit
+    numWorkMin   = swDoubleMin
+    numWorkMax   = swDoubleMax
+    numWorkSum   = swDoubleSum
+    numWorkSumSq = swDoubleSumSq
+
+    numMkSummary = SummaryDouble
+    numMkSummaryWork = SummaryWorkDouble
 
 initSummaryDouble :: TimeStamp -> SummaryWork Double
 initSummaryDouble entry = SummaryWorkDouble
