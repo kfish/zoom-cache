@@ -292,8 +292,8 @@ readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
 readVersion = Version <$> readInt16be <*> readInt16be
 
 readCodec :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-              => [IdentifyCodec]
-              -> Iteratee s m Codec
+          => [IdentifyCodec]
+          -> Iteratee s m Codec
 readCodec mappings = do
     tt <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
     maybe (error "Unknown track type") return (parseCodec mappings tt)
