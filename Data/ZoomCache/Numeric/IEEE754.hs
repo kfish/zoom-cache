@@ -116,7 +116,7 @@ instance ZoomWritable Double where
     fromRaw           = fromDouble
     fromSummaryData   = fromSummaryNum
 
-    initSummaryWork   = initSummaryDouble
+    initSummaryWork   = initSummaryFloat
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
@@ -145,17 +145,6 @@ instance ZoomNum Double where
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Double -> TimeStampDiff -> SummaryData Double -> SummaryData Double #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Double -> SummaryWork Double -> SummaryWork Double #-}
 
-initSummaryDouble :: TimeStamp -> SummaryWork Double
-initSummaryDouble entry = SummaryWorkDouble
-    { swDoubleTime = entry
-    , swDoubleEntry = Nothing
-    , swDoubleExit = 0.0
-    , swDoubleMin = floatMax
-    , swDoubleMax = negate floatMax
-    , swDoubleSum = 0.0
-    , swDoubleSumSq = 0.0
-    }
-
 ----------------------------------------------------------------------
 
 prettyPacketFloat :: PrintfArg a => a -> String
@@ -168,3 +157,14 @@ prettySummaryFloat s = concat
           (numEntry s) (numExit s) (numMin s) (numMax s)
     , printf "avg: %.3f\trms: %.3f" (numAvg s) (numRMS s)
     ]
+
+initSummaryFloat :: (RealFloat a, ZoomNum a)
+                 => TimeStamp -> SummaryWork a
+initSummaryFloat entry = numMkSummaryWork
+    entry
+    Nothing
+    0.0
+    floatMax
+    (negate floatMax)
+    0.0
+    0.0
