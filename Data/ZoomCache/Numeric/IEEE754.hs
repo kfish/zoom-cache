@@ -74,13 +74,7 @@ import Data.ZoomCache.Numeric.Internal
 import Data.ZoomCache.Numeric.Types
 
 ----------------------------------------------------------------------
-
--- Identifier for track headers
-trackTypeDouble :: ByteString
-trackTypeDouble = "ZOOMf64b"
-
-----------------------------------------------------------------------
--- Read
+-- Double
 
 instance ZoomReadable Double where
     data SummaryData Double = SummaryDouble
@@ -92,29 +86,16 @@ instance ZoomReadable Double where
         , summaryDoubleRMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const trackTypeDouble
+    trackIdentifier = const "ZOOMf64b"
 
     readRaw     = readDouble64be
     readSummary = readSummaryNum
 
-    prettyRaw         = prettyPacketDouble
-    prettySummaryData = prettySummaryDouble
+    prettyRaw         = prettyPacketFloat
+    prettySummaryData = prettySummaryFloat
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Double) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Double) #-}
-
-prettyPacketDouble :: Double -> String
-prettyPacketDouble = printf "%.3f"
-
-prettySummaryDouble :: SummaryData Double -> String
-prettySummaryDouble SummaryDouble{..} = concat
-    [ printf "\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\t"
-          summaryDoubleEntry summaryDoubleExit summaryDoubleMin summaryDoubleMax
-    , printf "avg: %.3f\trms: %.3f" summaryDoubleAvg summaryDoubleRMS
-    ]
-
-----------------------------------------------------------------------
--- Write
 
 instance ZoomWrite Double where
     write = writeData
@@ -174,3 +155,16 @@ initSummaryDouble entry = SummaryWorkDouble
     , swDoubleSum = 0.0
     , swDoubleSumSq = 0.0
     }
+
+----------------------------------------------------------------------
+
+prettyPacketFloat :: PrintfArg a => a -> String
+prettyPacketFloat = printf "%.3f"
+
+prettySummaryFloat :: (PrintfArg a, ZoomNum a)
+                   => SummaryData a -> String
+prettySummaryFloat s = concat
+    [ printf "\tentry: %.3f\texit: %.3f\tmin: %.3f\tmax: %.3f\t"
+          (numEntry s) (numExit s) (numMin s) (numMax s)
+    , printf "avg: %.3f\trms: %.3f" (numAvg s) (numRMS s)
+    ]
