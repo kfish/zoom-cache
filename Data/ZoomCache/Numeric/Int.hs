@@ -132,6 +132,7 @@ import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
 import Data.Int
 import Data.Iteratee (Iteratee)
+import Data.Maybe (fromMaybe)
 import Data.Word
 import Text.Printf
 
@@ -508,6 +509,107 @@ instance ZoomNum Int64 where
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int64 -> SummaryData Int64 #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int64 -> TimeStampDiff -> SummaryData Int64 -> SummaryData Int64 #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int64 -> SummaryWork Int64 -> SummaryWork Int64 #-}
+
+----------------------------------------------------------------------
+-- Integer
+
+instance ZoomReadable Integer where
+    data SummaryData Integer = SummaryInteger
+        { summaryIntegerEntry :: !Integer
+        , summaryIntegerExit  :: !Integer
+        , summaryIntegerMin   :: !Integer
+        , summaryIntegerMax   :: !Integer
+        , summaryIntegerAvg   :: {-# UNPACK #-}!Double
+        , summaryIntegerRMS   :: {-# UNPACK #-}!Double
+        }
+
+    trackIdentifier = const "ZOOMintb"
+
+    readRaw     = readIntegerVLC
+    readSummary = readSummaryNum
+
+    prettyRaw         = show
+    prettySummaryData = prettySummaryInt
+
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Integer) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Integer) #-}
+
+instance ZoomWrite Integer where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Integer) where
+    write = writeDataVBR
+
+instance ZoomWritable Integer where
+    data SummaryWork Integer = SummaryWorkInteger
+        { swIntegerTime  :: {-# UNPACK #-}!TimeStamp
+        , swIntegerEntry :: !(Maybe Integer)
+        , swIntegerExit  :: !Integer
+        , swIntegerMin   :: !(Maybe Integer)
+        , swIntegerMax   :: !(Maybe Integer)
+        , swIntegerSum   :: {-# UNPACK #-}!Double
+        , swIntegerSumSq :: {-# UNPACK #-}!Double
+        }
+
+    fromRaw           = fromIntegerVLC
+    fromSummaryData   = fromSummaryNum
+
+    initSummaryWork   = initSummaryInteger
+    toSummaryData     = toSummaryInteger
+    updateSummaryData = updateSummaryInteger
+    appendSummaryData = appendSummaryNum
+
+instance ZoomNum Integer where
+    numEntry = summaryIntegerEntry
+    numExit = summaryIntegerExit
+    numMin = summaryIntegerMin
+    numMax = summaryIntegerMax
+    numAvg = summaryIntegerAvg
+    numRMS = summaryIntegerRMS
+
+    numWorkTime = swIntegerTime
+    numWorkEntry = swIntegerEntry
+    numWorkExit = swIntegerExit
+    numWorkMin = error "numWorkMin undefined for Integer"
+    numWorkMax = error "numWorkMax undefined for Integer"
+    numWorkSum = swIntegerSum
+    numWorkSumSq = swIntegerSumSq
+
+    numMkSummary = SummaryInteger
+    numMkSummaryWork = error "numMkSummaryWork undefined for Integer"
+
+{-# SPECIALIZE fromSummaryNum :: SummaryData Integer -> Builder #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Integer -> SummaryData Integer #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Integer -> TimeStampDiff -> SummaryData Integer -> SummaryData Integer #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Integer -> SummaryWork Integer -> SummaryWork Integer #-}
+
+initSummaryInteger :: TimeStamp -> SummaryWork Integer
+initSummaryInteger entry = SummaryWorkInteger entry Nothing 0 Nothing Nothing 0.0 0.0
+
+toSummaryInteger :: TimeStampDiff -> SummaryWork Integer -> SummaryData Integer
+toSummaryInteger (TSDiff dur) SummaryWorkInteger{..} = SummaryInteger
+    { summaryIntegerEntry = fromMaybe 0 swIntegerEntry
+    , summaryIntegerExit  = swIntegerExit
+    , summaryIntegerMin = fromMaybe 0 swIntegerMin
+    , summaryIntegerMax = fromMaybe 0 swIntegerMax
+    , summaryIntegerAvg = swIntegerSum / fromIntegral dur
+    , summaryIntegerRMS = sqrt $ swIntegerSumSq / fromIntegral dur
+    }
+
+updateSummaryInteger :: TimeStamp -> Integer
+                     -> SummaryWork Integer
+                     -> SummaryWork Integer
+updateSummaryInteger t d SummaryWorkInteger{..} = SummaryWorkInteger
+    { swIntegerTime = t
+    , swIntegerEntry = Just $ fromMaybe d swIntegerEntry
+    , swIntegerExit = d
+    , swIntegerMin = Just $ fromMaybe d swIntegerMin
+    , swIntegerMax = Just $ fromMaybe d swIntegerMax
+    , swIntegerSum = swIntegerSum + realToFrac (d * fromIntegral dur)
+    , swIntegerSumSq = swIntegerSumSq + realToFrac (d*d * fromIntegral dur)
+    }
+    where
+        !(TSDiff dur) = timeStampDiff t swIntegerTime
 
 ----------------------------------------------------------------------
 

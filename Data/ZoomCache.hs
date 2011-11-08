@@ -100,6 +100,7 @@ standardIdentifiers =
     , identifyCodec (undefined :: Word16)
     , identifyCodec (undefined :: Word32)
     , identifyCodec (undefined :: Word64)
+    , identifyCodec (undefined :: Integer)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
     ]

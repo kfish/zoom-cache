@@ -24,6 +24,7 @@ module Data.Iteratee.ZoomCache.Utils (
     , readWord16be
     , readWord32be
     , readWord64be
+    , readIntegerVLC
     , readFloat32be
     , readDouble64be
     , readRational64be
@@ -31,6 +32,7 @@ module Data.Iteratee.ZoomCache.Utils (
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans (MonadIO)
+import Data.Bits
 import qualified Data.ByteString as B
 import Data.Int
 import Data.Iteratee (Iteratee)
@@ -123,6 +125,28 @@ readWord64be = fromIntegral <$> I.endianRead8 I.MSB
 {-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word64 #-}
 {-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word #-}
 {-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word #-}
+
+-- | Read a variable-length-coded Integer
+readIntegerVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+               => Iteratee s m Integer
+readIntegerVLC = do
+    x0 <- I.head
+    let sign = if (x0 .&. 1) == 1 then negate else id
+        contBit = x0 .&. 128
+        x1 = fromIntegral $ (x0 .&. 126) `shiftR` 1
+    if contBit == 0
+        then return . sign $ x1
+        else sign <$> readVLC 6 x1
+    where
+        readVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+                => Int -> Integer -> Iteratee s m Integer
+        readVLC n x0 = do
+            x <- I.head
+            let contBit = x .&. 128
+                x1 = (fromIntegral (x .&. 127) `shiftL` n) .|. x0
+            if contBit == 0
+                then return x1
+                else readVLC (n+7) x1
 
 -- | Read 4 bytes as a big-endian Float
 readFloat32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)

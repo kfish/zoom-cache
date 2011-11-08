@@ -22,10 +22,12 @@ module Blaze.ByteString.Builder.ZoomCache (
     , fromFloat
     , fromDouble
     , fromIntegral32be
+    , fromIntegerVLC
     , fromRational64
 ) where
 
 import Blaze.ByteString.Builder
+import Data.Bits
 import Data.Monoid
 import Data.Ratio
 import Data.Word
@@ -67,6 +69,40 @@ fromIntegral32be :: forall a . (Integral a) => a -> Builder
 fromIntegral32be = fromInt32be . fromIntegral
 {-# SPECIALIZE INLINE fromIntegral32be :: Int -> Builder #-}
 {-# SPECIALIZE INLINE fromIntegral32be :: Integer -> Builder #-}
+
+-- | Serialize an 'Integer' in variable-length-coding format
+fromIntegerVLC :: Integer -> Builder
+fromIntegerVLC x0 = enc x1 `mappend` buildVLC xHi
+    where
+        x1 = (xLo `shiftL` 1) .|. sign0
+        sign0 | x0 < 0    = 1
+              | otherwise = 0
+
+        (xHi, xLo) = bCont 6 (abs x0)
+
+        -- Split a bitstring of length len into a tuple of
+        -- the top (len-n) bits and (the lower n bits with the
+        -- extension bit set if any of the top (len-n) bits are
+        -- non-zero). We assume n < 8.
+        bCont :: Bits a => Int -> a -> (a, a)
+        bCont n v 
+            | hi == 0   = (hi, lo)
+            | otherwise = (hi, lo .|. (2^n))
+            where
+                -- Split a bitstring of length len into a tuple of
+                -- the top (len-n) bits and the lower n bits.
+                (hi, lo) = (v `shiftR` n, v .&. (2^n -1))
+
+        -- Build a variable-length-coded sequence of bytes corresponding
+        -- to the contents of x, 7 bits at a time.
+        buildVLC x
+            | x  == 0   = mempty
+            | otherwise = enc lo `mappend` buildVLC hi
+            where
+                (hi, lo) = bCont 7 x
+
+        enc :: Integer -> Builder
+        enc = fromWord8 . fromIntegral
 
 -- | Serialize a 'Rational' as a sequence of two 64bit big endian format
 -- integers.

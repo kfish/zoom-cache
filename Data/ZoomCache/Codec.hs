@@ -38,6 +38,7 @@ module Data.ZoomCache.Codec (
     , readWord16be
     , readWord32be
     , readWord64be
+    , readIntegerVLC
     , readFloat32be
     , readDouble64be
     , readRational64be
@@ -49,6 +50,7 @@ module Data.ZoomCache.Codec (
     -- * Builders
     , fromRational64
     , fromIntegral32be
+    , fromIntegerVLC
     , fromFloat
     , fromDouble
 
