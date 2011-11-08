@@ -65,6 +65,7 @@ module Data.ZoomCache (
 ) where
 
 import Data.Int
+import Data.Word
 
 import Data.ZoomCache.Write
 
@@ -79,6 +80,7 @@ import Data.ZoomCache.Bool()
 import Data.ZoomCache.Unit()
 import Data.ZoomCache.Numeric.IEEE754()
 import Data.ZoomCache.Numeric.Int()
+import Data.ZoomCache.Numeric.Word()
 
 ----------------------------------------------------------------------
 
@@ -93,6 +95,11 @@ standardIdentifiers =
     , identifyCodec (undefined :: Int16)
     , identifyCodec (undefined :: Int32)
     , identifyCodec (undefined :: Int64)
+    , identifyCodec (undefined :: Word)
+    , identifyCodec (undefined :: Word8)
+    , identifyCodec (undefined :: Word16)
+    , identifyCodec (undefined :: Word32)
+    , identifyCodec (undefined :: Word64)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
     ]
