@@ -30,6 +30,7 @@ module Data.ZoomCache.Codec (
     , identifyCodec
 
     -- * Raw data reading iteratees
+    , readInt8
     , readInt16be
     , readInt32be
     , readInt64be

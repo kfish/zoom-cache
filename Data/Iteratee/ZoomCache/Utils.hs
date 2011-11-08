@@ -16,7 +16,8 @@
 
 module Data.Iteratee.ZoomCache.Utils (
     -- * Raw data reading iteratees
-      readInt16be
+      readInt8
+    , readInt16be
     , readInt32be
     , readInt64be
     , readFloat32be
@@ -34,6 +35,18 @@ import qualified Data.ListLike as LL
 import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
+
+-- | Read 1 byte as an Integral
+readInt8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+         => Iteratee s m a
+readInt8 = fromIntegral . u8_to_s8 <$> I.head
+    where
+        u8_to_s8 :: Word8 -> Int8
+        u8_to_s8 = fromIntegral
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int8 #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int8 #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
 
 -- | Read 2 bytes as a big-endian Integral
 readInt16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
