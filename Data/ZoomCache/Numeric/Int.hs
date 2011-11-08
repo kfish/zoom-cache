@@ -19,7 +19,7 @@ Default codec implementation for values of type Int. This module
 implements the interfaces documented in "Data.ZoomCache.Codec".
 View the module source for enlightenment.
 
-The table below describes the encoding of SummaryData for Int.
+The table below describes the encoding of SummaryData for Int and Int32:
 
 @
    | ...                                                           |   -35
@@ -59,6 +59,7 @@ module Data.ZoomCache.Numeric.Int (
 import Blaze.ByteString.Builder
 import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
+import Data.Int
 import Data.Iteratee (Iteratee)
 import Data.Word
 import Text.Printf
@@ -140,6 +141,80 @@ instance ZoomNum Int where
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int -> TimeStampDiff -> SummaryData Int -> SummaryData Int #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int -> SummaryWork Int -> SummaryWork Int #-}
+
+----------------------------------------------------------------------
+-- Int32
+
+instance ZoomReadable Int32 where
+    data SummaryData Int32 = SummaryInt32
+        { summaryInt32Entry :: {-# UNPACK #-}!Int32
+        , summaryInt32Exit  :: {-# UNPACK #-}!Int32
+        , summaryInt32Min   :: {-# UNPACK #-}!Int32
+        , summaryInt32Max   :: {-# UNPACK #-}!Int32
+        , summaryInt32Avg   :: {-# UNPACK #-}!Double
+        , summaryInt32RMS   :: {-# UNPACK #-}!Double
+        }
+
+    trackIdentifier = const "ZOOMi32b"
+
+    readRaw     = readInt32be
+    readSummary = readSummaryNum
+
+    prettyRaw         = show
+    prettySummaryData = prettySummaryInt
+
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int32) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int32) #-}
+
+instance ZoomWrite Int32 where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Int32) where
+    write = writeDataVBR
+
+instance ZoomWritable Int32 where
+    data SummaryWork Int32 = SummaryWorkInt32
+        { swInt32Time  :: {-# UNPACK #-}!TimeStamp
+        , swInt32Entry :: !(Maybe Int32)
+        , swInt32Exit  :: {-# UNPACK #-}!Int32
+        , swInt32Min   :: {-# UNPACK #-}!Int32
+        , swInt32Max   :: {-# UNPACK #-}!Int32
+        , swInt32Sum   :: {-# UNPACK #-}!Double
+        , swInt32SumSq :: {-# UNPACK #-}!Double
+        }
+
+    fromRaw           = fromIntegral32be
+    fromSummaryData   = fromSummaryNum
+
+    initSummaryWork   = initSummaryNumBounded
+    toSummaryData     = mkSummaryNum
+    updateSummaryData = updateSummaryNum
+    appendSummaryData = appendSummaryNum
+
+instance ZoomNum Int32 where
+    numEntry = summaryInt32Entry
+    numExit = summaryInt32Exit
+    numMin = summaryInt32Min
+    numMax = summaryInt32Max
+    numAvg = summaryInt32Avg
+    numRMS = summaryInt32RMS
+
+    numWorkTime = swInt32Time
+    numWorkEntry = swInt32Entry
+    numWorkExit = swInt32Exit
+    numWorkMin = swInt32Min
+    numWorkMax = swInt32Max
+    numWorkSum = swInt32Sum
+    numWorkSumSq = swInt32SumSq
+
+    numMkSummary = SummaryInt32
+    numMkSummaryWork = SummaryWorkInt32
+
+{-# SPECIALIZE fromSummaryNum :: SummaryData Int32 -> Builder #-}
+{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int32 #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int32 -> SummaryData Int32 #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int32 -> TimeStampDiff -> SummaryData Int32 -> SummaryData Int32 #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int32 -> SummaryWork Int32 -> SummaryWork Int32 #-}
 
 ----------------------------------------------------------------------
 

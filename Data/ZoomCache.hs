@@ -63,6 +63,8 @@ module Data.ZoomCache (
     , module Data.ZoomCache.Pretty
 ) where
 
+import Data.Int
+
 import Data.ZoomCache.Write
 
 import Data.Iteratee.ZoomCache
@@ -86,6 +88,7 @@ standardIdentifiers =
     [ identifyCodec (undefined :: Float)
     , identifyCodec (undefined :: Double)
     , identifyCodec (undefined :: Int)
+    , identifyCodec (undefined :: Int32)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
     ]
