@@ -35,27 +35,31 @@ import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
--- | Read 2 bytes as a big-endian Int.
-readInt16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-            => Iteratee s m Int
+-- | Read 2 bytes as a big-endian Integral
+readInt16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+            => Iteratee s m a
 readInt16be = fromIntegral . u16_to_s16 <$> I.endianRead2 I.MSB
     where
         u16_to_s16 :: Word16 -> Int16
         u16_to_s16 = fromIntegral
+{-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int16 #-}
+{-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int16 #-}
 {-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
 {-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
 
--- | Read 4 bytes as a big-endian Int.
-readInt32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
-            => Iteratee s m Int
+-- | Read 4 bytes as a big-endian Integral
+readInt32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+            => Iteratee s m a
 readInt32be = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
     where
         u32_to_s32 :: Word32 -> Int32
         u32_to_s32 = fromIntegral
+{-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int32 #-}
+{-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int32 #-}
 {-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
 {-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
 
--- | Read 8 bytes as a big-endian Integer
+-- | Read 8 bytes as a big-endian Integral
 readInt64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
             => Iteratee s m a
 readInt64be = fromIntegral . u64_to_s64 <$> I.endianRead8 I.MSB

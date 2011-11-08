@@ -304,7 +304,7 @@ parseCodec mappings h = msum . map ($ h) $ mappings
 readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
                  => Iteratee s m DataRateType
 readDataRateType = do
-    n <- readInt16be
+    (n :: Int16) <- readInt16be
     case n of
         0 -> return ConstantDR
         1 -> return VariableDR
