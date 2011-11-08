@@ -68,13 +68,7 @@ import Data.ZoomCache.Numeric.Internal
 import Data.ZoomCache.Numeric.Types
 
 ----------------------------------------------------------------------
-
--- Identifier for track headers
-trackTypeInt :: ByteString
-trackTypeInt = "ZOOMi32b"
-
-----------------------------------------------------------------------
--- Read
+-- Int
 
 instance ZoomReadable Int where
     data SummaryData Int = SummaryInt
@@ -86,7 +80,7 @@ instance ZoomReadable Int where
         , summaryIntRMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const trackTypeInt
+    trackIdentifier = const "ZOOMi32b"
 
     readRaw     = readInt32be
     readSummary = readSummaryNum
@@ -96,19 +90,6 @@ instance ZoomReadable Int where
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int) #-}
-
-----------------------------------------------------------------------
-
-prettySummaryInt :: (PrintfArg a, ZoomNum a)
-                 => SummaryData a -> String
-prettySummaryInt s = concat
-    [ printf "\tentry: %d\texit: %df\tmin: %d\tmax: %d\t"
-          (numEntry s) (numExit s) (numMin s) (numMax s)
-    , printf "avg: %.3f\trms: %.3f" (numAvg s) (numRMS s)
-    ]
-
-----------------------------------------------------------------------
--- Write
 
 instance ZoomWrite Int where
     write = writeData
@@ -159,3 +140,14 @@ instance ZoomNum Int where
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int -> TimeStampDiff -> SummaryData Int -> SummaryData Int #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int -> SummaryWork Int -> SummaryWork Int #-}
+
+----------------------------------------------------------------------
+
+prettySummaryInt :: (PrintfArg a, ZoomNum a)
+                 => SummaryData a -> String
+prettySummaryInt s = concat
+    [ printf "\tentry: %d\texit: %df\tmin: %d\tmax: %d\t"
+          (numEntry s) (numExit s) (numMin s) (numMax s)
+    , printf "avg: %.3f\trms: %.3f" (numAvg s) (numRMS s)
+    ]
+
