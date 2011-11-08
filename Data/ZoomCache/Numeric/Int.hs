@@ -19,6 +19,21 @@ Default codec implementation for values of type Int. This module
 implements the interfaces documented in "Data.ZoomCache.Codec".
 View the module source for enlightenment.
 
+The table below describes the encoding of SummaryData for Int8:
+
+@
+   | ...                                                           |   -35
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Entry (int8)  | Exit (int8)   | Min (int8)    | Max (int8)    | 36-39
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Avg (double)                                                  | 40-43
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 44-47
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | RMS (double)                                                  | 48-51
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+@
+
 The table below describes the encoding of SummaryData for Int16:
 
 @
@@ -94,11 +109,13 @@ The table below describes the encoding of SummaryData for Int64:
 
 Field encoding formats:
 
-  @int16@:  16bit big endian
+  @int8@:   8bit signed integer
 
-  @int32@:  32bit big endian
+  @int16@:  16bit big endian signed integer
 
-  @int64@:  32bit big endian
+  @int32@:  32bit big endian signed integer
+
+  @int64@:  32bit big endian signed integer
 
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 
@@ -195,6 +212,80 @@ instance ZoomNum Int where
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int -> TimeStampDiff -> SummaryData Int -> SummaryData Int #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int -> SummaryWork Int -> SummaryWork Int #-}
+
+----------------------------------------------------------------------
+-- Int8
+
+instance ZoomReadable Int8 where
+    data SummaryData Int8 = SummaryInt8
+        { summaryInt8Entry :: {-# UNPACK #-}!Int8
+        , summaryInt8Exit  :: {-# UNPACK #-}!Int8
+        , summaryInt8Min   :: {-# UNPACK #-}!Int8
+        , summaryInt8Max   :: {-# UNPACK #-}!Int8
+        , summaryInt8Avg   :: {-# UNPACK #-}!Double
+        , summaryInt8RMS   :: {-# UNPACK #-}!Double
+        }
+
+    trackIdentifier = const "ZOOMiS8b"
+
+    readRaw     = readInt8
+    readSummary = readSummaryNum
+
+    prettyRaw         = show
+    prettySummaryData = prettySummaryInt
+
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int8) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int8) #-}
+
+instance ZoomWrite Int8 where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Int8) where
+    write = writeDataVBR
+
+instance ZoomWritable Int8 where
+    data SummaryWork Int8 = SummaryWorkInt8
+        { swInt8Time  :: {-# UNPACK #-}!TimeStamp
+        , swInt8Entry :: !(Maybe Int8)
+        , swInt8Exit  :: {-# UNPACK #-}!Int8
+        , swInt8Min   :: {-# UNPACK #-}!Int8
+        , swInt8Max   :: {-# UNPACK #-}!Int8
+        , swInt8Sum   :: {-# UNPACK #-}!Double
+        , swInt8SumSq :: {-# UNPACK #-}!Double
+        }
+
+    fromRaw           = fromInt8
+    fromSummaryData   = fromSummaryNum
+
+    initSummaryWork   = initSummaryNumBounded
+    toSummaryData     = mkSummaryNum
+    updateSummaryData = updateSummaryNum
+    appendSummaryData = appendSummaryNum
+
+instance ZoomNum Int8 where
+    numEntry = summaryInt8Entry
+    numExit = summaryInt8Exit
+    numMin = summaryInt8Min
+    numMax = summaryInt8Max
+    numAvg = summaryInt8Avg
+    numRMS = summaryInt8RMS
+
+    numWorkTime = swInt8Time
+    numWorkEntry = swInt8Entry
+    numWorkExit = swInt8Exit
+    numWorkMin = swInt8Min
+    numWorkMax = swInt8Max
+    numWorkSum = swInt8Sum
+    numWorkSumSq = swInt8SumSq
+
+    numMkSummary = SummaryInt8
+    numMkSummaryWork = SummaryWorkInt8
+
+{-# SPECIALIZE fromSummaryNum :: SummaryData Int8 -> Builder #-}
+{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int8 #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int8 -> SummaryData Int8 #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int8 -> TimeStampDiff -> SummaryData Int8 -> SummaryData Int8 #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int8 -> SummaryWork Int8 -> SummaryWork Int8 #-}
 
 ----------------------------------------------------------------------
 -- Int16
