@@ -98,6 +98,7 @@ Library
     Data.ZoomCache.Numeric.Int
     Data.ZoomCache.Numeric.Internal
     Data.ZoomCache.Numeric.Types
+    Data.ZoomCache.Numeric.Word
     Data.ZoomCache.Pretty
     Data.ZoomCache.Types
     Data.ZoomCache.Unit
