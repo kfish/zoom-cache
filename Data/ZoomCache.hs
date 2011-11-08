@@ -16,7 +16,7 @@ module Data.ZoomCache (
     -- * Types
       TimeStamp(..)
     , TrackNo
-    , Codec
+    , Codec(..)
     , IdentifyCodec
     , DataRateType(..)
 
@@ -51,6 +51,7 @@ module Data.ZoomCache (
     , setWatermark
 
     -- * TrackSpec helpers
+    , mkTrackSpec
     , oneTrack
 
     -- * Standard identifiers

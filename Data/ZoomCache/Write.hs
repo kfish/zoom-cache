@@ -41,6 +41,7 @@ module Data.ZoomCache.Write (
     , setWatermark
 
     -- * TrackSpec helpers
+    , mkTrackSpec
     , oneTrack
 ) where
 
