@@ -151,7 +151,7 @@ instance ZoomReadable Word where
         , summaryWordRMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMi32b"
+    trackIdentifier = const "ZOOMu32b"
 
     readRaw     = readInt32be
     readSummary = readSummaryNum
@@ -225,7 +225,7 @@ instance ZoomReadable Word8 where
         , summaryWord8RMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMiS8b"
+    trackIdentifier = const "ZOOMu08b"
 
     readRaw     = readInt8
     readSummary = readSummaryNum
@@ -299,7 +299,7 @@ instance ZoomReadable Word16 where
         , summaryWord16RMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMi16b"
+    trackIdentifier = const "ZOOMu16b"
 
     readRaw     = readInt16be
     readSummary = readSummaryNum
@@ -373,7 +373,7 @@ instance ZoomReadable Word32 where
         , summaryWord32RMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMi32b"
+    trackIdentifier = const "ZOOMu32b"
 
     readRaw     = readInt32be
     readSummary = readSummaryNum
@@ -447,7 +447,7 @@ instance ZoomReadable Word64 where
         , summaryWord64RMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMi64b"
+    trackIdentifier = const "ZOOMu64b"
 
     readRaw     = readInt64be
     readSummary = readSummaryNum
