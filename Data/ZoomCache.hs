@@ -90,6 +90,7 @@ standardIdentifiers =
     , identifyCodec (undefined :: Int)
     , identifyCodec (undefined :: Int16)
     , identifyCodec (undefined :: Int32)
+    , identifyCodec (undefined :: Int64)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
     ]

@@ -61,11 +61,44 @@ The table below describes the encoding of SummaryData for Int and Int32:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
 
+The table below describes the encoding of SummaryData for Int64:
+
+@
+   | ...                                                           |   -35
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Entry (int64)                                                 | 36-39
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 40-43
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Exit (int64)                                                  | 44-47
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 48-51
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Min (int64)                                                   | 52-55
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 56-59
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Max (int64)                                                   | 60-63
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 64-67
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Avg (int64)                                                   | 68-71
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 72-75
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | RMS (int64)                                                   | 76-79
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               | 80-83
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+@
+
 Field encoding formats:
 
   @int16@:  16bit big endian
 
   @int32@:  32bit big endian
+
+  @int64@:  32bit big endian
 
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 
@@ -310,6 +343,80 @@ instance ZoomNum Int32 where
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int32 -> SummaryData Int32 #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int32 -> TimeStampDiff -> SummaryData Int32 -> SummaryData Int32 #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int32 -> SummaryWork Int32 -> SummaryWork Int32 #-}
+
+----------------------------------------------------------------------
+-- Int64
+
+instance ZoomReadable Int64 where
+    data SummaryData Int64 = SummaryInt64
+        { summaryInt64Entry :: {-# UNPACK #-}!Int64
+        , summaryInt64Exit  :: {-# UNPACK #-}!Int64
+        , summaryInt64Min   :: {-# UNPACK #-}!Int64
+        , summaryInt64Max   :: {-# UNPACK #-}!Int64
+        , summaryInt64Avg   :: {-# UNPACK #-}!Double
+        , summaryInt64RMS   :: {-# UNPACK #-}!Double
+        }
+
+    trackIdentifier = const "ZOOMi64b"
+
+    readRaw     = readInt64be
+    readSummary = readSummaryNum
+
+    prettyRaw         = show
+    prettySummaryData = prettySummaryInt
+
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int64) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int64) #-}
+
+instance ZoomWrite Int64 where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Int64) where
+    write = writeDataVBR
+
+instance ZoomWritable Int64 where
+    data SummaryWork Int64 = SummaryWorkInt64
+        { swInt64Time  :: {-# UNPACK #-}!TimeStamp
+        , swInt64Entry :: !(Maybe Int64)
+        , swInt64Exit  :: {-# UNPACK #-}!Int64
+        , swInt64Min   :: {-# UNPACK #-}!Int64
+        , swInt64Max   :: {-# UNPACK #-}!Int64
+        , swInt64Sum   :: {-# UNPACK #-}!Double
+        , swInt64SumSq :: {-# UNPACK #-}!Double
+        }
+
+    fromRaw           = fromInt64be
+    fromSummaryData   = fromSummaryNum
+
+    initSummaryWork   = initSummaryNumBounded
+    toSummaryData     = mkSummaryNum
+    updateSummaryData = updateSummaryNum
+    appendSummaryData = appendSummaryNum
+
+instance ZoomNum Int64 where
+    numEntry = summaryInt64Entry
+    numExit = summaryInt64Exit
+    numMin = summaryInt64Min
+    numMax = summaryInt64Max
+    numAvg = summaryInt64Avg
+    numRMS = summaryInt64RMS
+
+    numWorkTime = swInt64Time
+    numWorkEntry = swInt64Entry
+    numWorkExit = swInt64Exit
+    numWorkMin = swInt64Min
+    numWorkMax = swInt64Max
+    numWorkSum = swInt64Sum
+    numWorkSumSq = swInt64SumSq
+
+    numMkSummary = SummaryInt64
+    numMkSummaryWork = SummaryWorkInt64
+
+{-# SPECIALIZE fromSummaryNum :: SummaryData Int64 -> Builder #-}
+{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int64 #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int64 -> SummaryData Int64 #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int64 -> TimeStampDiff -> SummaryData Int64 -> SummaryData Int64 #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int64 -> SummaryWork Int64 -> SummaryWork Int64 #-}
 
 ----------------------------------------------------------------------
 
