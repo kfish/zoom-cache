@@ -88,6 +88,7 @@ standardIdentifiers =
     [ identifyCodec (undefined :: Float)
     , identifyCodec (undefined :: Double)
     , identifyCodec (undefined :: Int)
+    , identifyCodec (undefined :: Int16)
     , identifyCodec (undefined :: Int32)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
