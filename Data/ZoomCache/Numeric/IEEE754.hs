@@ -15,9 +15,28 @@
    Stability   : unstable
    Portability : unknown
 
-Default codec implementation for values of type Double. This module
-implements the interfaces documented in "Data.ZoomCache.Codec".
+Default codec implementation for values of type Float and Double.
+This module implements the interfaces documented in "Data.ZoomCache.Codec".
 View the module source for enlightenment.
+
+The table below describes the encoding of SummaryData for Float.
+
+@
+   | ...                                                           |   -35
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Entry (float)                                                 | 36-39
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Exit (float)                                                  | 40-43
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Min (float)                                                   | 44-47
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Max (float)                                                   | 48-51
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Avg (float)                                                   | 52-55
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | RMS (float)                                                   | 56-59
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+@
 
 The table below describes the encoding of SummaryData for Double.
 
@@ -52,6 +71,7 @@ The table below describes the encoding of SummaryData for Double.
 
 Field encoding formats:
 
+  @float@:  big-endian IEEE 754-2008 binary32 (IEEE 754-1985 single)
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 
 -}
@@ -72,6 +92,78 @@ import Text.Printf
 import Data.ZoomCache.Codec
 import Data.ZoomCache.Numeric.Internal
 import Data.ZoomCache.Numeric.Types
+
+----------------------------------------------------------------------
+-- Float
+
+instance ZoomReadable Float where
+    data SummaryData Float = SummaryFloat
+        { summaryFloatEntry :: {-# UNPACK #-}!Float
+        , summaryFloatExit  :: {-# UNPACK #-}!Float
+        , summaryFloatMin   :: {-# UNPACK #-}!Float
+        , summaryFloatMax   :: {-# UNPACK #-}!Float
+        , summaryFloatAvg   :: {-# UNPACK #-}!Double
+        , summaryFloatRMS   :: {-# UNPACK #-}!Double
+        }
+
+    trackIdentifier = const "ZOOMf32b"
+
+    readRaw     = readFloat32be
+    readSummary = readSummaryNum
+
+    prettyRaw         = prettyPacketFloat
+    prettySummaryData = prettySummaryFloat
+
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Float) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Float) #-}
+
+instance ZoomWrite Float where
+    write = writeData
+
+instance ZoomWrite (TimeStamp, Float) where
+    write = writeDataVBR
+
+instance ZoomWritable Float where
+    data SummaryWork Float = SummaryWorkFloat
+        { swFloatTime  :: {-# UNPACK #-}!TimeStamp
+        , swFloatEntry :: !(Maybe Float)
+        , swFloatExit  :: {-# UNPACK #-}!Float
+        , swFloatMin   :: {-# UNPACK #-}!Float
+        , swFloatMax   :: {-# UNPACK #-}!Float
+        , swFloatSum   :: {-# UNPACK #-}!Double
+        , swFloatSumSq :: {-# UNPACK #-}!Double
+        }
+    fromRaw           = fromFloat
+    fromSummaryData   = fromSummaryNum
+
+    initSummaryWork   = initSummaryFloat
+    toSummaryData     = mkSummaryNum
+    updateSummaryData = updateSummaryNum
+    appendSummaryData = appendSummaryNum
+
+instance ZoomNum Float where
+    numEntry = summaryFloatEntry
+    numExit  = summaryFloatExit
+    numMin   = summaryFloatMin
+    numMax   = summaryFloatMax
+    numAvg   = summaryFloatAvg
+    numRMS   = summaryFloatRMS
+
+    numWorkTime  = swFloatTime
+    numWorkEntry = swFloatEntry
+    numWorkExit  = swFloatExit
+    numWorkMin   = swFloatMin
+    numWorkMax   = swFloatMax
+    numWorkSum   = swFloatSum
+    numWorkSumSq = swFloatSumSq
+
+    numMkSummary = SummaryFloat
+    numMkSummaryWork = SummaryWorkFloat
+
+{-# SPECIALIZE fromSummaryNum :: SummaryData Float -> Builder #-}
+{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Float -> SummaryData Float #-}
+{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Float -> TimeStampDiff -> SummaryData Float -> SummaryData Float #-}
+{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Float -> SummaryWork Float -> SummaryWork Float #-}
 
 ----------------------------------------------------------------------
 -- Double

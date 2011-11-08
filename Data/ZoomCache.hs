@@ -83,7 +83,8 @@ import Data.ZoomCache.Numeric.Int()
 -- by the zoom-cache library.
 standardIdentifiers :: [IdentifyCodec]
 standardIdentifiers =
-    [ identifyCodec (undefined :: Double)
+    [ identifyCodec (undefined :: Float)
+    , identifyCodec (undefined :: Double)
     , identifyCodec (undefined :: Int)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
