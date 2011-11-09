@@ -107,6 +107,18 @@ The table below describes the encoding of SummaryData for Word64:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
 
+SummaryData for Word is encoded as the following sequence, in which the
+variable-length coded sign bit is always zero:
+
+@
+   Entry (intVLC)
+   Exit (intVLC)
+   Min (intVLC)
+   Max (intVLC)
+   Avg (double)
+   RMS (double)
+@
+
 Field encoding formats:
 
   @word8@:   8bit unsigned integer
@@ -116,6 +128,8 @@ Field encoding formats:
   @word32@:  32bit big endian unsigned integer
 
   @word64@:  32bit big endian unsigned integer
+
+  @intVLC@: Variable-length-coded signed integer
 
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 

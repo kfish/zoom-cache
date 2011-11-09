@@ -107,6 +107,17 @@ The table below describes the encoding of SummaryData for Int64:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
 
+SummaryData for Int and Integer is encoded as the following sequence:
+
+@
+   Entry (intVLC)
+   Exit (intVLC)
+   Min (intVLC)
+   Max (intVLC)
+   Avg (double)
+   RMS (double)
+@
+
 Field encoding formats:
 
   @int8@:   8bit signed integer
@@ -116,6 +127,8 @@ Field encoding formats:
   @int32@:  32bit big endian signed integer
 
   @int64@:  32bit big endian signed integer
+
+  @intVLC@: Variable-length-coded signed integer
 
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 
