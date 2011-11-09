@@ -71,6 +71,8 @@ fromIntegral32be = fromInt32be . fromIntegral
 {-# SPECIALIZE INLINE fromIntegral32be :: Integer -> Builder #-}
 
 -- | Serialize an 'Integer' in variable-length-coding format
+-- For details of the variable-length coding format, see
+-- "Data.ZoomCache.Numeric.Int".
 fromIntegerVLC :: Integer -> Builder
 fromIntegerVLC x0 = enc x1 `mappend` buildVLC xHi
     where

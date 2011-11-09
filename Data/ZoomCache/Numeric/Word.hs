@@ -133,6 +133,8 @@ Field encoding formats:
 
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 
+For details of the variable-length coding format, see "Data.ZoomCache.Numeric.Int".
+
 -}
 ----------------------------------------------------------------------
 

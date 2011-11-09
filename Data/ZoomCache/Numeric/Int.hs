@@ -132,6 +132,38 @@ Field encoding formats:
 
   @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
 
+Variable-length coding format:
+
+  zoom-cache includes a simple variable-length coding scheme for signed integers.
+  When decoding, single bytes are read at a time. If the high bit is set, the
+  next byte is also read. The lower 7 bits of each byte contain data. Decoding
+  continues by reading single bytes until a byte is read with the high bit zero.
+
+  The first byte of a variable-length coded integer contain a sign bit and the
+  lowest 6 bits of the value. This byte is encoded as:
+
+@
+    0 1 2 3 4 5 6 7
+   +-+-+-+-+-+-+-+-+
+   |s| d[0]-d[5] |c|
+   +-+-+-+-+-+-+-+-+
+@
+
+  Subsequent bytes encode bits 6-12, 13-19, ... of the value:
+
+@
+    0 1 2 3 4 5 6 7
+   +-+-+-+-+-+-+-+-+
+   | d[n]-d[n+6] |c|
+   +-+-+-+-+-+-+-+-+
+@
+
+  where @n = 6, 13, 20, ...@
+
+  @s@: sign, 1 = negative, 0 = non-negative
+
+  @c@: continue flag, 1 = continue reading next byte, 0 = stop
+
 -}
 ----------------------------------------------------------------------
 

@@ -125,7 +125,9 @@ readWord64be = fromIntegral <$> I.endianRead8 I.MSB
 {-# SPECIALIZE INLINE readWord64be :: (Functor m, Monad m) => Iteratee [Word8] m Word #-}
 {-# SPECIALIZE INLINE readWord64be :: (Functor m, Monad m) => Iteratee B.ByteString m Word #-}
 
--- | Read a variable-length-coded Integer
+-- | Read a variable-length-coded Integer.
+-- For details of the variable-length coding format, see
+-- "Data.ZoomCache.Numeric.Int".
 readIntegerVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                => Iteratee s m Integer
 readIntegerVLC = do
