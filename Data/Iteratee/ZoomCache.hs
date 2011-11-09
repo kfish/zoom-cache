@@ -36,7 +36,7 @@ module Data.Iteratee.ZoomCache (
 
 import Control.Applicative
 import Control.Monad (msum, replicateM)
-import Control.Monad.Trans (liftIO, MonadIO)
+import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int
@@ -125,12 +125,12 @@ parseHeader h
 
 -- | Parse only the global and track headers of a zoom-cache file, returning
 -- a 'CacheFile'
-iterHeaders :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+iterHeaders :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
             => [IdentifyCodec]
             -> I.Iteratee s m CacheFile
 iterHeaders mappings = iterGlobal >>= go
     where
-        iterGlobal :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+        iterGlobal :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                    => Iteratee s m CacheFile
         iterGlobal = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
@@ -138,7 +138,7 @@ iterHeaders mappings = iterGlobal >>= go
                 Just GlobalHeader -> mkCacheFile <$> readGlobalHeader
                 _                 -> error "No global header"
 
-        go :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+        go :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
            => CacheFile
            -> Iteratee s m CacheFile
         go fi = do
@@ -152,18 +152,17 @@ iterHeaders mappings = iterGlobal >>= go
                         else go fi'
                 _ -> return fi
 
-readGlobalHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readGlobalHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                  => Iteratee s m Global
 readGlobalHeader = do
     v <- readVersion
-    liftIO $ print v
     n <- readInt32be
     p <- readRational64be
     b <- readRational64be
     _u <- B.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
     return $ Global v n p b Nothing
 
-readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                 => [IdentifyCodec]
                 -> Iteratee s m (TrackNo, TrackSpec)
 readTrackHeader mappings = do
@@ -179,7 +178,7 @@ readTrackHeader mappings = do
 ------------------------------------------------------------
 -- Packet, Summary reading
 
-readPacket :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readPacket :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
            => IntMap TrackSpec
            -> Iteratee s m (TrackNo, Maybe Packet)
 readPacket specs = do
@@ -201,16 +200,16 @@ readPacket specs = do
     return (trackNo, packet)
     where
         readRawCodec :: (I.Nullable s, LL.ListLike s Word8,
-                         Functor m, MonadIO m)
+                         Functor m, Monad m)
                      => Codec -> Int -> Iteratee s m ZoomRaw
         readRawCodec (Codec a) count = ZoomRaw <$> replicateM count (readRawAs a)
 
         readRawAs :: (ZoomReadable a, I.Nullable s, LL.ListLike s Word8,
-                      Functor m, MonadIO m)
+                      Functor m, Monad m)
                   => a -> Iteratee s m a
         readRawAs = const readRaw
 
-        readTimeStamps :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+        readTimeStamps :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                        => DataRateType -> Int -> TimeStamp
                        -> Iteratee s m [TimeStamp]
         readTimeStamps drType count entry = map TS <$> case drType of
@@ -219,7 +218,7 @@ readPacket specs = do
             VariableDR -> do
                 replicateM count readInt64be
 
-readSummaryBlock :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readSummaryBlock :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                  => IntMap TrackSpec
                  -> Iteratee s m (TrackNo, Maybe ZoomSummary)
 readSummaryBlock specs = do
@@ -239,14 +238,14 @@ readSummaryBlock specs = do
     return (trackNo, summary)
     where
         readSummaryCodec :: (I.Nullable s, LL.ListLike s Word8,
-                             Functor m, MonadIO m)
+                             Functor m, Monad m)
                          => Codec -> TrackNo -> Int -> TimeStamp -> TimeStamp
                          -> Iteratee s m ZoomSummary
         readSummaryCodec (Codec a) trackNo lvl entryTime exitTime = do
             ZoomSummary <$> (Summary trackNo lvl entryTime exitTime <$> readSummaryAs a)
 
         readSummaryAs :: (ZoomReadable a, I.Nullable s, LL.ListLike s Word8,
-                          Functor m, MonadIO m)
+                          Functor m, Monad m)
                       => a -> Iteratee s m (SummaryData a)
         readSummaryAs = const readSummary
 
@@ -287,11 +286,11 @@ mapSummaries mappings f = mapStream mappings process
 ----------------------------------------------------------------------
 -- zoom-cache datatype parsers
 
-readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readVersion :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
             => Iteratee s m Version
 readVersion = Version <$> readInt16be <*> readInt16be
 
-readCodec :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readCodec :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
           => [IdentifyCodec]
           -> Iteratee s m Codec
 readCodec mappings = do
@@ -301,7 +300,7 @@ readCodec mappings = do
 parseCodec :: [IdentifyCodec] -> IdentifyCodec
 parseCodec mappings h = msum . map ($ h) $ mappings
 
-readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                  => Iteratee s m DataRateType
 readDataRateType = do
     (n :: Int16) <- readInt16be

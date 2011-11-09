@@ -83,7 +83,6 @@ module Data.ZoomCache.Numeric.IEEE754 (
 )where
 
 import Blaze.ByteString.Builder
-import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
 import Data.Word
@@ -114,8 +113,8 @@ instance ZoomReadable Float where
     prettyRaw         = prettyPacketFloat
     prettySummaryData = prettySummaryFloat
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Float) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Float) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Float) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Float) #-}
 
 instance ZoomWrite Float where
     write = writeData
@@ -186,8 +185,8 @@ instance ZoomReadable Double where
     prettyRaw         = prettyPacketFloat
     prettySummaryData = prettySummaryFloat
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Double) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Double) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Double) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Double) #-}
 
 instance ZoomWrite Double where
     write = writeData

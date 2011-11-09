@@ -49,7 +49,6 @@ module Data.ZoomCache.Types (
 ) where
 
 import Blaze.ByteString.Builder
-import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
 import Data.Dynamic
 import Data.Int
@@ -154,12 +153,12 @@ class Typeable a => ZoomReadable a where
 
     -- | An iteratee to read one value of type 'a' from a stream of something
     -- like '[Word8]' or 'ByteString'.
-    readRaw         :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+    readRaw         :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                     => Iteratee s m a
 
     -- | An iteratee to read one value of type 'SummaryData a' from a stream
     -- of something like '[Word8]' or 'ByteString'.
-    readSummary        :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+    readSummary        :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                        => Iteratee s m (SummaryData a)
 
     -- | Pretty printing, used for dumping values of type 'a'.

@@ -128,7 +128,6 @@ module Data.ZoomCache.Numeric.Int (
 )where
 
 import Blaze.ByteString.Builder
-import Control.Monad.Trans (MonadIO)
 import Data.ByteString (ByteString)
 import Data.Int
 import Data.Iteratee (Iteratee)
@@ -161,8 +160,8 @@ instance ZoomReadable Int where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int) #-}
 
 instance ZoomWrite Int where
     write = writeData
@@ -235,8 +234,8 @@ instance ZoomReadable Int8 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int8) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int8) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int8) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int8) #-}
 
 instance ZoomWrite Int8 where
     write = writeData
@@ -309,8 +308,8 @@ instance ZoomReadable Int16 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int16) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int16) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int16) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int16) #-}
 
 instance ZoomWrite Int16 where
     write = writeData
@@ -383,8 +382,8 @@ instance ZoomReadable Int32 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int32) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int32) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int32) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int32) #-}
 
 instance ZoomWrite Int32 where
     write = writeData
@@ -457,8 +456,8 @@ instance ZoomReadable Int64 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Int64) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Int64) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int64) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int64) #-}
 
 instance ZoomWrite Int64 where
     write = writeData
@@ -531,8 +530,8 @@ instance ZoomReadable Integer where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee [Word8] m (SummaryData Integer) #-}
-{-# SPECIALIZE readSummaryNum :: (Functor m, MonadIO m) => Iteratee ByteString m (SummaryData Integer) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Integer) #-}
+{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Integer) #-}
 
 instance ZoomWrite Integer where
     write = writeData

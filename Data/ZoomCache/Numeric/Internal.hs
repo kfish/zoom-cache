@@ -14,7 +14,6 @@ module Data.ZoomCache.Numeric.Internal (
 
 import Blaze.ByteString.Builder
 import Control.Monad (replicateM)
-import Control.Monad.Trans (MonadIO)
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
@@ -28,7 +27,7 @@ import Data.ZoomCache.Numeric.Types
 ----------------------------------------------------------------------
 
 readSummaryNum :: (I.Nullable s, LL.ListLike s Word8,
-                   Functor m, MonadIO m,
+                   Functor m, Monad m,
                    ZoomNum a)
                => Iteratee s m (SummaryData a)
 readSummaryNum = do

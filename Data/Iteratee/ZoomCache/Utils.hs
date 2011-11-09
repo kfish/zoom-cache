@@ -31,7 +31,6 @@ module Data.Iteratee.ZoomCache.Utils (
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad.Trans (MonadIO)
 import Data.Bits
 import qualified Data.ByteString as B
 import Data.Int
@@ -43,91 +42,91 @@ import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Read 1 byte as a signed Integral
-readInt8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readInt8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
          => Iteratee s m a
 readInt8 = fromIntegral . u8_to_s8 <$> I.head
     where
         u8_to_s8 :: Word8 -> Int8
         u8_to_s8 = fromIntegral
-{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int8 #-}
-{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int8 #-}
-{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
-{-# SPECIALIZE INLINE readInt8 :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, Monad m) => Iteratee [Word8] m Int8 #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, Monad m) => Iteratee B.ByteString m Int8 #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, Monad m) => Iteratee [Word8] m Int #-}
+{-# SPECIALIZE INLINE readInt8 :: (Functor m, Monad m) => Iteratee B.ByteString m Int #-}
 
 -- | Read 2 bytes as a big-endian signed Integral
-readInt16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readInt16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
             => Iteratee s m a
 readInt16be = fromIntegral . u16_to_s16 <$> I.endianRead2 I.MSB
     where
         u16_to_s16 :: Word16 -> Int16
         u16_to_s16 = fromIntegral
-{-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int16 #-}
-{-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int16 #-}
-{-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
-{-# SPECIALIZE INLINE readInt16be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
+{-# SPECIALIZE INLINE readInt16be :: (Functor m, Monad m) => Iteratee [Word8] m Int16 #-}
+{-# SPECIALIZE INLINE readInt16be :: (Functor m, Monad m) => Iteratee B.ByteString m Int16 #-}
+{-# SPECIALIZE INLINE readInt16be :: (Functor m, Monad m) => Iteratee [Word8] m Int #-}
+{-# SPECIALIZE INLINE readInt16be :: (Functor m, Monad m) => Iteratee B.ByteString m Int #-}
 
 -- | Read 4 bytes as a big-endian signed Integral
-readInt32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readInt32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
             => Iteratee s m a
 readInt32be = fromIntegral . u32_to_s32 <$> I.endianRead4 I.MSB
     where
         u32_to_s32 :: Word32 -> Int32
         u32_to_s32 = fromIntegral
-{-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int32 #-}
-{-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int32 #-}
-{-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
-{-# SPECIALIZE INLINE readInt32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
+{-# SPECIALIZE INLINE readInt32be :: (Functor m, Monad m) => Iteratee [Word8] m Int32 #-}
+{-# SPECIALIZE INLINE readInt32be :: (Functor m, Monad m) => Iteratee B.ByteString m Int32 #-}
+{-# SPECIALIZE INLINE readInt32be :: (Functor m, Monad m) => Iteratee [Word8] m Int #-}
+{-# SPECIALIZE INLINE readInt32be :: (Functor m, Monad m) => Iteratee B.ByteString m Int #-}
 
 -- | Read 8 bytes as a big-endian signed Integral
-readInt64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readInt64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
             => Iteratee s m a
 readInt64be = fromIntegral . u64_to_s64 <$> I.endianRead8 I.MSB
     where
         u64_to_s64 :: Word64 -> Int64
         u64_to_s64 = fromIntegral
-{-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int64 #-}
-{-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int64 #-}
-{-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Int #-}
-{-# SPECIALIZE INLINE readInt64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Int #-}
+{-# SPECIALIZE INLINE readInt64be :: (Functor m, Monad m) => Iteratee [Word8] m Int64 #-}
+{-# SPECIALIZE INLINE readInt64be :: (Functor m, Monad m) => Iteratee B.ByteString m Int64 #-}
+{-# SPECIALIZE INLINE readInt64be :: (Functor m, Monad m) => Iteratee [Word8] m Int #-}
+{-# SPECIALIZE INLINE readInt64be :: (Functor m, Monad m) => Iteratee B.ByteString m Int #-}
 
 -- | Read 1 byte as an unsigned Integral
-readWord8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readWord8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
           => Iteratee s m a
 readWord8 = fromIntegral <$> I.head
-{-# SPECIALIZE INLINE readWord8 :: (Functor m, MonadIO m) => Iteratee [Word8] m Word8 #-}
-{-# SPECIALIZE INLINE readWord8 :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word8 #-}
-{-# SPECIALIZE INLINE readWord8 :: (Functor m, MonadIO m) => Iteratee [Word8] m Word #-}
-{-# SPECIALIZE INLINE readWord8 :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word #-}
+{-# SPECIALIZE INLINE readWord8 :: (Functor m, Monad m) => Iteratee [Word8] m Word8 #-}
+{-# SPECIALIZE INLINE readWord8 :: (Functor m, Monad m) => Iteratee B.ByteString m Word8 #-}
+{-# SPECIALIZE INLINE readWord8 :: (Functor m, Monad m) => Iteratee [Word8] m Word #-}
+{-# SPECIALIZE INLINE readWord8 :: (Functor m, Monad m) => Iteratee B.ByteString m Word #-}
 
 -- | Read 2 bytes as a big-endian unsigned Integral
-readWord16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readWord16be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
              => Iteratee s m a
 readWord16be = fromIntegral <$> I.endianRead2 I.MSB
-{-# SPECIALIZE INLINE readWord16be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word16 #-}
-{-# SPECIALIZE INLINE readWord16be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word16 #-}
-{-# SPECIALIZE INLINE readWord16be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word #-}
-{-# SPECIALIZE INLINE readWord16be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word #-}
+{-# SPECIALIZE INLINE readWord16be :: (Functor m, Monad m) => Iteratee [Word8] m Word16 #-}
+{-# SPECIALIZE INLINE readWord16be :: (Functor m, Monad m) => Iteratee B.ByteString m Word16 #-}
+{-# SPECIALIZE INLINE readWord16be :: (Functor m, Monad m) => Iteratee [Word8] m Word #-}
+{-# SPECIALIZE INLINE readWord16be :: (Functor m, Monad m) => Iteratee B.ByteString m Word #-}
 
 -- | Read 4 bytes as a big-endian unsigned Integral
-readWord32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readWord32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
               => Iteratee s m a
 readWord32be = fromIntegral <$> I.endianRead4 I.MSB
-{-# SPECIALIZE INLINE readWord32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word32 #-}
-{-# SPECIALIZE INLINE readWord32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word32 #-}
-{-# SPECIALIZE INLINE readWord32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word #-}
-{-# SPECIALIZE INLINE readWord32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word #-}
+{-# SPECIALIZE INLINE readWord32be :: (Functor m, Monad m) => Iteratee [Word8] m Word32 #-}
+{-# SPECIALIZE INLINE readWord32be :: (Functor m, Monad m) => Iteratee B.ByteString m Word32 #-}
+{-# SPECIALIZE INLINE readWord32be :: (Functor m, Monad m) => Iteratee [Word8] m Word #-}
+{-# SPECIALIZE INLINE readWord32be :: (Functor m, Monad m) => Iteratee B.ByteString m Word #-}
 
 -- | Read 8 bytes as a big-endian unsigned Integral
-readWord64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m, Integral a)
+readWord64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
              => Iteratee s m a
 readWord64be = fromIntegral <$> I.endianRead8 I.MSB
-{-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word64 #-}
-{-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word64 #-}
-{-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Word #-}
-{-# SPECIALIZE INLINE readWord64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Word #-}
+{-# SPECIALIZE INLINE readWord64be :: (Functor m, Monad m) => Iteratee [Word8] m Word64 #-}
+{-# SPECIALIZE INLINE readWord64be :: (Functor m, Monad m) => Iteratee B.ByteString m Word64 #-}
+{-# SPECIALIZE INLINE readWord64be :: (Functor m, Monad m) => Iteratee [Word8] m Word #-}
+{-# SPECIALIZE INLINE readWord64be :: (Functor m, Monad m) => Iteratee B.ByteString m Word #-}
 
 -- | Read a variable-length-coded Integer
-readIntegerVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readIntegerVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                => Iteratee s m Integer
 readIntegerVLC = do
     x0 <- I.head
@@ -138,7 +137,7 @@ readIntegerVLC = do
         then return . sign $ x1
         else sign <$> readVLC 6 x1
     where
-        readVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+        readVLC :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                 => Int -> Integer -> Iteratee s m Integer
         readVLC n x0 = do
             x <- I.head
@@ -149,26 +148,26 @@ readIntegerVLC = do
                 else readVLC (n+7) x1
 
 -- | Read 4 bytes as a big-endian Float
-readFloat32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readFloat32be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                => Iteratee s m Float
 readFloat32be = do
     n <- I.endianRead4 I.MSB
     return (unsafeCoerce n :: Float)
-{-# SPECIALIZE INLINE readFloat32be :: (Functor m, MonadIO m) => Iteratee [Word8] m Float #-}
-{-# SPECIALIZE INLINE readFloat32be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Float #-}
+{-# SPECIALIZE INLINE readFloat32be :: (Functor m, Monad m) => Iteratee [Word8] m Float #-}
+{-# SPECIALIZE INLINE readFloat32be :: (Functor m, Monad m) => Iteratee B.ByteString m Float #-}
 
 -- | Read 8 bytes as a big-endian Double
-readDouble64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readDouble64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                => Iteratee s m Double
 readDouble64be = do
     n <- I.endianRead8 I.MSB
     return (unsafeCoerce n :: Double)
-{-# SPECIALIZE INLINE readDouble64be :: (Functor m, MonadIO m) => Iteratee [Word8] m Double #-}
-{-# SPECIALIZE INLINE readDouble64be :: (Functor m, MonadIO m) => Iteratee B.ByteString m Double #-}
+{-# SPECIALIZE INLINE readDouble64be :: (Functor m, Monad m) => Iteratee [Word8] m Double #-}
+{-# SPECIALIZE INLINE readDouble64be :: (Functor m, Monad m) => Iteratee B.ByteString m Double #-}
 
 -- | Read 16 bytes as a big-endian Rational, encoded as an 8 byte
 -- big endian numerator followed by an 8 byte big endian denominator.
-readRational64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, MonadIO m)
+readRational64be :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
                  => Iteratee s m Rational
 readRational64be = do
     (num :: Integer) <- readInt64be
