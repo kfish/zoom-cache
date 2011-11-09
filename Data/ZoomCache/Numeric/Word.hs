@@ -53,7 +53,7 @@ The table below describes the encoding of SummaryData for Word16:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
 
-The table below describes the encoding of SummaryData for Word and Word32:
+The table below describes the encoding of SummaryData for Word32:
 
 @
    | ...                                                           |   -35
@@ -128,6 +128,7 @@ module Data.ZoomCache.Numeric.Word (
 )where
 
 import Blaze.ByteString.Builder
+import Control.Applicative ((<$>))
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
 import Data.Word
@@ -150,9 +151,9 @@ instance ZoomReadable Word where
         , summaryWordRMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMu32b"
+    trackIdentifier = const "ZOOMuntb"
 
-    readRaw     = readWord32be
+    readRaw     = fromIntegral <$> readIntegerVLC
     readSummary = readSummaryNum
 
     prettyRaw         = show
@@ -178,7 +179,7 @@ instance ZoomWritable Word where
         , swWordSumSq :: {-# UNPACK #-}!Double
         }
 
-    fromRaw           = fromWord32be . fromIntegral
+    fromRaw           = fromIntegerVLC . fromIntegral
     fromSummaryData   = fromSummaryNum
 
     initSummaryWork   = initSummaryNumBounded

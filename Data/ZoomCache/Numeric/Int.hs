@@ -53,7 +53,7 @@ The table below describes the encoding of SummaryData for Int16:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
 
-The table below describes the encoding of SummaryData for Int and Int32:
+The table below describes the encoding of SummaryData for Int32:
 
 @
    | ...                                                           |   -35
@@ -128,6 +128,7 @@ module Data.ZoomCache.Numeric.Int (
 )where
 
 import Blaze.ByteString.Builder
+import Control.Applicative ((<$>))
 import Data.ByteString (ByteString)
 import Data.Int
 import Data.Iteratee (Iteratee)
@@ -152,9 +153,9 @@ instance ZoomReadable Int where
         , summaryIntRMS   :: {-# UNPACK #-}!Double
         }
 
-    trackIdentifier = const "ZOOMi32b"
+    trackIdentifier = const "ZOOMintb"
 
-    readRaw     = readInt32be
+    readRaw     = fromIntegral <$> readIntegerVLC
     readSummary = readSummaryNum
 
     prettyRaw         = show
@@ -180,7 +181,7 @@ instance ZoomWritable Int where
         , swIntSumSq :: {-# UNPACK #-}!Double
         }
 
-    fromRaw           = fromIntegral32be
+    fromRaw           = fromIntegerVLC . fromIntegral
     fromSummaryData   = fromSummaryNum
 
     initSummaryWork   = initSummaryNumBounded
