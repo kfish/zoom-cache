@@ -153,7 +153,7 @@ instance ZoomReadable Word where
 
     trackIdentifier = const "ZOOMu32b"
 
-    readRaw     = readInt32be
+    readRaw     = readWord32be
     readSummary = readSummaryNum
 
     prettyRaw         = show
@@ -179,7 +179,7 @@ instance ZoomWritable Word where
         , swWordSumSq :: {-# UNPACK #-}!Double
         }
 
-    fromRaw           = fromIntegral32be
+    fromRaw           = fromWord32be . fromIntegral
     fromSummaryData   = fromSummaryNum
 
     initSummaryWork   = initSummaryNumBounded
@@ -227,7 +227,7 @@ instance ZoomReadable Word8 where
 
     trackIdentifier = const "ZOOMu08b"
 
-    readRaw     = readInt8
+    readRaw     = readWord8
     readSummary = readSummaryNum
 
     prettyRaw         = show
@@ -301,7 +301,7 @@ instance ZoomReadable Word16 where
 
     trackIdentifier = const "ZOOMu16b"
 
-    readRaw     = readInt16be
+    readRaw     = readWord16be
     readSummary = readSummaryNum
 
     prettyRaw         = show
@@ -375,7 +375,7 @@ instance ZoomReadable Word32 where
 
     trackIdentifier = const "ZOOMu32b"
 
-    readRaw     = readInt32be
+    readRaw     = readWord32be
     readSummary = readSummaryNum
 
     prettyRaw         = show
@@ -401,7 +401,7 @@ instance ZoomWritable Word32 where
         , swWord32SumSq :: {-# UNPACK #-}!Double
         }
 
-    fromRaw           = fromIntegral32be
+    fromRaw           = fromWord32be
     fromSummaryData   = fromSummaryNum
 
     initSummaryWork   = initSummaryNumBounded
@@ -449,7 +449,7 @@ instance ZoomReadable Word64 where
 
     trackIdentifier = const "ZOOMu64b"
 
-    readRaw     = readInt64be
+    readRaw     = readWord64be
     readSummary = readSummaryNum
 
     prettyRaw         = show
