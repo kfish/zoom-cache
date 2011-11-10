@@ -16,7 +16,7 @@
 -- implement the methods of the ZoomReadable and ZoomWritable classes.
 --
 -- For sample implementations, read the source of the provided instances
--- "Data.ZoomCache.Int" and "Data.ZoomCache.Double".
+-- "Data.ZoomCache.Numeric.Int" and "Data.ZoomCache.Numeric.Double".
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Codec (
