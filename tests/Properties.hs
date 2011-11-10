@@ -30,7 +30,6 @@ roundTripBool :: Bool -> Bool
 roundTripBool = roundTrip
 
 roundTripInt :: Int -> Bool
-roundTripInt 7 = False
 roundTripInt x = roundTrip x
 
 roundTripInt8 :: Int8 -> Bool
