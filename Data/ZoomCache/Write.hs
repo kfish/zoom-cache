@@ -51,6 +51,7 @@ import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString.Lazy as L
 import Data.Dynamic
 import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
@@ -121,7 +122,7 @@ flush = do
     tracks <- gets whTrackWork
     doRaw <- gets whWriteData
     when doRaw $
-        liftIO $ Fold.mapM_ (B.hPut h) $ IM.mapWithKey bsFromTrack tracks
+        liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
     mapM_ (uncurry flushSummary) (IM.assocs tracks)
     pending <- mconcat . IM.elems <$> gets whDeferred
     liftIO . B.hPut h . toByteString $ pending
@@ -289,19 +290,20 @@ modifyTracks f = modify (\z -> z { whTrackWork = f (whTrackWork z) })
 modifyTrack :: TrackNo -> (TrackWork -> TrackWork) -> ZoomW ()
 modifyTrack trackNo f = modifyTracks (IM.adjust f trackNo)
 
-bsFromTrack :: TrackNo -> TrackWork -> ByteString
-bsFromTrack trackNo TrackWork{..} = toByteString $ mconcat
-    [ fromByteString packetHeader
-    , fromIntegral32be trackNo
-    , fromTimeStamp twEntryTime
-    , fromTimeStamp twExitTime
-    , fromIntegral32be twCount
-    , fromIntegral32be (len twBuilder + len twTSBuilder)
-    , twBuilder
-    , twTSBuilder
+bsFromTrack :: TrackNo -> TrackWork -> L.ByteString
+bsFromTrack trackNo TrackWork{..} = mconcat
+    [ L.pack . B.unpack $ packetHeader
+    , toLazyByteString $ mconcat
+        [ fromIntegral32be trackNo
+        , fromTimeStamp twEntryTime
+        , fromTimeStamp twExitTime
+        , fromIntegral32be twCount
+        , fromIntegral32be (L.length rawBS)
+        ]
+    , rawBS
     ]
     where
-        len = B.length . toByteString
+        rawBS = toLazyByteString (twBuilder <> twTSBuilder)
 
 mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
 mkTrackWork !spec !entry !w = TrackWork
