@@ -213,7 +213,7 @@ Summary Data Packet header:
 @
 
 Some default encodings of Summary Data are provided in modules
-"Data.ZoomCache.Double" and "Data.ZoomCache.Int".
+"Data.ZoomCache.Numeric.Double" and "Data.ZoomCache.Numeric.Int".
 
 -}
 
