@@ -26,11 +26,14 @@ roundTrip x = x == i
         i = runner1 $ I.enumPure1Chunk bs readRaw
         bs = toByteString (fromRaw x)
 
+roundTripUnit :: () -> Bool
+roundTripUnit = roundTrip
+
 roundTripBool :: Bool -> Bool
 roundTripBool = roundTrip
 
 roundTripInt :: Int -> Bool
-roundTripInt x = roundTrip x
+roundTripInt = roundTrip
 
 roundTripInt8 :: Int8 -> Bool
 roundTripInt8 = roundTrip
@@ -77,7 +80,8 @@ main = defaultMain tests
 tests :: [Test]
 tests =
     [ testGroup "roundTrip"
-      [ testProperty "Bool" roundTripBool
+      [ testProperty "()" roundTripUnit
+      , testProperty "Bool" roundTripBool
       , testProperty "Int" roundTripInt
       , testProperty "Int8" roundTripInt8
       , testProperty "Int16" roundTripInt16
