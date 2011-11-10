@@ -46,6 +46,7 @@ module Data.ZoomCache.Write (
 ) where
 
 import Blaze.ByteString.Builder hiding (flush)
+import Codec.Compression.Zlib
 import Control.Applicative ((<$>))
 import Control.Monad.State
 import Data.ByteString (ByteString)
@@ -303,7 +304,7 @@ bsFromTrack trackNo TrackWork{..} = mconcat
     , rawBS
     ]
     where
-        rawBS = toLazyByteString (twBuilder <> twTSBuilder)
+        rawBS = compress $ toLazyByteString (twBuilder <> twTSBuilder)
 
 mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
 mkTrackWork !spec !entry !w = TrackWork

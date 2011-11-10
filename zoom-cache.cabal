@@ -83,7 +83,8 @@ Library
     iteratee                  >= 0.8.6.0 && < 0.9,
     ListLike                  >= 1.0     && < 4,
     MonadCatchIO-transformers >  0.2     && < 0.3,
-    mtl                       >= 2.0.0.0 && < 3
+    mtl                       >= 2.0.0.0 && < 3,
+    zlib
 
   Exposed-modules:
     Blaze.ByteString.Builder.ZoomCache
@@ -122,7 +123,8 @@ Executable zoom-cache
     iteratee                  >= 0.8.6.0 && < 0.9,
     ListLike                  >= 1.0     && < 4,
     mtl                       >= 2.0.0.0 && < 3,
-    ui-command
+    ui-command,
+    zlib
 
 Test-suite tests
   Type:              exitcode-stdio-1.0
