@@ -16,7 +16,7 @@
 
 module Blaze.ByteString.Builder.ZoomCache.Internal (
     -- * Builders
-      fromDataRateType
+      fromFlags
     , fromGlobal
     , fromSummary
     , fromTrackNo
@@ -24,6 +24,7 @@ module Blaze.ByteString.Builder.ZoomCache.Internal (
 ) where
 
 import Blaze.ByteString.Builder
+import Data.Bits
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 import Data.Monoid
@@ -36,9 +37,13 @@ import Data.ZoomCache.Types
 ----------------------------------------------------------------------
 -- Creating builders for ZoomCache types.
 
-fromDataRateType :: DataRateType -> Builder
-fromDataRateType ConstantDR = fromInt16be 0
-fromDataRateType VariableDR = fromInt16be 1
+fromFlags :: Bool -> DataRateType -> Builder
+fromFlags delta drType = fromInt16be (dl .|. dr)
+    where
+        dl | delta                = 2
+           | otherwise            = 0
+        dr | drType == VariableDR = 1
+           | otherwise            = 0
 
 fromGlobal :: Global -> Builder
 fromGlobal Global{..} = mconcat

@@ -63,5 +63,5 @@ data Global = Global
 -- For variable datarate, explicit timestamps are attached to each datum, encoded
 -- as a separate block of timestamps in the Raw Data packet.
 data DataRateType = ConstantDR | VariableDR
-    deriving (Show)
+    deriving (Eq, Show)
 

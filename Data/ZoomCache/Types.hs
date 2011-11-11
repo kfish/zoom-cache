@@ -67,10 +67,11 @@ type TrackMap = IntMap TrackSpec
 
 -- | A specification of the type and name of each track
 data TrackSpec = TrackSpec
-    { specType   :: !Codec
-    , specDRType :: !DataRateType
-    , specRate   :: {-# UNPACK #-}!Rational
-    , specName   :: !ByteString
+    { specType        :: !Codec
+    , specDeltaEncode :: !Bool
+    , specDRType      :: !DataRateType
+    , specRate        :: {-# UNPACK #-}!Rational
+    , specName        :: !ByteString
     }
     deriving (Show)
 

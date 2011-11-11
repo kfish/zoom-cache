@@ -37,6 +37,7 @@ module Data.Iteratee.ZoomCache (
 import Control.Applicative
 import Control.Monad (msum, replicateM)
 import Control.Monad.Trans (MonadIO)
+import Data.Bits
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int
@@ -168,12 +169,12 @@ readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
 readTrackHeader mappings = do
     trackNo <- readInt32be
     trackType <- readCodec mappings
-    drType <- readDataRateType
+    (drType, delta) <- readFlags
     rate <- readRational64be
     byteLength <- readInt32be
     name <- B.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
 
-    return (trackNo, TrackSpec trackType drType rate name)
+    return (trackNo, TrackSpec trackType delta drType rate name)
 
 ------------------------------------------------------------
 -- Packet, Summary reading
@@ -190,7 +191,7 @@ readPacket specs = do
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readTS = readTimeStamps specDRType count entryTime
-            d <- readRawCodec specType count
+            d <- readRawCodec specType specDeltaEncode count
             ts <- readTS
             return . Just $
                 (Packet trackNo entryTime exitTime count d ts)
@@ -201,8 +202,11 @@ readPacket specs = do
     where
         readRawCodec :: (I.Nullable s, LL.ListLike s Word8,
                          Functor m, Monad m)
-                     => Codec -> Int -> Iteratee s m ZoomRaw
-        readRawCodec (Codec a) count = ZoomRaw . deltaDecode <$> replicateM count (readRawAs a)
+                     => Codec -> Bool -> Int -> Iteratee s m ZoomRaw
+        readRawCodec (Codec a) delta count = ZoomRaw . f <$> replicateM count (readRawAs a)
+            where
+                f | delta     = deltaDecode
+                  | otherwise = id
 
         readRawAs :: (ZoomReadable a, I.Nullable s, LL.ListLike s Word8,
                       Functor m, Monad m)
@@ -300,11 +304,14 @@ readCodec mappings = do
 parseCodec :: [IdentifyCodec] -> IdentifyCodec
 parseCodec mappings h = msum . map ($ h) $ mappings
 
-readDataRateType :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-                 => Iteratee s m DataRateType
-readDataRateType = do
+readFlags :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
+                 => Iteratee s m (DataRateType, Bool)
+readFlags = do
     (n :: Int16) <- readInt16be
-    case n of
-        0 -> return ConstantDR
-        1 -> return VariableDR
-        _ -> error "Bad data rate type"
+    let drType = case n .&. 1 of
+            0 -> ConstantDR
+            _ -> VariableDR
+        delta = case n .&. 2 of
+            0 -> False
+            _ -> True
+    return (drType, delta)
