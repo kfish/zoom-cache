@@ -139,6 +139,7 @@ instance ZoomWritable Float where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Float where
     numEntry = summaryFloatEntry
@@ -211,6 +212,7 @@ instance ZoomWritable Double where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Double where
     numEntry = summaryDoubleEntry

@@ -233,6 +233,7 @@ instance ZoomWritable Int where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Int where
     numEntry = summaryIntEntry
@@ -307,6 +308,7 @@ instance ZoomWritable Int8 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Int8 where
     numEntry = summaryInt8Entry
@@ -381,6 +383,7 @@ instance ZoomWritable Int16 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Int16 where
     numEntry = summaryInt16Entry
@@ -455,6 +458,7 @@ instance ZoomWritable Int32 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Int32 where
     numEntry = summaryInt32Entry
@@ -529,6 +533,7 @@ instance ZoomWritable Int64 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Int64 where
     numEntry = summaryInt64Entry
@@ -603,6 +608,7 @@ instance ZoomWritable Integer where
     toSummaryData     = toSummaryInteger
     updateSummaryData = updateSummaryInteger
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Integer where
     numEntry = summaryIntegerEntry
