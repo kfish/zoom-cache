@@ -167,6 +167,10 @@ class Typeable a => ZoomReadable a where
     -- | Pretty printing for values of type 'SummaryData a'.
     prettySummaryData  :: SummaryData a -> String
 
+    -- | Delta-decode a list of values
+    deltaDecode :: [a] -> [a]
+    deltaDecode = id
+
 data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
 data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
