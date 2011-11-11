@@ -206,6 +206,8 @@ instance ZoomReadable Int where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
+    deltaDecode       = deltaDecodeNum
+
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int) #-}
 
@@ -280,6 +282,8 @@ instance ZoomReadable Int8 where
 
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
+
+    deltaDecode       = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int8) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int8) #-}
@@ -356,6 +360,8 @@ instance ZoomReadable Int16 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
+    deltaDecode       = deltaDecodeNum
+
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int16) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int16) #-}
 
@@ -430,6 +436,8 @@ instance ZoomReadable Int32 where
 
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
+
+    deltaDecode       = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int32) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int32) #-}
@@ -506,6 +514,8 @@ instance ZoomReadable Int64 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
+    deltaDecode       = deltaDecodeNum
+
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Int64) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int64) #-}
 
@@ -580,6 +590,8 @@ instance ZoomReadable Integer where
 
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
+
+    deltaDecode       = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Integer) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Integer) #-}

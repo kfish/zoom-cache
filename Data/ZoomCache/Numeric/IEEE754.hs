@@ -113,6 +113,8 @@ instance ZoomReadable Float where
     prettyRaw         = prettyPacketFloat
     prettySummaryData = prettySummaryFloat
 
+    deltaDecode       = deltaDecodeNum
+
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Float) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Float) #-}
 
@@ -185,6 +187,8 @@ instance ZoomReadable Double where
 
     prettyRaw         = prettyPacketFloat
     prettySummaryData = prettySummaryFloat
+
+    deltaDecode       = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Double) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Double) #-}
