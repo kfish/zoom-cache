@@ -166,7 +166,6 @@ class Typeable a => ZoomReadable a where
 
     -- | Pretty printing for values of type 'SummaryData a'.
     prettySummaryData  :: SummaryData a -> String
-    -- typeOfSummaryData :: SummaryData a -> TypeRep
 
 data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
