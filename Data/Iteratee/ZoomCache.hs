@@ -202,7 +202,7 @@ readPacket specs = do
         readRawCodec :: (I.Nullable s, LL.ListLike s Word8,
                          Functor m, Monad m)
                      => Codec -> Int -> Iteratee s m ZoomRaw
-        readRawCodec (Codec a) count = ZoomRaw <$> replicateM count (readRawAs a)
+        readRawCodec (Codec a) count = ZoomRaw . deltaDecode <$> replicateM count (readRawAs a)
 
         readRawAs :: (ZoomReadable a, I.Nullable s, LL.ListLike s Word8,
                       Functor m, Monad m)
