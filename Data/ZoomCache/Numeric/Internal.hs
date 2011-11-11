@@ -10,6 +10,7 @@ module Data.ZoomCache.Numeric.Internal (
     , mkSummaryNum
     , appendSummaryNum
     , updateSummaryNum
+    , deltaEncodeNum
 ) where
 
 import Blaze.ByteString.Builder
@@ -89,3 +90,7 @@ updateSummaryNum t d sw =
     where
         !(TSDiff dur) = timeStampDiff t (numWorkTime sw)
 {-# INLINEABLE updateSummaryNum #-}
+
+deltaEncodeNum :: ZoomNum a
+               => SummaryWork a -> a -> a
+deltaEncodeNum sw d = d - numWorkExit sw
