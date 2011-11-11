@@ -242,7 +242,9 @@ writeData trackNo d = do
 
     doRaw <- gets whWriteData
     when doRaw $
-        modifyTrack trackNo $ \z -> z { twBuilder = twBuilder z <> fromRaw d }
+        modifyTrack trackNo $ \z -> z
+            { twBuilder = twBuilder z <> (deltaEncodeWork (twWriter z) d)
+            }
 
     modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
         { twCount = c + 1
@@ -258,7 +260,7 @@ writeDataVBR trackNo (t, d) = do
     doRaw <- gets whWriteData
     when doRaw $
         modifyTrack trackNo $ \z -> z
-            { twBuilder = twBuilder z <> fromRaw d
+            { twBuilder = twBuilder z <> (deltaEncodeWork (twWriter z) d)
             , twTSBuilder = twTSBuilder z <> fromTimeStamp t
             }
 
@@ -267,6 +269,15 @@ writeDataVBR trackNo (t, d) = do
         , twWriter = updateWork t d (twWriter z)
         }
     flushIfNeeded trackNo
+
+deltaEncodeWork :: (Typeable a, ZoomWritable a)
+                => Maybe ZoomWork
+                -> a -> Builder
+deltaEncodeWork (Just (ZoomWork _ (Just cw))) !d =
+    case (fromDynamic . toDyn $ d) of
+        Just d' -> fromRaw (deltaEncode cw d')
+        Nothing -> fromRaw d
+deltaEncodeWork _ !d = fromRaw d
 
 ----------------------------------------------------------------------
 -- Global
