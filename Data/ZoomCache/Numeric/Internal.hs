@@ -10,6 +10,7 @@ module Data.ZoomCache.Numeric.Internal (
     , mkSummaryNum
     , appendSummaryNum
     , updateSummaryNum
+    , deltaDecodeNum
     , deltaEncodeNum
 ) where
 
@@ -91,6 +92,8 @@ updateSummaryNum t d sw =
         !(TSDiff dur) = timeStampDiff t (numWorkTime sw)
 {-# INLINEABLE updateSummaryNum #-}
 
-deltaEncodeNum :: ZoomNum a
-               => SummaryWork a -> a -> a
+deltaDecodeNum :: ZoomNum a => [a] -> [a]
+deltaDecodeNum = scanl (+) 0
+
+deltaEncodeNum :: ZoomNum a => SummaryWork a -> a -> a
 deltaEncodeNum sw d = d - numWorkExit sw
