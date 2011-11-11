@@ -202,6 +202,10 @@ class ZoomReadable a => ZoomWritable a where
                        -> TimeStampDiff -> SummaryData a
                        -> SummaryData a
 
+    -- | Delta-encode a value.
+    deltaEncode :: SummaryWork a -> a -> a
+    deltaEncode _ = id
+
 data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
     { levels   :: IntMap (Summary a -> Summary a)
     , currWork :: Maybe (SummaryWork a)
