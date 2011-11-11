@@ -95,7 +95,7 @@ versionMajor = 1
 
 -- | The minor version encoded by this library
 versionMinor :: Int
-versionMinor = 0
+versionMinor = 1
 
 {- |
 
