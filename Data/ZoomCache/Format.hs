@@ -115,7 +115,7 @@ Track header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | ...                                                           | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Reserved                                                  |d|v| 20-23
+   | Reserved                                                |z|d|v| 20-23
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Datarate numerator (int64)                                    | 24-27
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -133,6 +133,7 @@ Track header:
 
   @v@ : Variable data rate flag. 0=CBR, 1=VBR
   @d@ : Delta encode flag. 0=Raw values 1=delta encoded values
+  @z@ : Zlib encode flag. 0=uncompressed 1=zlib compressed
 
 Datarate: numerator 0 indicates variable bitrate (all data values are timestamped)
 -}

@@ -162,11 +162,12 @@ closeWrite :: ZoomWHandle -> IO ()
 closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
-oneTrack :: (ZoomReadable a) => a -> Bool -> DataRateType -> Rational -> ByteString -> TrackMap
-oneTrack a delta !drType !rate !name = IM.singleton 1 (mkTrackSpec a delta drType rate name)
+oneTrack :: (ZoomReadable a) => a -> Bool -> Bool -> DataRateType -> Rational -> ByteString -> TrackMap
+oneTrack a delta zlib !drType !rate !name = IM.singleton 1 (mkTrackSpec a delta zlib drType rate name)
 {-# INLINABLE oneTrack #-}
 
-mkTrackSpec :: (ZoomReadable a) => a -> Bool -> DataRateType -> Rational -> ByteString -> TrackSpec
+mkTrackSpec :: (ZoomReadable a)
+            => a -> Bool -> Bool -> DataRateType -> Rational -> ByteString -> TrackSpec
 mkTrackSpec a = TrackSpec (Codec a)
 
 -- | Query the maximum number of data points to buffer for a given track before
@@ -200,7 +201,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
         , toByteString $ mconcat
             [ fromTrackNo trackNo
             , fromCodec specType
-            , fromFlags specDeltaEncode specDRType
+            , fromFlags specDeltaEncode specZlibCompress specDRType
             , fromRational64 specRate
             , fromIntegral32be . C.length $ specName
             ]
@@ -317,7 +318,9 @@ bsFromTrack trackNo TrackWork{..} = mconcat
     , rawBS
     ]
     where
-        rawBS = compress $ toLazyByteString (twBuilder <> twTSBuilder)
+        rawBS = c $ toLazyByteString (twBuilder <> twTSBuilder)
+        c | specZlibCompress twSpec = compress
+          | otherwise               = id
 
 mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
 mkTrackWork !spec !entry !w = TrackWork

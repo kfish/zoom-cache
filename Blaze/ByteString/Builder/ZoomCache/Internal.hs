@@ -37,9 +37,11 @@ import Data.ZoomCache.Types
 ----------------------------------------------------------------------
 -- Creating builders for ZoomCache types.
 
-fromFlags :: Bool -> DataRateType -> Builder
-fromFlags delta drType = fromInt16be (dl .|. dr)
+fromFlags :: Bool -> Bool -> DataRateType -> Builder
+fromFlags delta zlib drType = fromInt16be (zl .|. dl .|. dr)
     where
+        zl | zlib                 = 4
+           | otherwise            = 0
         dl | delta                = 2
            | otherwise            = 0
         dr | drType == VariableDR = 1

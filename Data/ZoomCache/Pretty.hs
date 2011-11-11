@@ -47,12 +47,14 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
     [ "Track " ++ show trackNo ++ ":"
     , "\tName:\t" ++ C.unpack specName
     , "\tType:\t" ++ show specType
-    , "\tEnc:\t"  ++ encoding
+    , "\tEnc:\t"  ++ unwords [encoding, compression]
     , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
     ]
     where
         encoding | specDeltaEncode = "Delta"
                  | otherwise       = "Raw"
+        compression | specZlibCompress = "Zlib"
+                    | otherwise        = "Uncompressed"
 
 -- | Pretty-print a 'TimeStamp', given a datarate
 prettyTimeStamp :: Rational -> TimeStamp -> String

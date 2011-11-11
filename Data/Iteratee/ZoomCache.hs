@@ -172,12 +172,12 @@ readTrackHeader :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
 readTrackHeader mappings = do
     trackNo <- readInt32be
     trackType <- readCodec mappings
-    (drType, delta) <- readFlags
+    (drType, delta, zlib) <- readFlags
     rate <- readRational64be
     byteLength <- readInt32be
     name <- B.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
 
-    return (trackNo, TrackSpec trackType delta drType rate name)
+    return (trackNo, TrackSpec trackType delta zlib drType rate name)
 
 ------------------------------------------------------------
 -- Packet, Summary reading
@@ -196,10 +196,15 @@ readPacket specs = do
     byteLength <- readInt32be
     packet <- case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
-            let readDTS = readDataTimeStamps specType specDeltaEncode specDRType count entryTime
-            -- (d, ts) <- readDTS
-            z <- iterToByteStringLike iterInflate
-            let (d, ts) = runner1 $ I.enumPure1Chunk z readDTS
+            let readDTS :: (I.Nullable s, LL.ListLike s Word8,
+                            Functor m, Monad m)
+                        => Iteratee s m (ZoomRaw, [TimeStamp])
+                readDTS = readDataTimeStamps specType specDeltaEncode specDRType count entryTime
+            (d, ts) <- if specZlibCompress
+                then do
+                    z <- iterToByteStringLike iterInflate
+                    return $ runner1 $ I.enumPure1Chunk z readDTS
+                else readDTS
             return . Just $
                 (Packet trackNo entryTime exitTime count d ts)
         Nothing -> do
@@ -324,7 +329,7 @@ parseCodec :: [IdentifyCodec] -> IdentifyCodec
 parseCodec mappings h = msum . map ($ h) $ mappings
 
 readFlags :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-                 => Iteratee s m (DataRateType, Bool)
+          => Iteratee s m (DataRateType, Bool, Bool)
 readFlags = do
     (n :: Int16) <- readInt16be
     let drType = case n .&. 1 of
@@ -333,4 +338,7 @@ readFlags = do
         delta = case n .&. 2 of
             0 -> False
             _ -> True
-    return (drType, delta)
+        zlib = case n .&. 4 of
+            0 -> False
+            _ -> True
+    return (drType, delta, zlib)
