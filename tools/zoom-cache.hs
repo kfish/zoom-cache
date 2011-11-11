@@ -22,6 +22,7 @@ import Data.ZoomCache.Dump
 
 data Config = Config
     { noRaw    :: Bool
+    , delta    :: Bool
     , variable :: Bool
     , intData  :: Bool
     , label    :: ByteString
@@ -36,6 +37,7 @@ instance Default Config where
 defConfig :: Config
 defConfig = Config
     { noRaw    = False
+    , delta    = False
     , variable = False
     , intData  = False
     , label    = "gen"
@@ -45,6 +47,7 @@ defConfig = Config
     }
 
 data Option = NoRaw
+            | Delta
             | Variable
             | IntData
             | Label String
@@ -60,10 +63,12 @@ genOptions :: [OptDescr Option]
 genOptions =
     [ Option ['z'] ["no-raw"] (NoArg NoRaw)
              "Do NOT include raw data in the output"
+    , Option ['d'] ["delta"] (NoArg Delta)
+             "Delta-encode data"
     , Option ['b'] ["variable"] (NoArg Variable)
              "Generate variable-rate data"
     , Option ['i'] ["integer"] (NoArg IntData)
-             "Generate ingeger data"
+             "Generate integer data"
     , Option ['l'] ["label"] (ReqArg Label "label")
              "Set track label"
     , Option ['r'] ["rate"] (ReqArg Rate "data-rate")
@@ -87,6 +92,8 @@ processConfig = foldM processOneOption
     where
         processOneOption config NoRaw = do
             return $ config {noRaw = True}
+        processOneOption config Delta = do
+            return $ config {delta = True}
         processOneOption config Variable = do
             return $ config {variable = True}
         processOneOption config IntData = do
@@ -125,10 +132,10 @@ zoomWriteFile Config{..} (path:_)
     w :: (ZoomReadable a, ZoomWrite a, ZoomWrite (TimeStamp, a))
       => [a] -> FilePath -> IO ()
     w d
-        | variable  = withFileWrite (oneTrack (head d) VariableDR rate' label)
+        | variable  = withFileWrite (oneTrack (head d) delta VariableDR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) (zip (map TS [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack (head d) ConstantDR rate' label)
+        | otherwise = withFileWrite (oneTrack (head d) delta ConstantDR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) d)
     rate' = fromInteger rate

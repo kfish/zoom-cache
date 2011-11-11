@@ -67,10 +67,11 @@ type TrackMap = IntMap TrackSpec
 
 -- | A specification of the type and name of each track
 data TrackSpec = TrackSpec
-    { specType   :: !Codec
-    , specDRType :: !DataRateType
-    , specRate   :: {-# UNPACK #-}!Rational
-    , specName   :: !ByteString
+    { specType        :: !Codec
+    , specDeltaEncode :: !Bool
+    , specDRType      :: !DataRateType
+    , specRate        :: {-# UNPACK #-}!Rational
+    , specName        :: !ByteString
     }
     deriving (Show)
 
@@ -166,7 +167,10 @@ class Typeable a => ZoomReadable a where
 
     -- | Pretty printing for values of type 'SummaryData a'.
     prettySummaryData  :: SummaryData a -> String
-    -- typeOfSummaryData :: SummaryData a -> TypeRep
+
+    -- | Delta-decode a list of values
+    deltaDecode :: [a] -> [a]
+    deltaDecode = id
 
 data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
@@ -202,6 +206,10 @@ class ZoomReadable a => ZoomWritable a where
     appendSummaryData  :: TimeStampDiff -> SummaryData a
                        -> TimeStampDiff -> SummaryData a
                        -> SummaryData a
+
+    -- | Delta-encode a value.
+    deltaEncode :: SummaryWork a -> a -> a
+    deltaEncode _ = id
 
 data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
     { levels   :: IntMap (Summary a -> Summary a)

@@ -95,7 +95,7 @@ versionMajor = 1
 
 -- | The minor version encoded by this library
 versionMinor :: Int
-versionMinor = 0
+versionMinor = 1
 
 {- |
 
@@ -115,7 +115,7 @@ Track header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | ...                                                           | 16-19
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Flag: 0=CBR, 1=VBR                                            | 20-23
+   | Reserved                                                  |d|v| 20-23
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | Datarate numerator (int64)                                    | 24-27
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -130,6 +130,9 @@ Track header:
    | Name (UTF-8) ...                                              | 44-
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
+
+  @v@ : Variable data rate flag. 0=CBR, 1=VBR
+  @d@ : Delta encode flag. 0=Raw values 1=delta encoded values
 
 Datarate: numerator 0 indicates variable bitrate (all data values are timestamped)
 -}
@@ -213,7 +216,7 @@ Summary Data Packet header:
 @
 
 Some default encodings of Summary Data are provided in modules
-"Data.ZoomCache.Double" and "Data.ZoomCache.Int".
+"Data.ZoomCache.Numeric.Double" and "Data.ZoomCache.Numeric.Int".
 
 -}
 

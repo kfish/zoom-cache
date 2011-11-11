@@ -162,11 +162,11 @@ closeWrite :: ZoomWHandle -> IO ()
 closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
-oneTrack :: (ZoomReadable a) => a -> DataRateType -> Rational -> ByteString -> TrackMap
-oneTrack a !drType !rate !name = IM.singleton 1 (mkTrackSpec a drType rate name)
+oneTrack :: (ZoomReadable a) => a -> Bool -> DataRateType -> Rational -> ByteString -> TrackMap
+oneTrack a delta !drType !rate !name = IM.singleton 1 (mkTrackSpec a delta drType rate name)
 {-# INLINABLE oneTrack #-}
 
-mkTrackSpec :: (ZoomReadable a) => a -> DataRateType -> Rational -> ByteString -> TrackSpec
+mkTrackSpec :: (ZoomReadable a) => a -> Bool -> DataRateType -> Rational -> ByteString -> TrackSpec
 mkTrackSpec a = TrackSpec (Codec a)
 
 -- | Query the maximum number of data points to buffer for a given track before
@@ -200,7 +200,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
         , toByteString $ mconcat
             [ fromTrackNo trackNo
             , fromCodec specType
-            , fromDataRateType specDRType
+            , fromFlags specDeltaEncode specDRType
             , fromRational64 specRate
             , fromIntegral32be . C.length $ specName
             ]
@@ -244,7 +244,10 @@ writeData trackNo d = do
 
     doRaw <- gets whWriteData
     when doRaw $
-        modifyTrack trackNo $ \z -> z { twBuilder = twBuilder z <> fromRaw d }
+        modifyTrack trackNo $ \z -> z
+            { twBuilder = twBuilder z <>
+                  (deltaEncodeWork (specDeltaEncode . twSpec $ z) (twWriter z) d)
+            }
 
     modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
         { twCount = c + 1
@@ -260,7 +263,8 @@ writeDataVBR trackNo (t, d) = do
     doRaw <- gets whWriteData
     when doRaw $
         modifyTrack trackNo $ \z -> z
-            { twBuilder = twBuilder z <> fromRaw d
+            { twBuilder = twBuilder z <>
+                  (deltaEncodeWork (specDeltaEncode . twSpec $ z) (twWriter z) d)
             , twTSBuilder = twTSBuilder z <> fromTimeStamp t
             }
 
@@ -269,6 +273,15 @@ writeDataVBR trackNo (t, d) = do
         , twWriter = updateWork t d (twWriter z)
         }
     flushIfNeeded trackNo
+
+deltaEncodeWork :: (Typeable a, ZoomWritable a)
+                => Bool -> Maybe ZoomWork -> a -> Builder
+deltaEncodeWork False _                             d = fromRaw d
+deltaEncodeWork _     (Just (ZoomWork _ (Just cw))) d =
+    case (fromDynamic . toDyn $ d) of
+        Just d' -> fromRaw (deltaEncode cw d')
+        Nothing -> fromRaw d
+deltaEncodeWork _    _                              d = fromRaw d
 
 ----------------------------------------------------------------------
 -- Global

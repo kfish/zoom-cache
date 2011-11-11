@@ -113,6 +113,8 @@ instance ZoomReadable Float where
     prettyRaw         = prettyPacketFloat
     prettySummaryData = prettySummaryFloat
 
+    deltaDecode       = deltaDecodeNum
+
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Float) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Float) #-}
 
@@ -139,6 +141,7 @@ instance ZoomWritable Float where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Float where
     numEntry = summaryFloatEntry
@@ -185,6 +188,8 @@ instance ZoomReadable Double where
     prettyRaw         = prettyPacketFloat
     prettySummaryData = prettySummaryFloat
 
+    deltaDecode       = deltaDecodeNum
+
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Double) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Double) #-}
 
@@ -211,6 +216,7 @@ instance ZoomWritable Double where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
+    deltaEncode       = deltaEncodeNum
 
 instance ZoomNum Double where
     numEntry = summaryDoubleEntry
