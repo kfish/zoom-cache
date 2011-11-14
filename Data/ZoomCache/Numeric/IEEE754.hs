@@ -85,7 +85,6 @@ module Data.ZoomCache.Numeric.IEEE754 (
 import Blaze.ByteString.Builder
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
-import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
@@ -115,7 +114,6 @@ instance ZoomReadable Float where
 
     deltaDecode       = deltaDecodeNum
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Float) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Float) #-}
 
 instance ZoomWrite Float where
@@ -190,7 +188,6 @@ instance ZoomReadable Double where
 
     deltaDecode       = deltaDecodeNum
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Double) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Double) #-}
 
 instance ZoomWrite Double where

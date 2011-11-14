@@ -175,7 +175,6 @@ instance ZoomReadable Word where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Word) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word) #-}
 
 instance ZoomWrite Word where
@@ -249,7 +248,6 @@ instance ZoomReadable Word8 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Word8) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word8) #-}
 
 instance ZoomWrite Word8 where
@@ -323,7 +321,6 @@ instance ZoomReadable Word16 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Word16) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word16) #-}
 
 instance ZoomWrite Word16 where
@@ -397,7 +394,6 @@ instance ZoomReadable Word32 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Word32) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word32) #-}
 
 instance ZoomWrite Word32 where
@@ -471,7 +467,6 @@ instance ZoomReadable Word64 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-{-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Word64) #-}
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word64) #-}
 
 instance ZoomWrite Word64 where

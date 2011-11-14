@@ -16,22 +16,19 @@ module Data.ZoomCache.Numeric.Internal (
 
 import Blaze.ByteString.Builder
 import Control.Monad (replicateM)
+import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
-import qualified Data.Iteratee as I
-import qualified Data.ListLike as LL
 import Data.Maybe (fromMaybe)
 import Data.Monoid
-import Data.Word
 
 import Data.ZoomCache.Codec
 import Data.ZoomCache.Numeric.Types
 
 ----------------------------------------------------------------------
 
-readSummaryNum :: (I.Nullable s, LL.ListLike s Word8,
-                   Functor m, Monad m,
+readSummaryNum :: (Functor m, Monad m,
                    ZoomNum a)
-               => Iteratee s m (SummaryData a)
+               => Iteratee ByteString m (SummaryData a)
 readSummaryNum = do
     [en,ex,mn,mx] <- replicateM 4 readRaw
     [avg,rms] <- replicateM 2 readDouble64be

@@ -56,9 +56,6 @@ import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
-import qualified Data.Iteratee as I
-import qualified Data.ListLike as LL
-import Data.Word
 
 import Data.ZoomCache.Common
 
@@ -155,15 +152,14 @@ class Typeable a => ZoomReadable a where
     -- argument.
     trackIdentifier :: a -> ByteString
 
-    -- | An iteratee to read one value of type 'a' from a stream of something
-    -- like '[Word8]' or 'ByteString'.
-    readRaw         :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-                    => Iteratee s m a
+    -- | An iteratee to read one value of type 'a' from a stream of 'ByteString'.
+    readRaw         :: (Functor m, Monad m)
+                    => Iteratee ByteString m a
 
     -- | An iteratee to read one value of type 'SummaryData a' from a stream
-    -- of something like '[Word8]' or 'ByteString'.
-    readSummary        :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-                       => Iteratee s m (SummaryData a)
+    -- of 'ByteString'.
+    readSummary        :: (Functor m, Monad m)
+                       => Iteratee ByteString m (SummaryData a)
 
     -- | Pretty printing, used for dumping values of type 'a'.
     prettyRaw          :: a -> String
