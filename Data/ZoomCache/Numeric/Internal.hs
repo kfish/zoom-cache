@@ -91,6 +91,8 @@ updateSummaryNum t d sw =
 
 deltaDecodeNum :: ZoomNum a => [a] -> [a]
 deltaDecodeNum = deltaDecode
+{-# INLINE deltaDecodeNum #-}
 
 deltaEncodeNum :: ZoomNum a => SummaryWork a -> a -> a
 deltaEncodeNum sw d = d - numWorkExit sw
+{-# INLINE deltaEncodeNum #-}

@@ -24,6 +24,7 @@ module Data.ZoomCache.Numeric.Delta (
 -- > [1,1,1,-1,2]
 deltaEncode :: Num a => [a] -> [a]
 deltaEncode xs = zipWith (-) xs (0:xs)
+{-# INLINE deltaEncode #-}
 
 -- | Delta-decode a list of numbers
 --
@@ -31,3 +32,4 @@ deltaEncode xs = zipWith (-) xs (0:xs)
 -- > [1,2,3,2,4]
 deltaDecode :: Num a => [a] -> [a]
 deltaDecode = scanl1 (+)
+{-# INLINE deltaDecode #-}
