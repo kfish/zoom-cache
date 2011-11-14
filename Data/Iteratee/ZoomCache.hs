@@ -52,6 +52,7 @@ import Data.Maybe
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
+import Data.ZoomCache.Numeric.Delta
 import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
@@ -238,7 +239,7 @@ readPacket specs = do
             ConstantDR -> do
                 return $ take count [unTS entry ..]
             VariableDR -> do
-                replicateM count readInt64be
+                deltaDecode <$> replicateM count readInt64be
 
 readSummaryBlock :: (Functor m, Monad m)
                  => IntMap TrackSpec

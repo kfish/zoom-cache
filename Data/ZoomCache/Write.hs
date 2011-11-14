@@ -64,6 +64,7 @@ import Blaze.ByteString.Builder.ZoomCache
 import Blaze.ByteString.Builder.ZoomCache.Internal
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
+import Data.ZoomCache.Numeric.Delta
 import Data.ZoomCache.Types
 
 ------------------------------------------------------------
@@ -318,7 +319,8 @@ bsFromTrack trackNo TrackWork{..} = mconcat
     , rawBS
     ]
     where
-        tsBuilder = mconcat . map fromTimeStamp . reverse $ twReverseTS
+        tsBuilder = mconcat . map fromInt64be .
+                    deltaEncode . map unTS .  reverse $ twReverseTS
         rawBS = c $ toLazyByteString (twBuilder <> tsBuilder)
         c | specZlibCompress twSpec = compress
           | otherwise               = id
