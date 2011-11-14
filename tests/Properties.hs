@@ -14,7 +14,7 @@ import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 ----------------------------------------------------------------------
--- * Properties
+-- * Read, Write roundtrips
 
 runner1 :: Identity (I.Iteratee s Identity c) -> c
 runner1 = runIdentity . I.run . runIdentity
@@ -72,6 +72,32 @@ roundTripDouble :: Double -> Bool
 roundTripDouble = roundTrip
 
 ----------------------------------------------------------------------
+-- * Delta encoding roundtrips
+
+deltaEncDec :: Num a => [a] -> Bool
+deltaEncDec xs = xs == encDec
+    where
+        encDec = deltaDecode (deltaEncode xs)
+
+deltaEncDecInt :: [Int] -> Bool
+deltaEncDecInt = deltaEncDec
+
+deltaEncDecInt8 :: [Int8] -> Bool
+deltaEncDecInt8 = deltaEncDec
+
+deltaEncDecInt16 :: [Int16] -> Bool
+deltaEncDecInt16 = deltaEncDec
+
+deltaEncDecInt32 :: [Int32] -> Bool
+deltaEncDecInt32 = deltaEncDec
+
+deltaEncDecInt64 :: [Int64] -> Bool
+deltaEncDecInt64 = deltaEncDec
+
+deltaEncDecInteger :: [Integer] -> Bool
+deltaEncDecInteger = deltaEncDec
+
+----------------------------------------------------------------------
 -- Test harness
 
 main :: IO ()
@@ -95,5 +121,13 @@ tests =
       , testProperty "Integer" roundTripInteger
       , testProperty "Float" roundTripFloat
       , testProperty "Double" roundTripDouble
+      ]
+    , testGroup "Delta Encoding"
+      [ testProperty "Int" deltaEncDecInt
+      , testProperty "Int8" deltaEncDecInt8
+      , testProperty "Int16" deltaEncDecInt16
+      , testProperty "Int32" deltaEncDecInt32
+      , testProperty "Int64" deltaEncDecInt64
+      , testProperty "Integer" deltaEncDecInteger
       ]
     ]
