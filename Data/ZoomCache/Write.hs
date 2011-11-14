@@ -87,7 +87,7 @@ data ZoomWHandle = ZoomWHandle
 data TrackWork = TrackWork
     { twSpec      :: TrackSpec
     , twBuilder   :: Builder
-    , twTSBuilder :: Builder
+    , twReverseTS :: [TimeStamp]
     , twWriter    :: Maybe ZoomWork
     , twCount     :: {-# UNPACK #-}!Int
     , twWatermark :: {-# UNPACK #-}!Int
@@ -266,7 +266,7 @@ writeDataVBR trackNo (t, d) = do
         modifyTrack trackNo $ \z -> z
             { twBuilder = twBuilder z <>
                   (deltaEncodeWork (specDeltaEncode . twSpec $ z) (twWriter z) d)
-            , twTSBuilder = twTSBuilder z <> fromTimeStamp t
+            , twReverseTS = t : twReverseTS z
             }
 
     modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
@@ -318,7 +318,8 @@ bsFromTrack trackNo TrackWork{..} = mconcat
     , rawBS
     ]
     where
-        rawBS = c $ toLazyByteString (twBuilder <> twTSBuilder)
+        tsBuilder = mconcat . map fromTimeStamp . reverse $ twReverseTS
+        rawBS = c $ toLazyByteString (twBuilder <> tsBuilder)
         c | specZlibCompress twSpec = compress
           | otherwise               = id
 
@@ -326,7 +327,7 @@ mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
 mkTrackWork !spec !entry !w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
-        , twTSBuilder = mempty
+        , twReverseTS = []
         , twCount = 0
         , twWatermark = w
         , twEntryTime = entry
