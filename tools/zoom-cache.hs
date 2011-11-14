@@ -23,7 +23,7 @@ import Data.ZoomCache.Dump
 data Config = Config
     { noRaw    :: Bool
     , delta    :: Bool
-    , zlib    :: Bool
+    , zlib     :: Bool
     , variable :: Bool
     , intData  :: Bool
     , label    :: ByteString
@@ -68,7 +68,7 @@ genOptions =
              "Do NOT include raw data in the output"
     , Option ['d'] ["delta"] (NoArg Delta)
              "Delta-encode data"
-    , Option ['z'] ["zlib"] (NoArg ZLib)
+    , Option ['Z'] ["zlib"] (NoArg ZLib)
              "Zlib-compress data"
     , Option ['b'] ["variable"] (NoArg Variable)
              "Generate variable-rate data"
