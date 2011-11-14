@@ -60,6 +60,8 @@ module Data.ZoomCache.Codec (
     , TimeStampDiff(..)
     , timeStampDiff
 
+    -- * Delta encoding
+    , module Data.ZoomCache.Numeric.Delta
     -- * Minimum and maximum floating point
     , module Data.ZoomCache.Numeric.FloatMinMax
 ) where
@@ -70,4 +72,5 @@ import Data.ZoomCache.Common
 import Data.ZoomCache.Identify
 import Data.ZoomCache.Types
 import Data.ZoomCache.Write
+import Data.ZoomCache.Numeric.Delta
 import Data.ZoomCache.Numeric.FloatMinMax
