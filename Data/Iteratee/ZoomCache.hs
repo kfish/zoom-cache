@@ -44,7 +44,7 @@ import Data.Functor.Identity
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
-import Data.Iteratee (Iteratee)
+import Data.Iteratee (Iteratee, (<><))
 import qualified Data.Iteratee as I
 import Data.Iteratee.ZLib
 import qualified Data.ListLike as LL
@@ -182,8 +182,8 @@ readTrackHeader mappings = do
 ------------------------------------------------------------
 -- Packet, Summary reading
 
-iterInflate :: (MonadIO m) => Iteratee ByteString m ByteString
-iterInflate = I.joinIM $ enumInflate Zlib defaultDecompressParams I.stream2stream
+enumInflateZlib :: (MonadIO m) => I.Enumeratee ByteString ByteString m a
+enumInflateZlib = enumInflate Zlib defaultDecompressParams
 
 readPacket :: (ByteStringLike s, Functor m, MonadIO m)
            => IntMap TrackSpec
@@ -202,7 +202,7 @@ readPacket specs = do
                 readDTS = readDataTimeStamps specType specDeltaEncode specDRType count entryTime
             (d, ts) <- if specZlibCompress
                 then do
-                    z <- iterToByteStringLike iterInflate
+                    z <- I.joinI $ (enumInflateZlib <>< I.mapChunks likeToByteString) I.stream2stream
                     return $ runner1 $ I.enumPure1Chunk z readDTS
                 else readDTS
             return . Just $
