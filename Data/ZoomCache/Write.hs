@@ -280,7 +280,7 @@ deltaEncodeWork :: (Typeable a, ZoomWritable a)
 deltaEncodeWork False _                             d = fromRaw d
 deltaEncodeWork _     (Just (ZoomWork _ (Just cw))) d =
     case (fromDynamic . toDyn $ d) of
-        Just d' -> fromRaw (deltaEncode cw d')
+        Just d' -> fromRaw (deltaEncodeRaw cw d')
         Nothing -> fromRaw d
 deltaEncodeWork _    _                              d = fromRaw d
 

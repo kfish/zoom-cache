@@ -168,8 +168,8 @@ class Typeable a => ZoomReadable a where
     prettySummaryData  :: SummaryData a -> String
 
     -- | Delta-decode a list of values
-    deltaDecode :: [a] -> [a]
-    deltaDecode = id
+    deltaDecodeRaw :: [a] -> [a]
+    deltaDecodeRaw = id
 
 data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
@@ -207,8 +207,8 @@ class ZoomReadable a => ZoomWritable a where
                        -> SummaryData a
 
     -- | Delta-encode a value.
-    deltaEncode :: SummaryWork a -> a -> a
-    deltaEncode _ = id
+    deltaEncodeRaw :: SummaryWork a -> a -> a
+    deltaEncodeRaw _ = id
 
 data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
     { levels   :: IntMap (Summary a -> Summary a)

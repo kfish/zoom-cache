@@ -205,7 +205,7 @@ instance ZoomReadable Int where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-    deltaDecode       = deltaDecodeNum
+    deltaDecodeRaw    = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int) #-}
 
@@ -233,7 +233,7 @@ instance ZoomWritable Int where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
-    deltaEncode       = deltaEncodeNum
+    deltaEncodeRaw    = deltaEncodeNum
 
 instance ZoomNum Int where
     numEntry = summaryIntEntry
@@ -281,7 +281,7 @@ instance ZoomReadable Int8 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-    deltaDecode       = deltaDecodeNum
+    deltaDecodeRaw    = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int8) #-}
 
@@ -309,7 +309,7 @@ instance ZoomWritable Int8 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
-    deltaEncode       = deltaEncodeNum
+    deltaEncodeRaw    = deltaEncodeNum
 
 instance ZoomNum Int8 where
     numEntry = summaryInt8Entry
@@ -357,7 +357,7 @@ instance ZoomReadable Int16 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-    deltaDecode       = deltaDecodeNum
+    deltaDecodeRaw    = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int16) #-}
 
@@ -385,7 +385,7 @@ instance ZoomWritable Int16 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
-    deltaEncode       = deltaEncodeNum
+    deltaEncodeRaw    = deltaEncodeNum
 
 instance ZoomNum Int16 where
     numEntry = summaryInt16Entry
@@ -433,7 +433,7 @@ instance ZoomReadable Int32 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-    deltaDecode       = deltaDecodeNum
+    deltaDecodeRaw    = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int32) #-}
 
@@ -461,7 +461,7 @@ instance ZoomWritable Int32 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
-    deltaEncode       = deltaEncodeNum
+    deltaEncodeRaw    = deltaEncodeNum
 
 instance ZoomNum Int32 where
     numEntry = summaryInt32Entry
@@ -509,7 +509,7 @@ instance ZoomReadable Int64 where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-    deltaDecode       = deltaDecodeNum
+    deltaDecodeRaw    = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int64) #-}
 
@@ -537,7 +537,7 @@ instance ZoomWritable Int64 where
     toSummaryData     = mkSummaryNum
     updateSummaryData = updateSummaryNum
     appendSummaryData = appendSummaryNum
-    deltaEncode       = deltaEncodeNum
+    deltaEncodeRaw    = deltaEncodeNum
 
 instance ZoomNum Int64 where
     numEntry = summaryInt64Entry
@@ -585,7 +585,7 @@ instance ZoomReadable Integer where
     prettyRaw         = show
     prettySummaryData = prettySummaryInt
 
-    deltaDecode       = deltaDecodeNum
+    deltaDecodeRaw    = deltaDecodeNum
 
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Integer) #-}
 
@@ -613,7 +613,7 @@ instance ZoomWritable Integer where
     toSummaryData     = toSummaryInteger
     updateSummaryData = updateSummaryInteger
     appendSummaryData = appendSummaryNum
-    deltaEncode       = deltaEncodeNum
+    deltaEncodeRaw    = deltaEncodeNum
 
 instance ZoomNum Integer where
     numEntry = summaryIntegerEntry

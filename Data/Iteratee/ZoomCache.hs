@@ -216,7 +216,7 @@ readPacket specs = do
                      -> Iteratee ByteString m ZoomRaw
         readRawCodec (Codec a) delta count = ZoomRaw . f <$> replicateM count (readRawAs a)
             where
-                f | delta     = deltaDecode
+                f | delta     = deltaDecodeRaw
                   | otherwise = id
 
         readRawAs :: (ZoomReadable a, Functor m, Monad m)
