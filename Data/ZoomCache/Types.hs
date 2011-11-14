@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
@@ -131,6 +132,7 @@ data Summary a = Summary
     , summaryExitTime  :: {-# UNPACK #-}!TimeStamp
     , summaryData      :: !(SummaryData a)
     }
+    deriving (Typeable)
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
 summaryDuration :: Summary a -> TimeStampDiff
