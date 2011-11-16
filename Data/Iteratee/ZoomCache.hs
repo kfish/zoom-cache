@@ -84,7 +84,7 @@ instance I.NullPoint Stream where
 -- 'CacheFile' visible in the 'Stream' elements.
 enumCacheFile :: (Functor m, MonadIO m)
               => [IdentifyCodec]
-              -> I.Enumeratee ByteString Stream m a
+              -> I.Enumeratee ByteString [Stream] m a
 enumCacheFile mappings iter = do
     fi <- iterHeaders mappings
     enumStream fi iter
@@ -93,22 +93,22 @@ enumCacheFile mappings iter = do
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
-            -> I.Enumeratee ByteString Stream m a
+            -> I.Enumeratee ByteString [Stream] m a
 enumStream = I.unfoldConvStream go
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
-           -> Iteratee ByteString m (CacheFile, Stream)
+           -> Iteratee ByteString m (CacheFile, [Stream])
         go cf = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (B.pack header) of
                 Just PacketHeader -> do
                     (trackNo, packet) <- readPacket (cfSpecs cf)
-                    return (cf, StreamPacket cf trackNo (fromJust packet))
+                    return (cf, [StreamPacket cf trackNo (fromJust packet)])
                 Just SummaryHeader -> do
                     (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
-                    return (cf, StreamSummary cf trackNo (fromJust summary))
-                _ -> return (cf, StreamNull)
+                    return (cf, [StreamSummary cf trackNo (fromJust summary)])
+                _ -> return (cf, [StreamNull])
 
 ------------------------------------------------------------
 
@@ -279,7 +279,7 @@ mapStream :: (Functor m, MonadIO m)
           => [IdentifyCodec]
           -> (Stream -> m ())
           -> Iteratee ByteString m ()
-mapStream mappings = I.joinI . enumCacheFile mappings . I.mapChunksM_
+mapStream mappings = I.joinI . enumCacheFile mappings . I.mapM_
 {-# INLINABLE mapStream #-}
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
