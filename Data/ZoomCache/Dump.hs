@@ -75,8 +75,7 @@ info CacheFile{..} = do
     mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ cfSpecs
 
 streamRate :: Stream -> Maybe Rational
-streamRate StreamNull = Nothing
-streamRate s          = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
+streamRate s = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
 
 dumpData :: TrackNo -> Stream -> IO ()
 dumpData trackNo s@StreamPacket{..}

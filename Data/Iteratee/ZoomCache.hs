@@ -68,7 +68,6 @@ data Stream =
         , strmTrack   :: TrackNo
         , strmSummary :: ZoomSummary
         }
-    | StreamNull
 
 ----------------------------------------------------------------------
 
@@ -101,7 +100,7 @@ enumStream = I.unfoldConvStream go
                 Just SummaryHeader -> do
                     (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
                     return (cf, [StreamSummary cf trackNo (fromJust summary)])
-                _ -> return (cf, [StreamNull])
+                _ -> return (cf, [])
 
 ------------------------------------------------------------
 
