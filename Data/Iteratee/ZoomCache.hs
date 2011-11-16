@@ -70,13 +70,6 @@ data Stream =
         }
     | StreamNull
 
-instance I.Nullable Stream where
-    nullC StreamNull = True
-    nullC _          = False
-
-instance I.NullPoint Stream where
-    empty = StreamNull
-
 ----------------------------------------------------------------------
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
