@@ -24,6 +24,7 @@ module Data.ZoomCache.Numeric (
 
   , toSummaryDouble
 
+  , enumCacheFileDouble
   , enumCacheFileSummaryDouble
 
   , module Data.ZoomCache
@@ -40,6 +41,40 @@ import Data.Word
 import Data.ZoomCache
 import Data.ZoomCache.Numeric.Types
 import Data.ZoomCache.Types
+
+----------------------------------------------------------------------
+
+rawToDouble :: ZoomRaw -> [Double]
+rawToDouble (ZoomRaw xs) | typeOf xs == typeOf (undefined :: [Double]) =
+                              fromMaybe [] (cast xs :: Maybe [Double])
+                         | typeOf xs == typeOf (undefined :: [Float]) =
+                                         f (cast xs :: Maybe [Float])
+                         | typeOf xs == typeOf (undefined :: [Int]) =
+                                         f (cast xs :: Maybe [Int])
+                         | typeOf xs == typeOf (undefined :: [Int8]) =
+                                         f (cast xs :: Maybe [Int8])
+                         | typeOf xs == typeOf (undefined :: [Int16]) =
+                                         f (cast xs :: Maybe [Int16])
+                         | typeOf xs == typeOf (undefined :: [Int32]) =
+                                         f (cast xs :: Maybe [Int32])
+                         | typeOf xs == typeOf (undefined :: [Int64]) =
+                                         f (cast xs :: Maybe [Int64])
+                         | typeOf xs == typeOf (undefined :: [Integer]) =
+                                         f (cast xs :: Maybe [Integer])
+                         | typeOf xs == typeOf (undefined :: [Word]) =
+                                         f (cast xs :: Maybe [Word])
+                         | typeOf xs == typeOf (undefined :: [Word8]) =
+                                         f (cast xs :: Maybe [Word8])
+                         | typeOf xs == typeOf (undefined :: [Word16]) =
+                                         f (cast xs :: Maybe [Word16])
+                         | typeOf xs == typeOf (undefined :: [Word32]) =
+                                         f (cast xs :: Maybe [Word32])
+                         | typeOf xs == typeOf (undefined :: [Word64]) =
+                                         f (cast xs :: Maybe [Word64])
+                         | otherwise = []
+    where
+        f :: Real a => Maybe [a] -> [Double]
+        f = maybe [] (map realToFrac)
 
 ----------------------------------------------------------------------
 
@@ -85,6 +120,15 @@ toSummaryDataDouble s = numMkSummary
     (realToFrac . numMax $ s)
     (numAvg s)
     (numRMS s)
+
+----------------------------------------------------------------------
+
+enumCacheFileDouble :: (Functor m, MonadIO m)
+                    => [IdentifyCodec]
+                    -> I.Enumeratee ByteString [Double] m a
+enumCacheFileDouble mappings = I.joinI .
+    enumCacheFilePackets mappings .
+    I.mapChunks (concatMap (rawToDouble . packetData))
 
 enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
                            => [IdentifyCodec]
