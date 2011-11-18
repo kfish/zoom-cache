@@ -58,9 +58,12 @@ data Stream =
 
 enumCacheFilePackets :: (Functor m, MonadIO m)
                      => [IdentifyCodec]
+                     -> TrackNo
                      -> I.Enumeratee ByteString [Packet] m a
-enumCacheFilePackets mappings = I.joinI . enumCacheFileCTP mappings .
-                                I.mapChunks (map (\(_,_,p) -> p))
+enumCacheFilePackets mappings trackNo = I.joinI .
+    enumCacheFileCTP mappings . I.joinI .
+    I.filter (\(_,t,_) -> t == trackNo) .
+    I.mapChunks (map (\(_,_,p) -> p))
 
 enumCacheFileSummaryLevel :: (Functor m, MonadIO m)
                           => [IdentifyCodec]

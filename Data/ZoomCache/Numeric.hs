@@ -125,9 +125,10 @@ toSummaryDataDouble s = numMkSummary
 
 enumCacheFileDouble :: (Functor m, MonadIO m)
                     => [IdentifyCodec]
+                    -> TrackNo
                     -> I.Enumeratee ByteString [Double] m a
-enumCacheFileDouble mappings = I.joinI .
-    enumCacheFilePackets mappings .
+enumCacheFileDouble mappings trackNo = I.joinI .
+    enumCacheFilePackets mappings trackNo .
     I.mapChunks (concatMap (rawToDouble . packetData))
 
 enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
