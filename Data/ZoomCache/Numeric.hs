@@ -24,11 +24,16 @@ module Data.ZoomCache.Numeric (
 
   , toSummaryDouble
 
+  , enumCacheFileSummaryDouble
+
   , module Data.ZoomCache
 ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad.Trans (MonadIO)
+import Data.ByteString (ByteString)
 import Data.Int
+import qualified Data.Iteratee as I
 import Data.Maybe
 import Data.Typeable
 import Data.Word
@@ -80,3 +85,14 @@ toSummaryDataDouble s = numMkSummary
     (realToFrac . numMax $ s)
     (numAvg s)
     (numRMS s)
+
+enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
+                           => [IdentifyCodec]
+                           -> Int
+                           -> I.Enumeratee ByteString [Summary Double] m a
+enumCacheFileSummaryDouble mappings level = I.joinI .
+    enumCacheFileSummaryLevel mappings level .
+    I.mapChunks (catMaybes . map toSD)
+    where
+        toSD :: ZoomSummary -> Maybe (Summary Double)
+        toSD (ZoomSummary s) = toSummaryDouble s
