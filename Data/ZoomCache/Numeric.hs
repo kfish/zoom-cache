@@ -133,10 +133,11 @@ enumCacheFileDouble mappings trackNo = I.joinI .
 
 enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
                            => [IdentifyCodec]
+                           -> TrackNo
                            -> Int
                            -> I.Enumeratee ByteString [Summary Double] m a
-enumCacheFileSummaryDouble mappings level = I.joinI .
-    enumCacheFileSummaryLevel mappings level .
+enumCacheFileSummaryDouble mappings trackNo level =
+    I.joinI .  enumCacheFileSummaryLevel mappings trackNo level .
     I.mapChunks (catMaybes . map toSD)
     where
         toSD :: ZoomSummary -> Maybe (Summary Double)
