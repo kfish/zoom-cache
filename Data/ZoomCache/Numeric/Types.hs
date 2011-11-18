@@ -13,11 +13,20 @@ import Data.ZoomCache.Codec
 -- ZoomNum
 
 class (Ord a, Real a, ZoomReadable a, ZoomWritable a) => ZoomNum a where
+    -- | Value at start of interval
     numEntry :: SummaryData a -> a
+    -- | Value at end of interval
     numExit  :: SummaryData a -> a
+
+    -- | Minimum value in the summary interval
     numMin   :: SummaryData a -> a
+    -- | Maximum value in the summary interval
     numMax   :: SummaryData a -> a
+
+    -- | Mean value in the summary interval
     numAvg   :: SummaryData a -> Double
+
+    -- | Root mean square value in the summary interval
     numRMS   :: SummaryData a -> Double
 
     numWorkTime  :: SummaryWork a -> TimeStamp

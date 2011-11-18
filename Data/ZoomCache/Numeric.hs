@@ -10,7 +10,7 @@
 -- Stability   : unstable
 -- Portability : unknown
 --
--- ZoomCache packet and summary types and interfaces
+-- ZoomCache numeric API
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Numeric (
@@ -38,6 +38,7 @@ import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 
+-- | Coercion of numeric summaries to type Summary Double.
 toSummaryDouble :: Typeable a => Summary a -> Maybe (Summary Double)
 toSummaryDouble s | typeOf s == typeOf (undefined :: Summary Double) =
                                 id (cast s :: Maybe (Summary Double))
