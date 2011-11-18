@@ -99,6 +99,7 @@ Library
     Data.ZoomCache.Dump
     Data.ZoomCache.Format
     Data.ZoomCache.Identify
+    Data.ZoomCache.Numeric
     Data.ZoomCache.Numeric.Delta
     Data.ZoomCache.Numeric.FloatMinMax
     Data.ZoomCache.Numeric.IEEE754

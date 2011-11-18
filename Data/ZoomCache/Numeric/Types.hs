@@ -3,7 +3,7 @@
 {-# OPTIONS -Wall #-}
 
 module Data.ZoomCache.Numeric.Types (
-    -- * Classes
+    -- * Summaries of numeric values
       ZoomNum(..)
 ) where
 
@@ -31,4 +31,3 @@ class (Ord a, Real a, ZoomReadable a, ZoomWritable a) => ZoomNum a where
     numMkSummary :: a -> a -> a -> a -> Double -> Double -> SummaryData a
     numMkSummaryWork :: TimeStamp -> Maybe a -> a -> a -> a -> Double -> Double
                      -> SummaryWork a
-
