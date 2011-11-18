@@ -17,22 +17,7 @@
 -- Iteratee reading of ZoomCache files.
 ----------------------------------------------------------------------
 
-module Data.Iteratee.ZoomCache (
-    -- * Types
-      Stream(..)
-
-    -- * Parsing iteratees
-    , iterHeaders
-
-    -- * Enumeratee
-    , enumCacheFile
-    , enumStream
-
-    -- * Iteratee maps
-    , mapStream
-    , mapPackets
-    , mapSummaries
-) where
+module Data.Iteratee.ZoomCache where
 
 import Control.Applicative
 import Control.Monad (msum, replicateM)
@@ -70,6 +55,45 @@ data Stream =
         }
 
 ----------------------------------------------------------------------
+
+enumCacheFilePackets :: (Functor m, MonadIO m)
+                     => [IdentifyCodec]
+                     -> I.Enumeratee ByteString [Packet] m a
+enumCacheFilePackets mappings = I.joinI . enumCacheFileCTP mappings .
+                                I.mapChunks (map (\(_,_,p) -> p))
+
+enumCacheFileSummaryLevel :: (Functor m, MonadIO m)
+                          => [IdentifyCodec]
+                          -> Int
+                          -> I.Enumeratee ByteString [ZoomSummary] m a
+enumCacheFileSummaryLevel mappings level = I.joinI . enumCacheFileSummaries mappings .
+                                           I.filter (\(ZoomSummary s) -> summaryLevel s == level)
+
+enumCacheFileSummaries :: (Functor m, MonadIO m)
+                       => [IdentifyCodec]
+                      -> I.Enumeratee ByteString [ZoomSummary] m a
+enumCacheFileSummaries mappings = I.joinI . enumCacheFileCTS mappings .
+                                  I.mapChunks (map (\(_,_,s) -> s))
+
+enumCacheFileCTP :: (Functor m, MonadIO m)
+                 => [IdentifyCodec]
+                 -> I.Enumeratee ByteString [(CacheFile, TrackNo, Packet)] m a
+enumCacheFileCTP mappings = I.joinI . enumCacheFile mappings .
+                            I.mapChunks (catMaybes . map toCTP)
+    where
+        toCTP :: Stream -> Maybe (CacheFile, TrackNo, Packet)
+        toCTP StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
+        toCTP _                = Nothing
+
+enumCacheFileCTS :: (Functor m, MonadIO m)
+                 => [IdentifyCodec]
+                 -> I.Enumeratee ByteString [(CacheFile, TrackNo, ZoomSummary)] m a
+enumCacheFileCTS mappings = I.joinI . enumCacheFile mappings .
+                            I.mapChunks (catMaybes . map toCTS)
+    where
+        toCTS :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummary)
+        toCTS StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
+        toCTS _                 = Nothing
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
