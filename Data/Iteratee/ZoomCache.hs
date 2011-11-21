@@ -115,6 +115,31 @@ enumCacheFile mappings iter = do
 
 -- | An enumeratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
+-- This version skips parsing of all tracks other than the specified 'TrackNo'.
+enumStreamTrackNo :: (Functor m, MonadIO m)
+                  => CacheFile
+                  -> TrackNo
+                  -> I.Enumeratee ByteString [Stream] m a
+enumStreamTrackNo cf0 trackNo = I.unfoldConvStream go cf0
+    where
+        go :: (Functor m, MonadIO m)
+           => CacheFile
+           -> Iteratee ByteString m (CacheFile, [Stream])
+        go cf = do
+            header <- I.joinI $ I.takeUpTo 8 I.stream2list
+            case parseHeader (B.pack header) of
+                Just PacketHeader -> do
+                    packet <- readPacketTrackNo (cfSpecs cf) trackNo
+                    let res = maybe [] (\p -> [StreamPacket cf trackNo p]) packet
+                    return (cf, res)
+                Just SummaryHeader -> do
+                    summary <- readSummaryBlockTrackNo (cfSpecs cf) trackNo
+                    let res = maybe [] (\s -> [StreamSummary cf trackNo s]) summary
+                    return (cf, res)
+                _ -> return (cf, [])
+
+-- | An enumeratee of zoom-cache data, after global and track headers
+-- have been read, or if the 'CacheFile' has been acquired elsewhere.
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
             -> I.Enumeratee ByteString [Stream] m a
@@ -207,6 +232,23 @@ readTrackHeader mappings = do
 enumInflateZlib :: (MonadIO m) => I.Enumeratee ByteString ByteString m a
 enumInflateZlib = enumInflate Zlib defaultDecompressParams
 
+readPacketTrackNo :: (Functor m, MonadIO m)
+                  => IntMap TrackSpec
+                  -> TrackNo
+                  -> Iteratee ByteString m (Maybe Packet)
+readPacketTrackNo specs wantTrackNo = do
+    trackNo <- readInt32be
+    entryTime <- TS <$> readInt64be
+    exitTime <- TS <$> readInt64be
+    count <- readInt32be
+    byteLength <- readInt32be
+    if (trackNo == wantTrackNo)
+        then do
+            readPacketData specs trackNo entryTime exitTime count byteLength
+        else do
+            I.drop byteLength
+            return Nothing
+
 readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
            -> Iteratee ByteString m (TrackNo, Maybe Packet)
@@ -216,11 +258,22 @@ readPacket specs = do
     exitTime <- TS <$> readInt64be
     count <- readInt32be
     byteLength <- readInt32be
-    packet <- case IM.lookup trackNo specs of
+    packet <- readPacketData specs trackNo entryTime exitTime count byteLength
+    return (trackNo, packet)
+
+readPacketData :: (Functor m, MonadIO m)
+               => IntMap TrackSpec
+               -> TrackNo
+               -> TimeStamp -> TimeStamp
+               -> Int
+               -> Int
+               -> Iteratee ByteString m (Maybe Packet)
+readPacketData specs trackNo entryTime exitTime count byteLength =
+    case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readDTS :: (Functor m, Monad m)
                         => Iteratee ByteString m (ZoomRaw, [TimeStamp])
-                readDTS = readDataTimeStamps specType specDeltaEncode specDRType count entryTime
+                readDTS = readDataTimeStamps specType specDeltaEncode specDRType
             (d, ts) <- if specZlibCompress
                 then do
                     z <- I.joinI $ enumInflateZlib I.stream2stream
@@ -231,15 +284,14 @@ readPacket specs = do
         Nothing -> do
             I.drop byteLength
             return Nothing
-    return (trackNo, packet)
     where
         runner1 :: Identity (I.Iteratee s Identity c) -> c
         runner1 = runIdentity . I.run . runIdentity
 
         readRawCodec :: (Functor m, Monad m)
-                     => Codec -> Bool -> Int
+                     => Codec -> Bool
                      -> Iteratee ByteString m ZoomRaw
-        readRawCodec (Codec a) delta count = ZoomRaw . f <$> replicateM count (readRawAs a)
+        readRawCodec (Codec a) delta = ZoomRaw . f <$> replicateM count (readRawAs a)
             where
                 f | delta     = deltaDecodeRaw
                   | otherwise = id
@@ -249,21 +301,38 @@ readPacket specs = do
         readRawAs = const readRaw
 
         readDataTimeStamps :: (Functor m, Monad m)
-                           => Codec -> Bool -> DataRateType -> Int -> TimeStamp
+                           => Codec -> Bool -> DataRateType
                            -> Iteratee ByteString m (ZoomRaw, [TimeStamp])
-        readDataTimeStamps codec delta drType count entry = do
-            d <- readRawCodec codec delta count
-            ts <- readTimeStamps drType count entry
+        readDataTimeStamps codec delta drType = do
+            d <- readRawCodec codec delta
+            ts <- readTimeStamps drType
             return (d, ts)
 
         readTimeStamps :: (Functor m, Monad m)
-                       => DataRateType -> Int -> TimeStamp
+                       => DataRateType
                        -> Iteratee ByteString m [TimeStamp]
-        readTimeStamps drType count entry = map TS <$> case drType of
+        readTimeStamps drType = map TS <$> case drType of
             ConstantDR -> do
-                return $ take count [unTS entry ..]
+                return $ take count [unTS entryTime ..]
             VariableDR -> do
                 deltaDecode <$> replicateM count readInt64be
+
+readSummaryBlockTrackNo :: (Functor m, Monad m)
+                        => IntMap TrackSpec
+                        -> TrackNo
+                        -> Iteratee ByteString m (Maybe ZoomSummary)
+readSummaryBlockTrackNo specs wantTrackNo = do
+    trackNo <- readInt32be
+    lvl <- readInt32be
+    entryTime <- TS <$> readInt64be
+    exitTime <- TS <$> readInt64be
+    byteLength <- readInt32be
+    if (trackNo == wantTrackNo)
+        then do
+            readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength
+        else do
+            I.drop byteLength
+            return Nothing
 
 readSummaryBlock :: (Functor m, Monad m)
                  => IntMap TrackSpec
@@ -274,20 +343,30 @@ readSummaryBlock specs = do
     entryTime <- TS <$> readInt64be
     exitTime <- TS <$> readInt64be
     byteLength <- readInt32be
+    summary <- readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength
+    return (trackNo, summary)
 
-    summary <- case IM.lookup trackNo specs of
+readSummaryBlockData :: (Functor m, Monad m)
+                     => IntMap TrackSpec
+                     -> TrackNo
+                     -> Int
+                     -> TimeStamp -> TimeStamp
+                     -> Int
+                     -> Iteratee ByteString m (Maybe ZoomSummary)
+readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
+    case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
-            sd <- readSummaryCodec specType trackNo lvl entryTime exitTime
-            return $ Just sd
+            Just <$> readSummaryCodec specType
+            -- sd <- readSummaryCodec specType
+            -- return $ Just sd
         Nothing -> do
             I.drop byteLength
             return Nothing
-    return (trackNo, summary)
     where
         readSummaryCodec :: (Functor m, Monad m)
-                         => Codec -> TrackNo -> Int -> TimeStamp -> TimeStamp
+                         => Codec
                          -> Iteratee ByteString m ZoomSummary
-        readSummaryCodec (Codec a) trackNo lvl entryTime exitTime = do
+        readSummaryCodec (Codec a) = do
             ZoomSummary <$> (Summary trackNo lvl entryTime exitTime <$> readSummaryAs a)
 
         readSummaryAs :: (ZoomReadable a, Functor m, Monad m)
