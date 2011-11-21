@@ -129,7 +129,7 @@ enumStreamTrackNo cf0 trackNo = I.unfoldConvStream go cf0
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (B.pack header) of
                 Just PacketHeader -> do
-                    packet <- readPacketTrackNo (cfSpecs cf) trackNo
+                    (_, packet) <- readPacketTrackNo (cfSpecs cf) trackNo
                     let res = maybe [] (\p -> [StreamPacket cf trackNo p]) packet
                     return (cf, res)
                 Just SummaryHeader -> do
@@ -232,34 +232,35 @@ readTrackHeader mappings = do
 enumInflateZlib :: (MonadIO m) => I.Enumeratee ByteString ByteString m a
 enumInflateZlib = enumInflate Zlib defaultDecompressParams
 
-readPacketTrackNo :: (Functor m, MonadIO m)
-                  => IntMap TrackSpec
-                  -> TrackNo
-                  -> Iteratee ByteString m (Maybe Packet)
-readPacketTrackNo specs wantTrackNo = do
+readPacketPred :: (Functor m, MonadIO m)
+               => IntMap TrackSpec
+               -> ((TrackNo, TimeStamp, TimeStamp) -> Bool)
+               -> Iteratee ByteString m (TrackNo, Maybe Packet)
+readPacketPred specs p = do
     trackNo <- readInt32be
     entryTime <- TS <$> readInt64be
     exitTime <- TS <$> readInt64be
     count <- readInt32be
     byteLength <- readInt32be
-    if (trackNo == wantTrackNo)
+    packet <- if (p (trackNo, entryTime, exitTime))
         then do
             readPacketData specs trackNo entryTime exitTime count byteLength
         else do
             I.drop byteLength
             return Nothing
+    return (trackNo, packet)
+
+readPacketTrackNo :: (Functor m, MonadIO m)
+                  => IntMap TrackSpec
+                  -> TrackNo
+                  -> Iteratee ByteString m (TrackNo, Maybe Packet)
+readPacketTrackNo specs wantTrackNo =
+    readPacketPred specs (\(trackNo, _, _) -> trackNo == wantTrackNo)
 
 readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
            -> Iteratee ByteString m (TrackNo, Maybe Packet)
-readPacket specs = do
-    trackNo <- readInt32be
-    entryTime <- TS <$> readInt64be
-    exitTime <- TS <$> readInt64be
-    count <- readInt32be
-    byteLength <- readInt32be
-    packet <- readPacketData specs trackNo entryTime exitTime count byteLength
-    return (trackNo, packet)
+readPacket specs = readPacketPred specs (const True)
 
 readPacketData :: (Functor m, MonadIO m)
                => IntMap TrackSpec
