@@ -103,6 +103,26 @@ enumCacheFileCTS mappings = I.joinI . enumCacheFile mappings .
         toCTS StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
         toCTS _                 = Nothing
 
+filterTracksByName :: (Functor m, MonadIO m)
+                   => CacheFile
+                   -> [ByteString]
+                   -> I.Enumeratee [Stream] [Stream] m a
+filterTracksByName CacheFile{..} names = filterTracks tracks
+    where
+        tracks :: [TrackNo]
+        tracks = IM.keys (IM.filter f cfSpecs)
+        f :: TrackSpec -> Bool
+        f ts = specName ts `elem` names
+
+filterTracks :: (Functor m, MonadIO m)
+             => [TrackNo]
+             -> I.Enumeratee [Stream] [Stream] m a
+filterTracks tracks = I.filter fil
+    where
+        fil :: Stream -> Bool
+        fil StreamPacket{..}  = strmTrack `elem` tracks
+        fil StreamSummary{..} = strmTrack `elem` tracks
+
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
 -- 'CacheFile' visible in the 'Stream' elements.
