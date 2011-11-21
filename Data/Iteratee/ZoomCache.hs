@@ -133,7 +133,7 @@ enumStreamTrackNo cf0 trackNo = I.unfoldConvStream go cf0
                     let res = maybe [] (\p -> [StreamPacket cf trackNo p]) packet
                     return (cf, res)
                 Just SummaryHeader -> do
-                    summary <- readSummaryBlockTrackNo (cfSpecs cf) trackNo
+                    (_, summary) <- readSummaryBlockTrackNo (cfSpecs cf) trackNo
                     let res = maybe [] (\s -> [StreamSummary cf trackNo s]) summary
                     return (cf, res)
                 _ -> return (cf, [])
@@ -317,34 +317,35 @@ readPacketData specs trackNo entryTime exitTime count byteLength =
             VariableDR -> do
                 deltaDecode <$> replicateM count readInt64be
 
-readSummaryBlockTrackNo :: (Functor m, Monad m)
-                        => IntMap TrackSpec
-                        -> TrackNo
-                        -> Iteratee ByteString m (Maybe ZoomSummary)
-readSummaryBlockTrackNo specs wantTrackNo = do
+readSummaryBlockPred :: (Functor m, Monad m)
+                     => IntMap TrackSpec
+                     -> ((TrackNo, Int, TimeStamp, TimeStamp) -> Bool)
+                     -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
+readSummaryBlockPred specs p = do
     trackNo <- readInt32be
     lvl <- readInt32be
     entryTime <- TS <$> readInt64be
     exitTime <- TS <$> readInt64be
     byteLength <- readInt32be
-    if (trackNo == wantTrackNo)
+    summary <- if (p (trackNo, lvl, entryTime, exitTime))
         then do
             readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength
         else do
             I.drop byteLength
             return Nothing
+    return (trackNo, summary)
+
+readSummaryBlockTrackNo :: (Functor m, Monad m)
+                        => IntMap TrackSpec
+                        -> TrackNo
+                        -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
+readSummaryBlockTrackNo specs wantTrackNo =
+    readSummaryBlockPred specs (\(trackNo, _, _, _) -> trackNo == wantTrackNo)
 
 readSummaryBlock :: (Functor m, Monad m)
                  => IntMap TrackSpec
                  -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
-readSummaryBlock specs = do
-    trackNo <- readInt32be
-    lvl <- readInt32be
-    entryTime <- TS <$> readInt64be
-    exitTime <- TS <$> readInt64be
-    byteLength <- readInt32be
-    summary <- readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength
-    return (trackNo, summary)
+readSummaryBlock specs = readSummaryBlockPred specs (const True)
 
 readSummaryBlockData :: (Functor m, Monad m)
                      => IntMap TrackSpec
