@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -126,10 +127,13 @@ toSummaryDataDouble s = numMkSummary
 enumCacheFileDouble :: (Functor m, MonadIO m)
                     => [IdentifyCodec]
                     -> TrackNo
-                    -> I.Enumeratee ByteString [Double] m a
+                    -> I.Enumeratee ByteString [(TimeStamp, Double)] m a
 enumCacheFileDouble mappings trackNo = I.joinI .
     enumCacheFilePackets mappings trackNo .
-    I.mapChunks (concatMap (rawToDouble . packetData))
+    I.mapChunks (concatMap f)
+    where
+        f :: Packet -> [(TimeStamp, Double)]
+        f Packet{..} = zip packetTimeStamps (rawToDouble packetData)
 
 enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
                            => [IdentifyCodec]
