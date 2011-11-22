@@ -129,7 +129,8 @@ enumCacheFileDouble :: (Functor m, MonadIO m)
                     -> I.Enumeratee ByteString [(TimeStamp, Double)] m a
 enumCacheFileDouble trackNo =
     I.joinI . enumCacheFile standardIdentifiers .
-    I.joinI . enumPackets trackNo .
+    I.joinI . filterTracks [trackNo] .
+    I.joinI . enumPackets .
     I.mapChunks (concatMap f)
     where
         f :: Packet -> [(TimeStamp, Double)]
@@ -141,7 +142,8 @@ enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
                            -> I.Enumeratee ByteString [Summary Double] m a
 enumCacheFileSummaryDouble trackNo level =
     I.joinI . enumCacheFile standardIdentifiers .
-    I.joinI . enumSummaryLevel trackNo level .
+    I.joinI . filterTracks [trackNo] .
+    I.joinI . enumSummaryLevel level .
     I.mapChunks (catMaybes . map toSD)
     where
         toSD :: ZoomSummary -> Maybe (Summary Double)
