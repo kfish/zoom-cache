@@ -5,21 +5,50 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
--- |
--- Module      : Data.ZoomCache.Write
--- Copyright   : Conrad Parker
--- License     : BSD3-style (see LICENSE)
---
--- Maintainer  : Conrad Parker <conrad@metadecks.org>
--- Stability   : unstable
--- Portability : unknown
---
--- Iteratee reading of ZoomCache files.
+{- |
+   Module      : Data.Iteratee.ZoomCache
+   Copyright   : Conrad Parker
+   License     : BSD3-style (see LICENSE)
+
+   Maintainer  : Conrad Parker <conrad@metadecks.org>
+   Stability   : unstable
+   Portability : unknown
+
+   Iteratee reading of ZoomCache files.
+
+   A typical usage, using the iteratee @iter@ to process the level 3 summaries
+   from the track called \"rainfall\":
+
+@
+  I.fileDriverRandom (enumCacheFile standardIdentifiers .
+      I.joinI . filterTracksByName [\"rainfall\"] .
+      I.joinI . enumSummaryLevel 3 $ iter) filename
+@
+
+   Similarly, using the iteratee @rawIter@ to process the raw data from the
+   track called \"rainfall\":
+
+@
+  I.fileDriverRandom (enumCacheFile standardIdentifiers .
+      I.joinI . filterTracksByName [\"rainfall\"] .
+      I.joinI . enumPackets $ rawIter) filename
+@
+-}
+
 ----------------------------------------------------------------------
 
 module Data.Iteratee.ZoomCache (
+  -- * Types
     Stream(..)
 
+  -- * Reading zoom-cache files and ByteStrings
+  , enumCacheFile
+
+  , iterHeaders
+  , enumStream
+  , enumStreamTrackNo
+
+  -- * Stream enumeratees
   , enumPackets
   , enumSummaryLevel
   , enumSummaries
@@ -28,12 +57,7 @@ module Data.Iteratee.ZoomCache (
   , filterTracksByName
   , filterTracks
 
-  , enumCacheFile
-  , enumStream
-  , enumStreamTrackNo
-
-  , iterHeaders
-
+  -- * Deprecated convenience functions
   , mapStream
   , mapPackets
   , mapSummaries
@@ -76,10 +100,12 @@ data Stream =
 
 ----------------------------------------------------------------------
 
+-- | Filter just the raw data
 enumPackets :: (Functor m, MonadIO m)
             => I.Enumeratee [Stream] [Packet] m a
 enumPackets = I.joinI . enumCTP . I.mapChunks (map (\(_,_,p) -> p))
 
+-- | Filter summaries at a particular summary level
 enumSummaryLevel :: (Functor m, MonadIO m)
                  => Int
                  -> I.Enumeratee [Stream] [ZoomSummary] m a
@@ -87,10 +113,12 @@ enumSummaryLevel level =
     I.joinI . enumSummaries .
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
 
+-- | Filter summaries at all levels
 enumSummaries :: (Functor m, MonadIO m)
               => I.Enumeratee [Stream] [ZoomSummary] m a
 enumSummaries = I.joinI . enumCTS .  I.mapChunks (map (\(_,_,s) -> s))
 
+-- | Filter raw data
 enumCTP :: (Functor m, MonadIO m)
         => I.Enumeratee [Stream] [(CacheFile, TrackNo, Packet)] m a
 enumCTP = I.mapChunks (catMaybes . map toCTP)
@@ -99,6 +127,7 @@ enumCTP = I.mapChunks (catMaybes . map toCTP)
         toCTP StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
         toCTP _                = Nothing
 
+-- | Filter summaries
 enumCTS :: (Functor m, MonadIO m)
         => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummary)] m a
 enumCTS = I.mapChunks (catMaybes . map toCTS)
@@ -107,6 +136,7 @@ enumCTS = I.mapChunks (catMaybes . map toCTS)
         toCTS StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
         toCTS _                 = Nothing
 
+-- | Filter to a given list of track names
 filterTracksByName :: (Functor m, MonadIO m)
                    => CacheFile
                    -> [ByteString]
@@ -118,6 +148,7 @@ filterTracksByName CacheFile{..} names = filterTracks tracks
         f :: TrackSpec -> Bool
         f ts = specName ts `elem` names
 
+-- | Filter to a given list of track numbers
 filterTracks :: (Functor m, MonadIO m)
              => [TrackNo]
              -> I.Enumeratee [Stream] [Stream] m a
@@ -140,6 +171,12 @@ enumCacheFile identifiers iter = do
 -- | An enumeratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
 -- This version skips parsing of all tracks other than the specified 'TrackNo'.
+--
+-- This function should only be used in applications where only one track is
+-- used from a file; if you need to process multiple tracks independently then
+-- give each an iteratee filtered by filterTracks or filterTracksByName, and
+-- run these in parallel on the output of 'enumCacheFile' or 'enumStream'.
+-- Using this function multiple times in parallel will duplicate some parsing.
 enumStreamTrackNo :: (Functor m, MonadIO m)
                   => CacheFile
                   -> TrackNo
