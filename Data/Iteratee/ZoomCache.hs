@@ -122,8 +122,8 @@ filterTracks tracks = I.filter fil
 enumCacheFile :: (Functor m, MonadIO m)
               => [IdentifyCodec]
               -> I.Enumeratee ByteString [Stream] m a
-enumCacheFile mappings iter = do
-    fi <- iterHeaders mappings
+enumCacheFile identifiers iter = do
+    fi <- iterHeaders identifiers
     enumStream fi iter
 
 -- | An enumeratee of zoom-cache data, after global and track headers
@@ -192,7 +192,7 @@ parseHeader h
 iterHeaders :: (Functor m, Monad m)
             => [IdentifyCodec]
             -> I.Iteratee ByteString m CacheFile
-iterHeaders mappings = iterGlobal >>= go
+iterHeaders identifiers = iterGlobal >>= go
     where
         iterGlobal :: (Functor m, Monad m)
                    => Iteratee ByteString m CacheFile
@@ -209,7 +209,7 @@ iterHeaders mappings = iterGlobal >>= go
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (B.pack header) of
                 Just TrackHeader -> do
-                    (trackNo, spec) <- readTrackHeader mappings
+                    (trackNo, spec) <- readTrackHeader identifiers
                     let fi' = fi{cfSpecs = IM.insert trackNo spec (cfSpecs fi)}
                     if (fiFull fi')
                         then return fi'
@@ -229,9 +229,9 @@ readGlobalHeader = do
 readTrackHeader :: (Functor m, Monad m)
                 => [IdentifyCodec]
                 -> Iteratee ByteString m (TrackNo, TrackSpec)
-readTrackHeader mappings = do
+readTrackHeader identifiers = do
     trackNo <- readInt32be
-    trackType <- readCodec mappings
+    trackType <- readCodec identifiers
     (drType, delta, zlib) <- readFlags
     rate <- readRational64be
     byteLength <- readInt32be
@@ -397,7 +397,7 @@ mapStream :: (Functor m, MonadIO m)
           => [IdentifyCodec]
           -> (Stream -> m ())
           -> Iteratee ByteString m ()
-mapStream mappings = I.joinI . enumCacheFile mappings . I.mapM_
+mapStream identifiers = I.joinI . enumCacheFile identifiers . I.mapM_
 {-# INLINABLE mapStream #-}
 
 -- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
@@ -405,7 +405,7 @@ mapPackets :: (Functor m, MonadIO m)
            => [IdentifyCodec]
            -> (Packet -> m ())
            -> Iteratee ByteString m ()
-mapPackets mappings f = mapStream mappings process
+mapPackets identifiers f = mapStream identifiers process
     where
         process StreamPacket{..} = f strmPacket
         process _                = return ()
@@ -416,7 +416,7 @@ mapSummaries :: (Functor m, MonadIO m)
              => [IdentifyCodec]
              -> (ZoomSummary -> m ())
              -> Iteratee ByteString m ()
-mapSummaries mappings f = mapStream mappings process
+mapSummaries identifiers f = mapStream identifiers process
     where
         process StreamSummary{..} = f strmSummary
         process _                 = return ()
@@ -432,12 +432,12 @@ readVersion = Version <$> readInt16be <*> readInt16be
 readCodec :: (Functor m, Monad m)
           => [IdentifyCodec]
           -> Iteratee ByteString m Codec
-readCodec mappings = do
+readCodec identifiers = do
     tt <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
-    maybe (error "Unknown track type") return (parseCodec mappings tt)
+    maybe (error "Unknown track type") return (parseCodec identifiers tt)
 
 parseCodec :: [IdentifyCodec] -> IdentifyCodec
-parseCodec mappings h = msum . map ($ h) $ mappings
+parseCodec identifiers h = msum . map ($ h) $ identifiers
 
 readFlags :: (Functor m, Monad m)
           => Iteratee ByteString m (DataRateType, Bool, Bool)

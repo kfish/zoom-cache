@@ -35,23 +35,23 @@ import Data.ZoomCache
 
 zoomInfoFile :: [IdentifyCodec]
              -> FilePath -> IO ()
-zoomInfoFile mappings path =
-    I.fileDriverRandom (iterHeaders mappings) path >>= info
+zoomInfoFile identifiers path =
+    I.fileDriverRandom (iterHeaders identifiers) path >>= info
 
 zoomDumpFile :: [IdentifyCodec]
              -> TrackNo -> FilePath -> IO ()
-zoomDumpFile mappings trackNo =
-    I.fileDriverRandom (mapStream mappings (dumpData trackNo))
+zoomDumpFile identifiers trackNo =
+    I.fileDriverRandom (mapStream identifiers (dumpData trackNo))
 
 zoomDumpSummary :: [IdentifyCodec]
                 -> TrackNo -> FilePath -> IO ()
-zoomDumpSummary mappings trackNo =
-    I.fileDriverRandom (mapStream mappings (dumpSummary trackNo))
+zoomDumpSummary identifiers trackNo =
+    I.fileDriverRandom (mapStream identifiers (dumpSummary trackNo))
 
 zoomDumpSummaryLevel :: [IdentifyCodec]
                      -> TrackNo -> Int -> FilePath -> IO ()
-zoomDumpSummaryLevel mappings trackNo lvl =
-    I.fileDriverRandom (mapStream mappings (dumpSummaryLevel trackNo lvl))
+zoomDumpSummaryLevel identifiers trackNo lvl =
+    I.fileDriverRandom (mapStream identifiers (dumpSummaryLevel trackNo lvl))
 
 ----------------------------------------------------------------------
 
