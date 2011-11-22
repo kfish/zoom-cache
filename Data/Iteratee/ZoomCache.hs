@@ -17,7 +17,27 @@
 -- Iteratee reading of ZoomCache files.
 ----------------------------------------------------------------------
 
-module Data.Iteratee.ZoomCache where
+module Data.Iteratee.ZoomCache (
+    Stream(..)
+
+  , enumPackets
+  , enumSummaryLevel
+  , enumSummaries
+  , enumCTP
+  , enumCTS
+  , filterTracksByName
+  , filterTracks
+
+  , enumCacheFile
+  , enumStream
+  , enumStreamTrackNo
+
+  , iterHeaders
+
+  , mapStream
+  , mapPackets
+  , mapSummaries
+) where
 
 import Control.Applicative
 import Control.Monad (msum, replicateM)
