@@ -25,15 +25,14 @@ module Data.ZoomCache.Numeric (
 
   , toSummaryDouble
 
-  , enumCacheFileDouble
-  , enumCacheFileSummaryDouble
+  , enumDouble
+  , enumSummaryDouble
 
   , module Data.ZoomCache
 ) where
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans (MonadIO)
-import Data.ByteString (ByteString)
 import Data.Int
 import qualified Data.Iteratee as I
 import Data.Maybe
@@ -124,25 +123,17 @@ toSummaryDataDouble s = numMkSummary
 
 ----------------------------------------------------------------------
 
-enumCacheFileDouble :: (Functor m, MonadIO m)
-                    => TrackNo
-                    -> I.Enumeratee ByteString [(TimeStamp, Double)] m a
-enumCacheFileDouble trackNo =
-    I.joinI . enumCacheFile standardIdentifiers .
-    I.joinI . filterTracks [trackNo] .
-    I.joinI . enumPackets .
-    I.mapChunks (concatMap f)
+enumDouble :: (Functor m, MonadIO m)
+           => I.Enumeratee [Stream] [(TimeStamp, Double)] m a
+enumDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
     where
         f :: Packet -> [(TimeStamp, Double)]
         f Packet{..} = zip packetTimeStamps (rawToDouble packetData)
 
-enumCacheFileSummaryDouble :: (Functor m, MonadIO m)
-                           => TrackNo
-                           -> Int
-                           -> I.Enumeratee ByteString [Summary Double] m a
-enumCacheFileSummaryDouble trackNo level =
-    I.joinI . enumCacheFile standardIdentifiers .
-    I.joinI . filterTracks [trackNo] .
+enumSummaryDouble :: (Functor m, MonadIO m)
+                  => Int
+                  -> I.Enumeratee [Stream] [Summary Double] m a
+enumSummaryDouble level =
     I.joinI . enumSummaryLevel level .
     I.mapChunks (catMaybes . map toSD)
     where
