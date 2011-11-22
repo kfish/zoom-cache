@@ -38,20 +38,19 @@ zoomInfoFile :: [IdentifyCodec]
 zoomInfoFile identifiers path =
     I.fileDriverRandom (iterHeaders identifiers) path >>= info
 
-zoomDumpFile :: [IdentifyCodec]
-             -> TrackNo -> FilePath -> IO ()
-zoomDumpFile identifiers trackNo =
-    I.fileDriverRandom (mapStream identifiers (dumpData trackNo))
+zoomDumpFile :: [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
+zoomDumpFile = dumpSomething dumpData
 
-zoomDumpSummary :: [IdentifyCodec]
-                -> TrackNo -> FilePath -> IO ()
-zoomDumpSummary identifiers trackNo =
-    I.fileDriverRandom (mapStream identifiers (dumpSummary trackNo))
+zoomDumpSummary :: [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
+zoomDumpSummary = dumpSomething dumpSummary
 
-zoomDumpSummaryLevel :: [IdentifyCodec]
-                     -> TrackNo -> Int -> FilePath -> IO ()
-zoomDumpSummaryLevel identifiers trackNo lvl =
-    I.fileDriverRandom (mapStream identifiers (dumpSummaryLevel trackNo lvl))
+zoomDumpSummaryLevel :: Int
+                     -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
+zoomDumpSummaryLevel lvl = dumpSomething (dumpSummaryLevel lvl)
+
+dumpSomething :: (Stream -> IO ()) -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
+dumpSomething f identifiers trackNo = I.fileDriverRandom
+    (I.joinI . enumCacheFile identifiers . I.joinI . filterTracks [trackNo] . I.mapM_ $ f)
 
 ----------------------------------------------------------------------
 
@@ -63,10 +62,8 @@ info CacheFile{..} = do
 streamRate :: Stream -> Maybe Rational
 streamRate s = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
 
-dumpData :: TrackNo -> Stream -> IO ()
-dumpData trackNo s@StreamPacket{..}
-    | strmTrack == trackNo = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
-    | otherwise            = return ()
+dumpData :: Stream -> IO ()
+dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
     where
         pretty = case streamRate s of
             Just r  -> prettyTimeStamp r
@@ -74,22 +71,20 @@ dumpData trackNo s@StreamPacket{..}
         tds = zip (map pretty (packetTimeStamps strmPacket)) vals
         vals = f (packetData strmPacket)
         f (ZoomRaw a) = map prettyRaw a
-dumpData _ _ = return ()
+dumpData _ = return ()
 
-dumpSummary :: TrackNo -> Stream -> IO ()
-dumpSummary trackNo s@StreamSummary{..}
-    | strmTrack == trackNo = case streamRate s of
+dumpSummary :: Stream -> IO ()
+dumpSummary s@StreamSummary{..} = case streamRate s of
         Just r  -> putStrLn $ f r strmSummary
         Nothing -> return ()
-    | otherwise            = return ()
     where
         f r (ZoomSummary a) = prettySummary r a
-dumpSummary _ _           = return ()
+dumpSummary _ = return ()
 
-dumpSummaryLevel :: TrackNo -> Int -> Stream -> IO ()
-dumpSummaryLevel trackNo level s@StreamSummary{..}
-    | level == opLevel strmSummary && strmTrack == trackNo = dumpSummary trackNo s
-    | otherwise                                            = return ()
+dumpSummaryLevel :: Int -> Stream -> IO ()
+dumpSummaryLevel level s@StreamSummary{..}
+    | level == opLevel strmSummary = dumpSummary s
+    | otherwise                    = return ()
     where opLevel (ZoomSummary a) = summaryLevel a
-dumpSummaryLevel _ _ _ = return ()
+dumpSummaryLevel _ _ = return ()
 
