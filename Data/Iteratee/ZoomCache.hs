@@ -62,8 +62,8 @@ enumCacheFilePackets :: (Functor m, MonadIO m)
                      -> I.Enumeratee ByteString [Packet] m a
 enumCacheFilePackets mappings trackNo =
     I.joinI . enumCacheFile mappings .
+    I.joinI . filterTracks [trackNo] .
     I.joinI . enumCTP .
-    I.joinI . I.filter (\(_,t,_) -> t == trackNo) .
     I.mapChunks (map (\(_,_,p) -> p))
 
 enumCacheFileSummaryLevel :: (Functor m, MonadIO m)
@@ -81,8 +81,8 @@ enumCacheFileSummaries :: (Functor m, MonadIO m)
                        -> I.Enumeratee ByteString [ZoomSummary] m a
 enumCacheFileSummaries mappings trackNo =
     I.joinI . enumCacheFile mappings .
+    I.joinI . filterTracks [trackNo] .
     I.joinI . enumCTS .
-    I.joinI . I.filter (\(_,t,_) -> t == trackNo) .
     I.mapChunks (map (\(_,_,s) -> s))
 
 enumCTP :: (Functor m, MonadIO m)
