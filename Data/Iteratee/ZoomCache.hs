@@ -56,11 +56,6 @@ module Data.Iteratee.ZoomCache (
   , enumCTS
   , filterTracksByName
   , filterTracks
-
-  -- * Deprecated convenience functions
-  , mapStream
-  , mapPackets
-  , mapSummaries
 ) where
 
 import Control.Applicative
@@ -436,39 +431,6 @@ readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
                       => a -> Iteratee ByteString m (SummaryData a)
         readSummaryAs = const readSummary
 
-
-----------------------------------------------------------------------
--- Convenience functions
-
--- | Map a monadic 'Stream' processing function over an entire zoom-cache file.
-mapStream :: (Functor m, MonadIO m)
-          => [IdentifyCodec]
-          -> (Stream -> m ())
-          -> Iteratee ByteString m ()
-mapStream identifiers = I.joinI . enumCacheFile identifiers . I.mapM_
-{-# INLINABLE mapStream #-}
-
--- | Map a monadic 'Packet' processing function over an entire zoom-cache file.
-mapPackets :: (Functor m, MonadIO m)
-           => [IdentifyCodec]
-           -> (Packet -> m ())
-           -> Iteratee ByteString m ()
-mapPackets identifiers f = mapStream identifiers process
-    where
-        process StreamPacket{..} = f strmPacket
-        process _                = return ()
-{-# INLINABLE mapPackets #-}
-
--- | Map a monadic 'Summary' processing function over an entire zoom-cache file.
-mapSummaries :: (Functor m, MonadIO m)
-             => [IdentifyCodec]
-             -> (ZoomSummary -> m ())
-             -> Iteratee ByteString m ()
-mapSummaries identifiers f = mapStream identifiers process
-    where
-        process StreamSummary{..} = f strmSummary
-        process _                 = return ()
-{-# INLINABLE mapSummaries #-}
 
 ----------------------------------------------------------------------
 -- zoom-cache datatype parsers
