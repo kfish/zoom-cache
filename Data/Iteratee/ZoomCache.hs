@@ -56,31 +56,26 @@ data Stream =
 
 ----------------------------------------------------------------------
 
-enumCacheFilePackets :: (Functor m, MonadIO m)
-                     => [IdentifyCodec]
-                     -> TrackNo
-                     -> I.Enumeratee ByteString [Packet] m a
-enumCacheFilePackets mappings trackNo =
-    I.joinI . enumCacheFile mappings .
+enumPackets :: (Functor m, MonadIO m)
+            => TrackNo
+            -> I.Enumeratee [Stream] [Packet] m a
+enumPackets trackNo =
     I.joinI . filterTracks [trackNo] .
     I.joinI . enumCTP .
     I.mapChunks (map (\(_,_,p) -> p))
 
-enumCacheFileSummaryLevel :: (Functor m, MonadIO m)
-                          => [IdentifyCodec]
-                          -> TrackNo
-                          -> Int
-                          -> I.Enumeratee ByteString [ZoomSummary] m a
-enumCacheFileSummaryLevel mappings trackNo level =
-    I.joinI . enumCacheFileSummaries mappings trackNo .
+enumSummaryLevel :: (Functor m, MonadIO m)
+                 => TrackNo
+                 -> Int
+                 -> I.Enumeratee [Stream] [ZoomSummary] m a
+enumSummaryLevel trackNo level =
+    I.joinI . enumSummaries trackNo .
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
 
-enumCacheFileSummaries :: (Functor m, MonadIO m)
-                       => [IdentifyCodec]
-                       -> TrackNo
-                       -> I.Enumeratee ByteString [ZoomSummary] m a
-enumCacheFileSummaries mappings trackNo =
-    I.joinI . enumCacheFile mappings .
+enumSummaries :: (Functor m, MonadIO m)
+              => TrackNo
+              -> I.Enumeratee [Stream] [ZoomSummary] m a
+enumSummaries trackNo =
     I.joinI . filterTracks [trackNo] .
     I.joinI . enumCTS .
     I.mapChunks (map (\(_,_,s) -> s))
