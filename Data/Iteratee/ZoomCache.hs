@@ -61,7 +61,8 @@ enumCacheFilePackets :: (Functor m, MonadIO m)
                      -> TrackNo
                      -> I.Enumeratee ByteString [Packet] m a
 enumCacheFilePackets mappings trackNo =
-    I.joinI . enumCacheFileCTP mappings .
+    I.joinI . enumCacheFile mappings .
+    I.joinI . enumCTP .
     I.joinI . I.filter (\(_,t,_) -> t == trackNo) .
     I.mapChunks (map (\(_,_,p) -> p))
 
@@ -79,25 +80,22 @@ enumCacheFileSummaries :: (Functor m, MonadIO m)
                        -> TrackNo
                        -> I.Enumeratee ByteString [ZoomSummary] m a
 enumCacheFileSummaries mappings trackNo =
-    I.joinI . enumCacheFileCTS mappings .
+    I.joinI . enumCacheFile mappings .
+    I.joinI . enumCTS .
     I.joinI . I.filter (\(_,t,_) -> t == trackNo) .
     I.mapChunks (map (\(_,_,s) -> s))
 
-enumCacheFileCTP :: (Functor m, MonadIO m)
-                 => [IdentifyCodec]
-                 -> I.Enumeratee ByteString [(CacheFile, TrackNo, Packet)] m a
-enumCacheFileCTP mappings = I.joinI . enumCacheFile mappings .
-                            I.mapChunks (catMaybes . map toCTP)
+enumCTP :: (Functor m, MonadIO m)
+        => I.Enumeratee [Stream] [(CacheFile, TrackNo, Packet)] m a
+enumCTP = I.mapChunks (catMaybes . map toCTP)
     where
         toCTP :: Stream -> Maybe (CacheFile, TrackNo, Packet)
         toCTP StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
         toCTP _                = Nothing
 
-enumCacheFileCTS :: (Functor m, MonadIO m)
-                 => [IdentifyCodec]
-                 -> I.Enumeratee ByteString [(CacheFile, TrackNo, ZoomSummary)] m a
-enumCacheFileCTS mappings = I.joinI . enumCacheFile mappings .
-                            I.mapChunks (catMaybes . map toCTS)
+enumCTS :: (Functor m, MonadIO m)
+        => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummary)] m a
+enumCTS = I.mapChunks (catMaybes . map toCTS)
     where
         toCTS :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummary)
         toCTS StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
