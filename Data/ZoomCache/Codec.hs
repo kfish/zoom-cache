@@ -27,6 +27,7 @@ module Data.ZoomCache.Codec (
     , ZoomWrite(..)
 
     -- * Identification
+    , IdentifyCodec
     , identifyCodec
 
     -- * Raw data reading iteratees
