@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -114,7 +115,9 @@ instance ZoomReadable Float where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Float) #-}
+#endif
 
 instance ZoomWrite Float where
     write = writeData
@@ -160,10 +163,12 @@ instance ZoomNum Float where
     numMkSummary = SummaryFloat
     numMkSummaryWork = SummaryWorkFloat
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Float -> Builder #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Float -> SummaryData Float #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Float -> TimeStampDiff -> SummaryData Float -> SummaryData Float #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Float -> SummaryWork Float -> SummaryWork Float #-}
+#endif
 
 ----------------------------------------------------------------------
 -- Double
@@ -188,7 +193,9 @@ instance ZoomReadable Double where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Double) #-}
+#endif
 
 instance ZoomWrite Double where
     write = writeData
@@ -234,10 +241,12 @@ instance ZoomNum Double where
     numMkSummary = SummaryDouble
     numMkSummaryWork = SummaryWorkDouble
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Double -> Builder #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Double -> SummaryData Double #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Double -> TimeStampDiff -> SummaryData Double -> SummaryData Double #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Double -> SummaryWork Double -> SummaryWork Double #-}
+#endif
 
 ----------------------------------------------------------------------
 

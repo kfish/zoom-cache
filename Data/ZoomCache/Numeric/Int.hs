@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -207,7 +208,9 @@ instance ZoomReadable Int where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int) #-}
+#endif
 
 instance ZoomWrite Int where
     write = writeData
@@ -254,11 +257,13 @@ instance ZoomNum Int where
     numMkSummary = SummaryInt
     numMkSummaryWork = SummaryWorkInt
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int -> TimeStampDiff -> SummaryData Int -> SummaryData Int #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int -> SummaryWork Int -> SummaryWork Int #-}
+#endif
 
 ----------------------------------------------------------------------
 -- Int8
@@ -283,7 +288,9 @@ instance ZoomReadable Int8 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int8) #-}
+#endif
 
 instance ZoomWrite Int8 where
     write = writeData
@@ -330,11 +337,13 @@ instance ZoomNum Int8 where
     numMkSummary = SummaryInt8
     numMkSummaryWork = SummaryWorkInt8
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int8 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int8 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int8 -> SummaryData Int8 #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int8 -> TimeStampDiff -> SummaryData Int8 -> SummaryData Int8 #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int8 -> SummaryWork Int8 -> SummaryWork Int8 #-}
+#endif
 
 ----------------------------------------------------------------------
 -- Int16
@@ -359,7 +368,9 @@ instance ZoomReadable Int16 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int16) #-}
+#endif
 
 instance ZoomWrite Int16 where
     write = writeData
@@ -406,11 +417,13 @@ instance ZoomNum Int16 where
     numMkSummary = SummaryInt16
     numMkSummaryWork = SummaryWorkInt16
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int16 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int16 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int16 -> SummaryData Int16 #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int16 -> TimeStampDiff -> SummaryData Int16 -> SummaryData Int16 #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int16 -> SummaryWork Int16 -> SummaryWork Int16 #-}
+#endif
 
 ----------------------------------------------------------------------
 -- Int32
@@ -435,7 +448,9 @@ instance ZoomReadable Int32 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int32) #-}
+#endif
 
 instance ZoomWrite Int32 where
     write = writeData
@@ -482,11 +497,13 @@ instance ZoomNum Int32 where
     numMkSummary = SummaryInt32
     numMkSummaryWork = SummaryWorkInt32
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int32 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int32 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int32 -> SummaryData Int32 #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int32 -> TimeStampDiff -> SummaryData Int32 -> SummaryData Int32 #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int32 -> SummaryWork Int32 -> SummaryWork Int32 #-}
+#endif
 
 ----------------------------------------------------------------------
 -- Int64
@@ -511,7 +528,9 @@ instance ZoomReadable Int64 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int64) #-}
+#endif
 
 instance ZoomWrite Int64 where
     write = writeData
@@ -558,11 +577,13 @@ instance ZoomNum Int64 where
     numMkSummary = SummaryInt64
     numMkSummaryWork = SummaryWorkInt64
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int64 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int64 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int64 -> SummaryData Int64 #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int64 -> TimeStampDiff -> SummaryData Int64 -> SummaryData Int64 #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int64 -> SummaryWork Int64 -> SummaryWork Int64 #-}
+#endif
 
 ----------------------------------------------------------------------
 -- Integer
@@ -587,7 +608,9 @@ instance ZoomReadable Integer where
 
     deltaDecodeRaw    = deltaDecodeNum
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Integer) #-}
+#endif
 
 instance ZoomWrite Integer where
     write = writeData
@@ -634,10 +657,12 @@ instance ZoomNum Integer where
     numMkSummary = SummaryInteger
     numMkSummaryWork = error "numMkSummaryWork undefined for Integer"
 
+#if __GHC_VERSION__ >= 700
 {-# SPECIALIZE fromSummaryNum :: SummaryData Integer -> Builder #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Integer -> SummaryData Integer #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Integer -> TimeStampDiff -> SummaryData Integer -> SummaryData Integer #-}
 {-# SPECIALIZE updateSummaryNum :: TimeStamp -> Integer -> SummaryWork Integer -> SummaryWork Integer #-}
+#endif
 
 initSummaryInteger :: TimeStamp -> SummaryWork Integer
 initSummaryInteger entry = SummaryWorkInteger entry Nothing 0 Nothing Nothing 0.0 0.0
