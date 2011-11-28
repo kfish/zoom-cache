@@ -176,7 +176,7 @@ instance ZoomReadable Word where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word) #-}
 #endif
 
@@ -224,7 +224,7 @@ instance ZoomNum Word where
     numMkSummary = SummaryWord
     numMkSummaryWork = SummaryWorkWord
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word -> SummaryData Word #-}
@@ -253,7 +253,7 @@ instance ZoomReadable Word8 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word8) #-}
 #endif
 
@@ -301,7 +301,7 @@ instance ZoomNum Word8 where
     numMkSummary = SummaryWord8
     numMkSummaryWork = SummaryWorkWord8
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word8 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word8 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word8 -> SummaryData Word8 #-}
@@ -330,7 +330,7 @@ instance ZoomReadable Word16 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word16) #-}
 #endif
 
@@ -378,7 +378,7 @@ instance ZoomNum Word16 where
     numMkSummary = SummaryWord16
     numMkSummaryWork = SummaryWorkWord16
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word16 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word16 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word16 -> SummaryData Word16 #-}
@@ -407,7 +407,7 @@ instance ZoomReadable Word32 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word32) #-}
 #endif
 
@@ -455,7 +455,7 @@ instance ZoomNum Word32 where
     numMkSummary = SummaryWord32
     numMkSummaryWork = SummaryWorkWord32
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word32 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word32 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word32 -> SummaryData Word32 #-}
@@ -484,7 +484,7 @@ instance ZoomReadable Word64 where
     prettyRaw         = show
     prettySummaryData = prettySummaryWord
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Word64) #-}
 #endif
 
@@ -532,7 +532,7 @@ instance ZoomNum Word64 where
     numMkSummary = SummaryWord64
     numMkSummaryWork = SummaryWorkWord64
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word64 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word64 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word64 -> SummaryData Word64 #-}

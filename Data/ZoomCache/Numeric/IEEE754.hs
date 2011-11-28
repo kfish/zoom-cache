@@ -115,7 +115,7 @@ instance ZoomReadable Float where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Float) #-}
 #endif
 
@@ -163,7 +163,7 @@ instance ZoomNum Float where
     numMkSummary = SummaryFloat
     numMkSummaryWork = SummaryWorkFloat
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Float -> Builder #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Float -> SummaryData Float #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Float -> TimeStampDiff -> SummaryData Float -> SummaryData Float #-}
@@ -193,7 +193,7 @@ instance ZoomReadable Double where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Double) #-}
 #endif
 
@@ -241,7 +241,7 @@ instance ZoomNum Double where
     numMkSummary = SummaryDouble
     numMkSummaryWork = SummaryWorkDouble
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Double -> Builder #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Double -> SummaryData Double #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Double -> TimeStampDiff -> SummaryData Double -> SummaryData Double #-}

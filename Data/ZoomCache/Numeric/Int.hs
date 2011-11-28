@@ -208,7 +208,7 @@ instance ZoomReadable Int where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int) #-}
 #endif
 
@@ -257,7 +257,7 @@ instance ZoomNum Int where
     numMkSummary = SummaryInt
     numMkSummaryWork = SummaryWorkInt
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
@@ -288,7 +288,7 @@ instance ZoomReadable Int8 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int8) #-}
 #endif
 
@@ -337,7 +337,7 @@ instance ZoomNum Int8 where
     numMkSummary = SummaryInt8
     numMkSummaryWork = SummaryWorkInt8
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int8 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int8 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int8 -> SummaryData Int8 #-}
@@ -368,7 +368,7 @@ instance ZoomReadable Int16 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int16) #-}
 #endif
 
@@ -417,7 +417,7 @@ instance ZoomNum Int16 where
     numMkSummary = SummaryInt16
     numMkSummaryWork = SummaryWorkInt16
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int16 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int16 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int16 -> SummaryData Int16 #-}
@@ -448,7 +448,7 @@ instance ZoomReadable Int32 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int32) #-}
 #endif
 
@@ -497,7 +497,7 @@ instance ZoomNum Int32 where
     numMkSummary = SummaryInt32
     numMkSummaryWork = SummaryWorkInt32
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int32 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int32 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int32 -> SummaryData Int32 #-}
@@ -528,7 +528,7 @@ instance ZoomReadable Int64 where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Int64) #-}
 #endif
 
@@ -577,7 +577,7 @@ instance ZoomNum Int64 where
     numMkSummary = SummaryInt64
     numMkSummaryWork = SummaryWorkInt64
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int64 -> Builder #-}
 {-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int64 #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int64 -> SummaryData Int64 #-}
@@ -608,7 +608,7 @@ instance ZoomReadable Integer where
 
     deltaDecodeRaw    = deltaDecodeNum
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE readSummaryNum :: (Functor m, Monad m) => Iteratee ByteString m (SummaryData Integer) #-}
 #endif
 
@@ -657,7 +657,7 @@ instance ZoomNum Integer where
     numMkSummary = SummaryInteger
     numMkSummaryWork = error "numMkSummaryWork undefined for Integer"
 
-#if __GHC_VERSION__ >= 700
+#if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Integer -> Builder #-}
 {-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Integer -> SummaryData Integer #-}
 {-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Integer -> TimeStampDiff -> SummaryData Integer -> SummaryData Integer #-}
