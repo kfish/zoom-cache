@@ -407,6 +407,36 @@ diskSummary fWork trackNo TrackWork{..} = case twWriter of
 finishWork :: TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder)
 finishWork _trackNo (ZoomWork l cw) = (ZoomWork IM.empty cw, finishLevels l)
 
+{-
+
+When finishing the writing of a file, we want the final, highest-level
+summary block to contain data for the entire range of the file:
+
+   1:  [ ] [ ] [ ] [ ]
+        \   /   \   /
+   2:    [ ]     [ ]
+          \_     _/
+            \   /
+   3:        [ ]
+
+However this is not usually the case -- unless, by chance, exactly 2^n level 1
+summary blocks have been written.
+
+So, we traverse all saved summary levels, and flush a summary at each level. In
+order to do so we force all saved summary data to be flushed, and push that
+saved data up to higher levels. In this way the contents of the final level 1
+summary block are bubbled through the tree and appended to all saved summary
+blocks.
+
+   1:  [ ] [ ] [x]
+        \   /  |||  Block x is propagated to the next summary level,
+   2:    [s]   [x]  where it is appended to saved block s.
+          \_    |
+            \   /
+   3:        [ ]
+
+-}
+
 -- Flush saved summaries at all levels, to ensure that all summary levels
 -- contain data for the entire time range. In particular, the highest level
 -- of summary should contain one block for the entire range of the file,
