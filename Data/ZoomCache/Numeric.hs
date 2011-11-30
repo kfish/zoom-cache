@@ -25,6 +25,7 @@ module Data.ZoomCache.Numeric (
 
   , toSummaryDouble
 
+  , wholeTrackSummaryDouble
   , enumDouble
   , enumSummaryDouble
 
@@ -33,6 +34,7 @@ module Data.ZoomCache.Numeric (
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans (MonadIO)
+import Data.ByteString (ByteString)
 import Data.Int
 import qualified Data.Iteratee as I
 import Data.Maybe
@@ -122,6 +124,18 @@ toSummaryDataDouble s = numMkSummary
     (numRMS s)
 
 ----------------------------------------------------------------------
+
+-- | Read the summary of an entire track.
+wholeTrackSummaryDouble :: (Functor m, MonadIO m)
+                        => [IdentifyCodec]
+                        -> TrackNo
+                        -> I.Iteratee ByteString m (Summary Double)
+wholeTrackSummaryDouble identifiers trackNo = I.joinI $ enumCacheFile identifiers .
+    I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
+    where
+        e = I.joinI . enumSummaries . I.mapChunks (catMaybes . map toSD)
+        toSD :: ZoomSummary -> Maybe (Summary Double)
+        toSD (ZoomSummary s) = toSummaryDouble s
 
 enumDouble :: (Functor m, MonadIO m)
            => I.Enumeratee [Stream] [(TimeStamp, Double)] m a
