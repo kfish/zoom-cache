@@ -43,6 +43,7 @@ module Data.Iteratee.ZoomCache (
 
   -- * Reading zoom-cache files and ByteStrings
   , enumCacheFile
+  , wholeTrackSummary
 
   , iterHeaders
   , enumStream
@@ -92,6 +93,19 @@ data Stream =
         , strmTrack   :: TrackNo
         , strmSummary :: ZoomSummary
         }
+
+----------------------------------------------------------------------
+
+-- | Read the summary of an entire track.
+wholeTrackSummary :: (Functor m, MonadIO m)
+                  => [IdentifyCodec]
+                  -> TrackNo
+                  -> Iteratee ByteString m (TrackSpec, ZoomSummary)
+wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
+    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTS $ f <$> I.last
+    where
+        f :: (CacheFile, TrackNo, ZoomSummary) -> (TrackSpec, ZoomSummary)
+        f (cf, _, zs) = (fromJust $ IM.lookup trackNo (cfSpecs cf), zs)
 
 ----------------------------------------------------------------------
 
