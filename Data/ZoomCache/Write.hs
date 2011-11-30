@@ -57,6 +57,7 @@ import Data.Dynamic
 import qualified Data.Foldable as Fold
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
+import Data.List (foldl')
 import Data.Monoid
 import System.IO
 
@@ -112,20 +113,34 @@ withFileWrite :: TrackMap
               -> IO ()
 withFileWrite ztypes doRaw f path = do
     z <- openWrite ztypes doRaw path
-    z' <- execStateT (f >> flush) z
+    z' <- execStateT (f >> flush >> finish) z
     hClose (whHandle z')
 
 -- | Force a flush of ZoomCache summary blocks to disk. It is not usually
 -- necessary to call this function as summary blocks are transparently written
 -- at regular intervals.
 flush :: ZoomW ()
-flush = do
+flush = diskTracks flushSummary
+
+-- | Write final, whole-file summary blocks.
+--
+-- This function flushes saved summaries at all levels, to ensure that all
+-- summary levels contain data for the entire time range of the track.
+--
+-- In particular, the highest level of summary will contain one block for
+-- the entire range of the file, and this will be the last summary block
+-- in the track.
+finish :: ZoomW ()
+finish = diskTracks finishSummary
+
+diskTracks :: (TrackNo -> TrackWork -> ZoomW ()) -> ZoomW ()
+diskTracks fSummary = do
     h <- gets whHandle
     tracks <- gets whTrackWork
     doRaw <- gets whWriteData
     when doRaw $
         liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
-    mapM_ (uncurry flushSummary) (IM.assocs tracks)
+    mapM_ (uncurry fSummary) (IM.assocs tracks)
     pending <- mconcat . IM.elems <$> gets whDeferred
     liftIO . B.hPut h . toByteString $ pending
     modify $ \z -> z
@@ -374,17 +389,50 @@ updateWork !t !d (Just (ZoomWork l (Just cw))) =
 -- Summary
 
 flushSummary :: TrackNo -> TrackWork -> ZoomW ()
-flushSummary trackNo TrackWork{..} = case twWriter of
+flushSummary trackNo tw@TrackWork{..} =
+    diskSummary (flushWork twEntryTime twExitTime) trackNo tw
+
+finishSummary :: TrackNo -> TrackWork -> ZoomW ()
+finishSummary = diskSummary finishWork
+
+diskSummary :: (TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder))
+            -> TrackNo -> TrackWork -> ZoomW ()
+diskSummary fWork trackNo TrackWork{..} = case twWriter of
     Just writer -> do
-        let (writer', bs) = flushWork trackNo twEntryTime twExitTime writer
+        let (writer', bs) = fWork trackNo writer
         modify $ \z -> z { whDeferred = IM.unionWith mappend (whDeferred z) bs }
         modifyTrack trackNo (\ztt -> ztt { twWriter = Just writer' } )
     _           -> return ()
 
-flushWork :: TrackNo -> TimeStamp -> TimeStamp
-          -> ZoomWork -> (ZoomWork, IntMap Builder)
-flushWork _       _         _        op@(ZoomWork _ Nothing) = (op, IM.empty)
-flushWork trackNo entryTime exitTime (ZoomWork l (Just cw))  =
+finishWork :: TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder)
+finishWork _trackNo (ZoomWork l cw) = (ZoomWork IM.empty cw, finishLevels l)
+
+-- Flush saved summaries at all levels, to ensure that all summary levels
+-- contain data for the entire time range. In particular, the highest level
+-- of summary should contain one block for the entire range of the file,
+-- and this should be the last summary block in the track (as summary blocks
+-- are written in order of level)
+finishLevels :: (Typeable a, ZoomWritable a)
+             => IntMap (Summary a) -> IntMap Builder
+finishLevels l = snd $ foldl' propagate (Nothing, IM.empty) [1 .. fst $ IM.findMax l]
+    where
+        propagate (Nothing, bs) k = case IM.lookup k l of
+            Nothing    -> -- Nothing propagated, nothing saved
+                (Nothing, bs)
+            Just saved -> -- Nothing propagated, saved to flush: propagate saved
+                (Just (incLevel saved), IM.insert k (fromSummary saved) bs)
+        propagate (Just bub, bs) k = case IM.lookup k l of
+            Nothing    -> -- Something propagated to flush, nothing saved
+                (Just (incLevel bub), IM.insert k (fromSummary bub) bs)
+            Just saved -> -- Something propagated, something saved;
+                          -- append these, flush and propagate
+                let new = saved `appendSummary` bub in
+                (Just (incLevel new), IM.insert k (fromSummary new) bs)
+
+flushWork :: TimeStamp -> TimeStamp
+          -> TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder)
+flushWork _         _        _       op@(ZoomWork _ Nothing) = (op, IM.empty)
+flushWork entryTime exitTime trackNo (ZoomWork l (Just cw))  =
     (ZoomWork l' (Just cw), bs)
     where
         (bs, l') = pushSummary s IM.empty l
