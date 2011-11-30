@@ -211,6 +211,6 @@ class ZoomReadable a => ZoomWritable a where
     deltaEncodeRaw _ = id
 
 data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
-    { levels   :: IntMap (Summary a -> Summary a)
+    { levels   :: IntMap (Summary a)
     , currWork :: Maybe (SummaryWork a)
     }

@@ -399,17 +399,19 @@ flushWork trackNo entryTime exitTime (ZoomWork l (Just cw))  =
 
 pushSummary :: (ZoomWritable a)
             => Summary a
-            -> IntMap Builder -> IntMap (Summary a -> Summary a)
-            -> (IntMap Builder, IntMap (Summary a -> Summary a))
+            -> IntMap Builder -> IntMap (Summary a)
+            -> (IntMap Builder, IntMap (Summary a))
 pushSummary s bs l = do
     case IM.lookup (summaryLevel s) l of
-        Just g  -> pushSummary (g s) bs' cleared
-        Nothing -> (bs', inserted)
+        Just saved -> pushSummary (saved `appendSummary` s) bs' cleared
+        Nothing    -> (bs', inserted)
     where
         bs' = IM.insert (summaryLevel s) (fromSummary s) bs
-        f next = (s `appendSummary` next) { summaryLevel = summaryLevel s + 1 }
-        inserted = IM.insert (summaryLevel s) f l
+        inserted = IM.insert (summaryLevel s) (incLevel s) l
         cleared = IM.delete (summaryLevel s) l
+
+incLevel :: Summary a -> Summary a
+incLevel s =  s { summaryLevel = summaryLevel s + 1 }
 
 -- | Append two Summaries, merging statistical summary data.
 -- XXX: summaries are only compatible if tracks and levels are equal
