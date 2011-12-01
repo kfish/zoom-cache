@@ -3,7 +3,7 @@ Name:                zoom-cache
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             0.8.0.0
+Version:             0.8.1.0
 
 Synopsis:            A streamable, seekable, zoomable cache file format
 
