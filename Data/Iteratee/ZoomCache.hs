@@ -105,12 +105,13 @@ data Stream =
 wholeTrackSummary :: (Functor m, MonadIO m)
                   => [IdentifyCodec]
                   -> TrackNo
-                  -> Iteratee ByteString m (TrackSpec, ZoomSummarySO)
+                  -> Iteratee ByteString m (TrackSpec, ZoomSummary)
 wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
-        f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummarySO)
-        f (cf, _, zs) = (fromJust $ IM.lookup trackNo (cfSpecs cf), zs)
+        f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummary)
+        f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
+                             summaryFromCTSO ctso)
 
 ----------------------------------------------------------------------
 
