@@ -36,6 +36,9 @@ module Data.ZoomCache.Types (
     , ZoomWork(..)
 
     -- * Types
+    , Summary(..)
+    , summaryFromSummarySO
+
     , PacketSO(..)
     , SummarySO(..)
     , SummaryData()
@@ -134,6 +137,27 @@ data SummarySO a = SummarySO
 -- | The duration covered by a summary, in units of 1 / the track's datarate
 summarySODuration :: SummarySO a -> SampleOffsetDiff
 summarySODuration s = SODiff $ (unSO $ summarySOExit s) - (unSO $ summarySOEntry s)
+
+
+-- | A summary block with samplecounts converted to TimeStamp
+data Summary a = Summary
+    { summaryTrack :: {-# UNPACK #-}!TrackNo
+    , summaryLevel :: {-# UNPACK #-}!Int
+    , summaryEntry :: {-# UNPACK #-}!TimeStamp
+    , summaryExit  :: {-# UNPACK #-}!TimeStamp
+    , summaryData  :: !(SummaryData a)
+    }
+    deriving (Typeable)
+
+-- | Convert a SummarySo to a Summary, given a samplerate
+summaryFromSummarySO :: Rational -> SummarySO a -> Summary a
+summaryFromSummarySO r SummarySO{..} = Summary {
+      summaryTrack = summarySOTrack
+    , summaryLevel = summarySOLevel
+    , summaryEntry = timeStampFromSO r summarySOEntry
+    , summaryExit  = timeStampFromSO r summarySOExit
+    , summaryData  = summarySOData
+    } 
 
 ------------------------------------------------------------
 -- Read
