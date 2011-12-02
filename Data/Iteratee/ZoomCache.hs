@@ -50,10 +50,10 @@ module Data.Iteratee.ZoomCache (
   , enumStreamTrackNo
 
   -- * Stream enumeratees
-  , enumPackets
+  , enumPacketSOs
   , enumSummarySOLevel
   , enumSummarySOs
-  , enumCTP
+  , enumCTPSO
   , enumCTSO
   , filterTracksByName
   , filterTracks
@@ -86,7 +86,7 @@ data Stream =
     StreamPacket
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmPacket  :: Packet
+        , strmPacket  :: PacketSO
         }
     | StreamSummary
         { strmFile    :: CacheFile
@@ -110,9 +110,9 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 ----------------------------------------------------------------------
 
 -- | Filter just the raw data
-enumPackets :: (Functor m, MonadIO m)
-            => I.Enumeratee [Stream] [Packet] m a
-enumPackets = I.joinI . enumCTP . I.mapChunks (map (\(_,_,p) -> p))
+enumPacketSOs :: (Functor m, MonadIO m)
+              => I.Enumeratee [Stream] [PacketSO] m a
+enumPacketSOs = I.joinI . enumCTPSO . I.mapChunks (map (\(_,_,p) -> p))
 
 -- | Filter summaries at a particular summary level
 enumSummarySOLevel :: (Functor m, MonadIO m)
@@ -128,22 +128,22 @@ enumSummarySOs :: (Functor m, MonadIO m)
 enumSummarySOs = I.joinI . enumCTSO .  I.mapChunks (map (\(_,_,s) -> s))
 
 -- | Filter raw data
-enumCTP :: (Functor m, MonadIO m)
-        => I.Enumeratee [Stream] [(CacheFile, TrackNo, Packet)] m a
-enumCTP = I.mapChunks (catMaybes . map toCTP)
+enumCTPSO :: (Functor m, MonadIO m)
+          => I.Enumeratee [Stream] [(CacheFile, TrackNo, PacketSO)] m a
+enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
     where
-        toCTP :: Stream -> Maybe (CacheFile, TrackNo, Packet)
-        toCTP StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
-        toCTP _                = Nothing
+        toCTPSO :: Stream -> Maybe (CacheFile, TrackNo, PacketSO)
+        toCTPSO StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
+        toCTPSO _                = Nothing
 
 -- | Filter summaries
 enumCTSO :: (Functor m, MonadIO m)
          => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummarySO)] m a
-enumCTSO = I.mapChunks (catMaybes . map toCTS)
+enumCTSO = I.mapChunks (catMaybes . map toCTSO)
     where
-        toCTS :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
-        toCTS StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
-        toCTS _                 = Nothing
+        toCTSO :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
+        toCTSO StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
+        toCTSO _                 = Nothing
 
 -- | Filter to a given list of track names
 filterTracksByName :: (Functor m, MonadIO m)
@@ -305,7 +305,7 @@ enumInflateZlib = enumInflate Zlib defaultDecompressParams
 readPacketPred :: (Functor m, MonadIO m)
                => IntMap TrackSpec
                -> ((TrackNo, SampleOffset, SampleOffset) -> Bool)
-               -> Iteratee ByteString m (TrackNo, Maybe Packet)
+               -> Iteratee ByteString m (TrackNo, Maybe PacketSO)
 readPacketPred specs p = do
     trackNo <- readInt32be
     entryTime <- SO <$> readInt64be
@@ -323,13 +323,13 @@ readPacketPred specs p = do
 readPacketTrackNo :: (Functor m, MonadIO m)
                   => IntMap TrackSpec
                   -> TrackNo
-                  -> Iteratee ByteString m (TrackNo, Maybe Packet)
+                  -> Iteratee ByteString m (TrackNo, Maybe PacketSO)
 readPacketTrackNo specs wantTrackNo =
     readPacketPred specs (\(trackNo, _, _) -> trackNo == wantTrackNo)
 
 readPacket :: (Functor m, MonadIO m)
            => IntMap TrackSpec
-           -> Iteratee ByteString m (TrackNo, Maybe Packet)
+           -> Iteratee ByteString m (TrackNo, Maybe PacketSO)
 readPacket specs = readPacketPred specs (const True)
 
 readPacketData :: (Functor m, MonadIO m)
@@ -338,7 +338,7 @@ readPacketData :: (Functor m, MonadIO m)
                -> SampleOffset -> SampleOffset
                -> Int
                -> Int
-               -> Iteratee ByteString m (Maybe Packet)
+               -> Iteratee ByteString m (Maybe PacketSO)
 readPacketData specs trackNo entryTime exitTime count byteLength =
     case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
@@ -351,7 +351,7 @@ readPacketData specs trackNo entryTime exitTime count byteLength =
                     return $ runner1 $ I.enumPure1Chunk z readDTS
                 else readDTS
             return . Just $
-                (Packet trackNo entryTime exitTime count d ts)
+                (PacketSO trackNo entryTime exitTime count d ts)
         Nothing -> do
             I.drop byteLength
             return Nothing

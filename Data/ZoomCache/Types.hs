@@ -36,7 +36,7 @@ module Data.ZoomCache.Types (
     , ZoomWork(..)
 
     -- * Types
-    , Packet(..)
+    , PacketSO(..)
     , SummarySO(..)
     , SummaryData()
 
@@ -111,13 +111,13 @@ fiFull (CacheFile g specs) = IM.size specs == noTracks g
 
 ------------------------------------------------------------
 
-data Packet = Packet
-    { packetTrack      :: {-# UNPACK #-}!TrackNo
-    , packetEntryTime  :: {-# UNPACK #-}!SampleOffset
-    , packetExitTime   :: {-# UNPACK #-}!SampleOffset
-    , packetCount      :: {-# UNPACK #-}!Int
-    , packetData       :: !ZoomRaw
-    , packetSampleOffsets :: ![SampleOffset]
+data PacketSO = PacketSO
+    { packetSOTrack         :: {-# UNPACK #-}!TrackNo
+    , packetSOEntrySO       :: {-# UNPACK #-}!SampleOffset
+    , packetSOExitSO        :: {-# UNPACK #-}!SampleOffset
+    , packetSOCount         :: {-# UNPACK #-}!Int
+    , packetSOData          :: !ZoomRaw
+    , packetSOSampleOffsets :: ![SampleOffset]
     }
 
 ------------------------------------------------------------

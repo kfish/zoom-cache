@@ -139,10 +139,10 @@ wholeTrackSummarySODouble identifiers trackNo = I.joinI $ enumCacheFile identifi
 
 enumDouble :: (Functor m, MonadIO m)
            => I.Enumeratee [Stream] [(SampleOffset, Double)] m a
-enumDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
+enumDouble = I.joinI . enumPacketSOs . I.mapChunks (concatMap f)
     where
-        f :: Packet -> [(SampleOffset, Double)]
-        f Packet{..} = zip packetSampleOffsets (rawToDouble packetData)
+        f :: PacketSO -> [(SampleOffset, Double)]
+        f PacketSO{..} = zip packetSOSampleOffsets (rawToDouble packetSOData)
 
 enumSummarySODouble :: (Functor m, MonadIO m)
                     => Int

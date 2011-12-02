@@ -26,7 +26,7 @@ module Data.ZoomCache (
 
     , ZoomRaw(..)
     , ZoomSummarySO(..)
-    , Packet(..)
+    , PacketSO(..)
     , SummarySO(..)
 
     -- * Track specification

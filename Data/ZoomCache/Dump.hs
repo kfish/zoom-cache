@@ -68,8 +68,8 @@ dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
         pretty = case streamRate s of
             Just r  -> prettySampleOffset r
             Nothing -> show . unSO
-        tds = zip (map pretty (packetSampleOffsets strmPacket)) vals
-        vals = f (packetData strmPacket)
+        tds = zip (map pretty (packetSOSampleOffsets strmPacket)) vals
+        vals = f (packetSOData strmPacket)
         f (ZoomRaw a) = map prettyRaw a
 dumpData _ = return ()
 
