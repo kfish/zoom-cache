@@ -37,6 +37,8 @@ module Data.ZoomCache.Types (
     , ZoomWork(..)
 
     -- * Types
+    , Packet(..)
+    , packetFromPacketSO
     , Summary(..)
     , summaryFromSummarySO
 
@@ -117,11 +119,30 @@ fiFull (CacheFile g specs) = IM.size specs == noTracks g
 
 data PacketSO = PacketSO
     { packetSOTrack         :: {-# UNPACK #-}!TrackNo
-    , packetSOEntrySO       :: {-# UNPACK #-}!SampleOffset
-    , packetSOExitSO        :: {-# UNPACK #-}!SampleOffset
+    , packetSOEntry         :: {-# UNPACK #-}!SampleOffset
+    , packetSOExit          :: {-# UNPACK #-}!SampleOffset
     , packetSOCount         :: {-# UNPACK #-}!Int
     , packetSOData          :: !ZoomRaw
     , packetSOSampleOffsets :: ![SampleOffset]
+    }
+
+data Packet = Packet
+    { packetTrack      :: {-# UNPACK #-}!TrackNo
+    , packetEntry      :: {-# UNPACK #-}!TimeStamp
+    , packetExit       :: {-# UNPACK #-}!TimeStamp
+    , packetCount      :: {-# UNPACK #-}!Int
+    , packetData       :: !ZoomRaw
+    , packetTimeStamps :: ![TimeStamp]
+    }
+
+packetFromPacketSO :: Rational -> PacketSO -> Packet
+packetFromPacketSO r PacketSO{..} = Packet {
+      packetTrack = packetSOTrack
+    , packetEntry = timeStampFromSO r packetSOEntry
+    , packetExit  = timeStampFromSO r packetSOExit
+    , packetCount = packetSOCount
+    , packetData  = packetSOData
+    , packetTimeStamps = map (timeStampFromSO r) packetSOSampleOffsets
     }
 
 ------------------------------------------------------------
