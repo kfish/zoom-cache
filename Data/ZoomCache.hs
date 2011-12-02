@@ -31,6 +31,10 @@ module Data.ZoomCache (
     , ZoomReadable(..)
 
     , ZoomRaw(..)
+    , ZoomSummary(..)
+    , Packet(..)
+    , Summary(..)
+
     , ZoomSummarySO(..)
     , PacketSO(..)
     , SummarySO(..)
