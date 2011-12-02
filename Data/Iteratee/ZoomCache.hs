@@ -50,6 +50,7 @@ module Data.Iteratee.ZoomCache (
   , enumStreamTrackNo
 
   -- * Stream enumeratees
+  , enumPackets
   , enumSummaryLevel
   , enumSummaries
   , filterTracksByName
@@ -110,6 +111,19 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     where
         f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummarySO)
         f (cf, _, zs) = (fromJust $ IM.lookup trackNo (cfSpecs cf), zs)
+
+----------------------------------------------------------------------
+
+-- | Filter just the raw data
+enumPackets :: (Functor m, MonadIO m)
+            => I.Enumeratee [Stream] [Packet] m a
+enumPackets = I.joinI . enumCTPSO . I.mapChunks (map packetFromCTPSO)
+
+-- | Convert a CTSO triple into a ZoomSummary
+packetFromCTPSO :: (CacheFile, TrackNo, PacketSO) -> Packet
+packetFromCTPSO (cf, trackNo, pso) = packetFromPacketSO r pso
+    where
+        r = specRate . fromJust . IM.lookup trackNo . cfSpecs $ cf
 
 ----------------------------------------------------------------------
 
