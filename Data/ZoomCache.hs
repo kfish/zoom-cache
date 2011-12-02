@@ -25,9 +25,9 @@ module Data.ZoomCache (
     , ZoomReadable(..)
 
     , ZoomRaw(..)
-    , ZoomSummary(..)
+    , ZoomSummarySO(..)
     , Packet(..)
-    , Summary(..)
+    , SummarySO(..)
 
     -- * Track specification
     , TrackMap

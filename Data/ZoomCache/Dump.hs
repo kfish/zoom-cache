@@ -78,13 +78,13 @@ dumpSummary s@StreamSummary{..} = case streamRate s of
         Just r  -> putStrLn $ f r strmSummary
         Nothing -> return ()
     where
-        f r (ZoomSummary a) = prettySummary r a
+        f r (ZoomSummarySO a) = prettySummarySO r a
 dumpSummary _ = return ()
 
 dumpSummaryLevel :: Int -> Stream -> IO ()
 dumpSummaryLevel level s@StreamSummary{..}
     | level == opLevel strmSummary = dumpSummary s
     | otherwise                    = return ()
-    where opLevel (ZoomSummary a) = summaryLevel a
+    where opLevel (ZoomSummarySO a) = summarySOLevel a
 dumpSummaryLevel _ _ = return ()
 

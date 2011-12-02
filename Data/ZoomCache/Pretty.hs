@@ -17,7 +17,7 @@ module Data.ZoomCache.Pretty (
       prettyGlobal
     , prettyTrackSpec
     , prettySampleOffset
-    , prettySummary
+    , prettySummarySO
 ) where
 
 import qualified Data.ByteString.Char8 as C
@@ -72,22 +72,22 @@ prettySampleOffset r (SO t)
           (minT, secN) = quotRem secT 60
           (hrs, minN) = quotRem minT 60
 
--- | Pretty-print a 'Summary', given a datarate
-prettySummary :: ZoomReadable a => Rational -> Summary a -> String
-prettySummary r s = concat
-    [ prettySummaryTimes r s
-    , prettySummaryLevel s
-    , prettySummaryData (summaryData s)
+-- | Pretty-print a 'SummarySO', given a datarate
+prettySummarySO :: ZoomReadable a => Rational -> SummarySO a -> String
+prettySummarySO r s = concat
+    [ prettySummarySOTimes r s
+    , prettySummarySOLevel s
+    , prettySummaryData (summarySOData s)
     ]
 
-prettySummaryTimes :: Rational -> Summary a -> String
-prettySummaryTimes r s = concat
-    [ "[", (prettySampleOffset r $ summaryEntrySO s)
-    , "-", (prettySampleOffset r $ summaryExitSO s), "] "
+prettySummarySOTimes :: Rational -> SummarySO a -> String
+prettySummarySOTimes r s = concat
+    [ "[", (prettySampleOffset r $ summarySOEntry s)
+    , "-", (prettySampleOffset r $ summarySOExit s), "] "
     ]
 
-prettySummaryLevel :: Summary a -> String
-prettySummaryLevel s = printf "lvl: %d" (summaryLevel s)
+prettySummarySOLevel :: SummarySO a -> String
+prettySummarySOLevel s = printf "lvl: %d" (summarySOLevel s)
 
 ----------------------------------------------------------------------
 

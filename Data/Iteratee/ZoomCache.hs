@@ -51,10 +51,10 @@ module Data.Iteratee.ZoomCache (
 
   -- * Stream enumeratees
   , enumPackets
-  , enumSummaryLevel
-  , enumSummaries
+  , enumSummarySOLevel
+  , enumSummarySOs
   , enumCTP
-  , enumCTS
+  , enumCTSO
   , filterTracksByName
   , filterTracks
 ) where
@@ -91,7 +91,7 @@ data Stream =
     | StreamSummary
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
-        , strmSummary :: ZoomSummary
+        , strmSummary :: ZoomSummarySO
         }
 
 ----------------------------------------------------------------------
@@ -100,11 +100,11 @@ data Stream =
 wholeTrackSummary :: (Functor m, MonadIO m)
                   => [IdentifyCodec]
                   -> TrackNo
-                  -> Iteratee ByteString m (TrackSpec, ZoomSummary)
+                  -> Iteratee ByteString m (TrackSpec, ZoomSummarySO)
 wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTS $ f <$> I.last
+    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
-        f :: (CacheFile, TrackNo, ZoomSummary) -> (TrackSpec, ZoomSummary)
+        f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummarySO)
         f (cf, _, zs) = (fromJust $ IM.lookup trackNo (cfSpecs cf), zs)
 
 ----------------------------------------------------------------------
@@ -115,17 +115,17 @@ enumPackets :: (Functor m, MonadIO m)
 enumPackets = I.joinI . enumCTP . I.mapChunks (map (\(_,_,p) -> p))
 
 -- | Filter summaries at a particular summary level
-enumSummaryLevel :: (Functor m, MonadIO m)
-                 => Int
-                 -> I.Enumeratee [Stream] [ZoomSummary] m a
-enumSummaryLevel level =
-    I.joinI . enumSummaries .
-    I.filter (\(ZoomSummary s) -> summaryLevel s == level)
+enumSummarySOLevel :: (Functor m, MonadIO m)
+                   => Int
+                   -> I.Enumeratee [Stream] [ZoomSummarySO] m a
+enumSummarySOLevel level =
+    I.joinI . enumSummarySOs .
+    I.filter (\(ZoomSummarySO s) -> summarySOLevel s == level)
 
 -- | Filter summaries at all levels
-enumSummaries :: (Functor m, MonadIO m)
-              => I.Enumeratee [Stream] [ZoomSummary] m a
-enumSummaries = I.joinI . enumCTS .  I.mapChunks (map (\(_,_,s) -> s))
+enumSummarySOs :: (Functor m, MonadIO m)
+               => I.Enumeratee [Stream] [ZoomSummarySO] m a
+enumSummarySOs = I.joinI . enumCTSO .  I.mapChunks (map (\(_,_,s) -> s))
 
 -- | Filter raw data
 enumCTP :: (Functor m, MonadIO m)
@@ -137,11 +137,11 @@ enumCTP = I.mapChunks (catMaybes . map toCTP)
         toCTP _                = Nothing
 
 -- | Filter summaries
-enumCTS :: (Functor m, MonadIO m)
-        => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummary)] m a
-enumCTS = I.mapChunks (catMaybes . map toCTS)
+enumCTSO :: (Functor m, MonadIO m)
+         => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummarySO)] m a
+enumCTSO = I.mapChunks (catMaybes . map toCTS)
     where
-        toCTS :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummary)
+        toCTS :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
         toCTS StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
         toCTS _                 = Nothing
 
@@ -391,7 +391,7 @@ readPacketData specs trackNo entryTime exitTime count byteLength =
 readSummaryBlockPred :: (Functor m, Monad m)
                      => IntMap TrackSpec
                      -> ((TrackNo, Int, SampleOffset, SampleOffset) -> Bool)
-                     -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
+                     -> Iteratee ByteString m (TrackNo, Maybe ZoomSummarySO)
 readSummaryBlockPred specs p = do
     trackNo <- readInt32be
     lvl <- readInt32be
@@ -409,13 +409,13 @@ readSummaryBlockPred specs p = do
 readSummaryBlockTrackNo :: (Functor m, Monad m)
                         => IntMap TrackSpec
                         -> TrackNo
-                        -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
+                        -> Iteratee ByteString m (TrackNo, Maybe ZoomSummarySO)
 readSummaryBlockTrackNo specs wantTrackNo =
     readSummaryBlockPred specs (\(trackNo, _, _, _) -> trackNo == wantTrackNo)
 
 readSummaryBlock :: (Functor m, Monad m)
                  => IntMap TrackSpec
-                 -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
+                 -> Iteratee ByteString m (TrackNo, Maybe ZoomSummarySO)
 readSummaryBlock specs = readSummaryBlockPred specs (const True)
 
 readSummaryBlockData :: (Functor m, Monad m)
@@ -424,7 +424,7 @@ readSummaryBlockData :: (Functor m, Monad m)
                      -> Int
                      -> SampleOffset -> SampleOffset
                      -> Int
-                     -> Iteratee ByteString m (Maybe ZoomSummary)
+                     -> Iteratee ByteString m (Maybe ZoomSummarySO)
 readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
     case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
@@ -437,9 +437,9 @@ readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
     where
         readSummaryCodec :: (Functor m, Monad m)
                          => Codec
-                         -> Iteratee ByteString m ZoomSummary
+                         -> Iteratee ByteString m ZoomSummarySO
         readSummaryCodec (Codec a) = do
-            ZoomSummary <$> (Summary trackNo lvl entryTime exitTime <$> readSummaryAs a)
+            ZoomSummarySO <$> (SummarySO trackNo lvl entryTime exitTime <$> readSummaryAs a)
 
         readSummaryAs :: (ZoomReadable a, Functor m, Monad m)
                       => a -> Iteratee ByteString m (SummaryData a)

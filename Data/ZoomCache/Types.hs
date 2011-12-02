@@ -31,16 +31,16 @@ module Data.ZoomCache.Types (
 
     , ZoomRaw(..)
 
-    , ZoomSummary(..)
+    , ZoomSummarySO(..)
 
     , ZoomWork(..)
 
     -- * Types
     , Packet(..)
-    , Summary(..)
+    , SummarySO(..)
     , SummaryData()
 
-    , summaryDuration
+    , summarySODuration
 
     -- * CacheFile
     , CacheFile(..)
@@ -122,18 +122,18 @@ data Packet = Packet
 
 ------------------------------------------------------------
 -- | A recorded block of summary data
-data Summary a = Summary
-    { summaryTrack   :: {-# UNPACK #-}!TrackNo
-    , summaryLevel   :: {-# UNPACK #-}!Int
-    , summaryEntrySO :: {-# UNPACK #-}!SampleOffset
-    , summaryExitSO  :: {-# UNPACK #-}!SampleOffset
-    , summaryData    :: !(SummaryData a)
+data SummarySO a = SummarySO
+    { summarySOTrack :: {-# UNPACK #-}!TrackNo
+    , summarySOLevel :: {-# UNPACK #-}!Int
+    , summarySOEntry :: {-# UNPACK #-}!SampleOffset
+    , summarySOExit  :: {-# UNPACK #-}!SampleOffset
+    , summarySOData  :: !(SummaryData a)
     }
     deriving (Typeable)
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
-summaryDuration :: Summary a -> SampleOffsetDiff
-summaryDuration s = SODiff $ (unSO $ summaryExitSO s) - (unSO $ summaryEntrySO s)
+summarySODuration :: SummarySO a -> SampleOffsetDiff
+summarySODuration s = SODiff $ (unSO $ summarySOExit s) - (unSO $ summarySOEntry s)
 
 ------------------------------------------------------------
 -- Read
@@ -173,7 +173,7 @@ class Typeable a => ZoomReadable a where
 
 data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
-data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
+data ZoomSummarySO = forall a . ZoomReadable a => ZoomSummarySO (SummarySO a)
 
 ------------------------------------------------------------
 -- Write
@@ -211,6 +211,6 @@ class ZoomReadable a => ZoomWritable a where
     deltaEncodeRaw _ = id
 
 data ZoomWork = forall a . (Typeable a, ZoomWritable a) => ZoomWork
-    { levels   :: IntMap (Summary a)
+    { levels   :: IntMap (SummarySO a)
     , currWork :: Maybe (SummaryWork a)
     }

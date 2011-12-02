@@ -120,7 +120,7 @@ withFileWrite ztypes doRaw f path = do
 -- necessary to call this function as summary blocks are transparently written
 -- at regular intervals.
 flush :: ZoomW ()
-flush = diskTracks flushSummary
+flush = diskTracks flushSummarySO
 
 -- | Write final, whole-file summary blocks.
 --
@@ -131,16 +131,16 @@ flush = diskTracks flushSummary
 -- the entire range of the file, and this will be the last summary block
 -- in the track.
 finish :: ZoomW ()
-finish = diskTracks finishSummary
+finish = diskTracks finishSummarySO
 
 diskTracks :: (TrackNo -> TrackWork -> ZoomW ()) -> ZoomW ()
-diskTracks fSummary = do
+diskTracks fSummarySO = do
     h <- gets whHandle
     tracks <- gets whTrackWork
     doRaw <- gets whWriteData
     when doRaw $
         liftIO $ Fold.mapM_ (L.hPut h) $ IM.mapWithKey bsFromTrack tracks
-    mapM_ (uncurry fSummary) (IM.assocs tracks)
+    mapM_ (uncurry fSummarySO) (IM.assocs tracks)
     pending <- mconcat . IM.elems <$> gets whDeferred
     liftIO . B.hPut h . toByteString $ pending
     modify $ \z -> z
@@ -386,18 +386,18 @@ updateWork !t !d (Just (ZoomWork l (Just cw))) =
             Nothing -> Nothing
 
 ----------------------------------------------------------------------
--- Summary
+-- SummarySO
 
-flushSummary :: TrackNo -> TrackWork -> ZoomW ()
-flushSummary trackNo tw@TrackWork{..} =
-    diskSummary (flushWork twEntryTime twExitTime) trackNo tw
+flushSummarySO :: TrackNo -> TrackWork -> ZoomW ()
+flushSummarySO trackNo tw@TrackWork{..} =
+    diskSummarySO (flushWork twEntryTime twExitTime) trackNo tw
 
-finishSummary :: TrackNo -> TrackWork -> ZoomW ()
-finishSummary = diskSummary finishWork
+finishSummarySO :: TrackNo -> TrackWork -> ZoomW ()
+finishSummarySO = diskSummarySO finishWork
 
-diskSummary :: (TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder))
+diskSummarySO :: (TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder))
             -> TrackNo -> TrackWork -> ZoomW ()
-diskSummary fWork trackNo TrackWork{..} = case twWriter of
+diskSummarySO fWork trackNo TrackWork{..} = case twWriter of
     Just writer -> do
         let (writer', bs) = fWork trackNo writer
         modify $ \z -> z { whDeferred = IM.unionWith mappend (whDeferred z) bs }
@@ -443,21 +443,21 @@ blocks.
 -- and this should be the last summary block in the track (as summary blocks
 -- are written in order of level)
 finishLevels :: (Typeable a, ZoomWritable a)
-             => IntMap (Summary a) -> IntMap Builder
+             => IntMap (SummarySO a) -> IntMap Builder
 finishLevels l = snd $ foldl' propagate (Nothing, IM.empty) [1 .. fst $ IM.findMax l]
     where
         propagate (Nothing, bs) k = case IM.lookup k l of
             Nothing    -> -- Nothing propagated, nothing saved
                 (Nothing, bs)
             Just saved -> -- Nothing propagated, saved to flush: propagate saved
-                (Just (incLevel saved), IM.insert k (fromSummary saved) bs)
+                (Just (incLevel saved), IM.insert k (fromSummarySO saved) bs)
         propagate (Just bub, bs) k = case IM.lookup k l of
             Nothing    -> -- Something propagated to flush, nothing saved
-                (Just (incLevel bub), IM.insert k (fromSummary bub) bs)
+                (Just (incLevel bub), IM.insert k (fromSummarySO bub) bs)
             Just saved -> -- Something propagated, something saved;
                           -- append these, flush and propagate
-                let new = saved `appendSummary` bub in
-                (Just (incLevel new), IM.insert k (fromSummary new) bs)
+                let new = saved `appendSummarySO` bub in
+                (Just (incLevel new), IM.insert k (fromSummarySO new) bs)
 
 flushWork :: SampleOffset -> SampleOffset
           -> TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder)
@@ -465,45 +465,45 @@ flushWork _         _        _       op@(ZoomWork _ Nothing) = (op, IM.empty)
 flushWork entrySO exitSO trackNo (ZoomWork l (Just cw))  =
     (ZoomWork l' (Just cw), bs)
     where
-        (bs, l') = pushSummary s IM.empty l
-        s = Summary
-            { summaryTrack = trackNo
-            , summaryLevel = 1
-            , summaryEntrySO = entrySO
-            , summaryExitSO = exitSO
-            , summaryData = toSummaryData dur cw
+        (bs, l') = pushSummarySO s IM.empty l
+        s = SummarySO
+            { summarySOTrack = trackNo
+            , summarySOLevel = 1
+            , summarySOEntry = entrySO
+            , summarySOExit = exitSO
+            , summarySOData = toSummaryData dur cw
             }
         dur = sampleOffsetDiff exitSO entrySO
 
-pushSummary :: (ZoomWritable a)
-            => Summary a
-            -> IntMap Builder -> IntMap (Summary a)
-            -> (IntMap Builder, IntMap (Summary a))
-pushSummary s bs l = do
-    case IM.lookup (summaryLevel s) l of
-        Just saved -> pushSummary (saved `appendSummary` s) bs' cleared
+pushSummarySO :: (ZoomWritable a)
+            => SummarySO a
+            -> IntMap Builder -> IntMap (SummarySO a)
+            -> (IntMap Builder, IntMap (SummarySO a))
+pushSummarySO s bs l = do
+    case IM.lookup (summarySOLevel s) l of
+        Just saved -> pushSummarySO (saved `appendSummarySO` s) bs' cleared
         Nothing    -> (bs', inserted)
     where
-        bs' = IM.insert (summaryLevel s) (fromSummary s) bs
-        inserted = IM.insert (summaryLevel s) (incLevel s) l
-        cleared = IM.delete (summaryLevel s) l
+        bs' = IM.insert (summarySOLevel s) (fromSummarySO s) bs
+        inserted = IM.insert (summarySOLevel s) (incLevel s) l
+        cleared = IM.delete (summarySOLevel s) l
 
-incLevel :: Summary a -> Summary a
-incLevel s =  s { summaryLevel = summaryLevel s + 1 }
+incLevel :: SummarySO a -> SummarySO a
+incLevel s =  s { summarySOLevel = summarySOLevel s + 1 }
 
 -- | Append two Summaries, merging statistical summary data.
 -- XXX: summaries are only compatible if tracks and levels are equal
-appendSummary :: (ZoomWritable a) => Summary a -> Summary a -> Summary a
-appendSummary s1 s2 = Summary
-    { summaryTrack = summaryTrack s1
-    , summaryLevel = summaryLevel s1
-    , summaryEntrySO = summaryEntrySO s1
-    , summaryExitSO = summaryExitSO s2
-    , summaryData = appendSummaryData (dur s1) (summaryData s1)
-                                      (dur s2) (summaryData s2)
+appendSummarySO :: (ZoomWritable a) => SummarySO a -> SummarySO a -> SummarySO a
+appendSummarySO s1 s2 = SummarySO
+    { summarySOTrack = summarySOTrack s1
+    , summarySOLevel = summarySOLevel s1
+    , summarySOEntry = summarySOEntry s1
+    , summarySOExit = summarySOExit s2
+    , summarySOData = appendSummaryData (dur s1) (summarySOData s1)
+                                        (dur s2) (summarySOData s2)
     }
     where
-        dur = summaryDuration
+        dur = summarySODuration
 
 ------------------------------------------------------------
 

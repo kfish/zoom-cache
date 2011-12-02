@@ -18,7 +18,7 @@ module Blaze.ByteString.Builder.ZoomCache.Internal (
     -- * Builders
       fromFlags
     , fromGlobal
-    , fromSummary
+    , fromSummarySO
     , fromTrackNo
     , fromCodec
 ) where
@@ -59,19 +59,19 @@ fromGlobal Global{..} = mconcat
     , fromByteString $ C.pack (replicate 20 '\0') -- UTCTime
     ]
 
-fromSummary :: ZoomWritable a => Summary a -> Builder
-fromSummary s@Summary{..} = mconcat [ fromSummaryHeader s, l, d]
+fromSummarySO :: ZoomWritable a => SummarySO a -> Builder
+fromSummarySO s@SummarySO{..} = mconcat [ fromSummarySOHeader s, l, d]
     where
-        d = fromSummaryData summaryData
+        d = fromSummaryData summarySOData
         l = fromIntegral32be . B.length . toByteString $ d
 
-fromSummaryHeader :: Summary a -> Builder
-fromSummaryHeader s = mconcat
+fromSummarySOHeader :: SummarySO a -> Builder
+fromSummarySOHeader s = mconcat
     [ fromByteString summaryHeader
-    , fromIntegral32be . summaryTrack $ s
-    , fromIntegral32be . summaryLevel $ s
-    , fromSampleOffset . summaryEntrySO $ s
-    , fromSampleOffset . summaryExitSO $ s
+    , fromIntegral32be . summarySOTrack $ s
+    , fromIntegral32be . summarySOLevel $ s
+    , fromSampleOffset . summarySOEntry $ s
+    , fromSampleOffset . summarySOExit $ s
     ]
 
 fromTrackNo :: TrackNo -> Builder
