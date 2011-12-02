@@ -31,6 +31,7 @@ module Data.ZoomCache.Types (
 
     , ZoomRaw(..)
 
+    , ZoomSummary(..)
     , ZoomSummarySO(..)
 
     , ZoomWork(..)
@@ -198,6 +199,8 @@ class Typeable a => ZoomReadable a where
 data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 
 data ZoomSummarySO = forall a . ZoomReadable a => ZoomSummarySO (SummarySO a)
+
+data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 
 ------------------------------------------------------------
 -- Write

@@ -50,13 +50,17 @@ module Data.Iteratee.ZoomCache (
   , enumStreamTrackNo
 
   -- * Stream enumeratees
+  , enumSummaryLevel
+  , enumSummaries
+  , filterTracksByName
+  , filterTracks
+
+  -- * Low-level access to SampleOffsets
   , enumPacketSOs
   , enumSummarySOLevel
   , enumSummarySOs
   , enumCTPSO
   , enumCTSO
-  , filterTracksByName
-  , filterTracks
 ) where
 
 import Control.Applicative
@@ -106,6 +110,28 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     where
         f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummarySO)
         f (cf, _, zs) = (fromJust $ IM.lookup trackNo (cfSpecs cf), zs)
+
+----------------------------------------------------------------------
+
+-- | Filter summaries at a particular summary level
+enumSummaryLevel :: (Functor m, MonadIO m)
+                 => Int
+                 -> I.Enumeratee [Stream] [ZoomSummary] m a
+enumSummaryLevel level =
+    I.joinI . enumSummaries .
+    I.filter (\(ZoomSummary s) -> summaryLevel s == level)
+
+-- | Filter summaries at all levels
+enumSummaries :: (Functor m, MonadIO m)
+              => I.Enumeratee [Stream] [ZoomSummary] m a
+enumSummaries = I.joinI . enumCTSO .  I.mapChunks (map summaryFromCTSO)
+
+-- | Convert a CTSO triple into a ZoomSummary
+summaryFromCTSO :: (CacheFile, TrackNo, ZoomSummarySO) -> ZoomSummary
+summaryFromCTSO (cf, trackNo, (ZoomSummarySO zso)) =
+    ZoomSummary (summaryFromSummarySO r zso)
+    where
+        r = specRate . fromJust . IM.lookup trackNo . cfSpecs $ cf
 
 ----------------------------------------------------------------------
 
