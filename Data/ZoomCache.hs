@@ -14,11 +14,11 @@
 
 module Data.ZoomCache (
     -- * Types
-      TimeStamp(..)
+      SampleOffset(..)
     , TrackNo
     , Codec(..)
     , IdentifyCodec
-    , DataRateType(..)
+    , SampleRateType(..)
 
     , CacheFile(..)
 

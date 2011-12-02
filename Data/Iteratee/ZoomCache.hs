@@ -304,12 +304,12 @@ enumInflateZlib = enumInflate Zlib defaultDecompressParams
 
 readPacketPred :: (Functor m, MonadIO m)
                => IntMap TrackSpec
-               -> ((TrackNo, TimeStamp, TimeStamp) -> Bool)
+               -> ((TrackNo, SampleOffset, SampleOffset) -> Bool)
                -> Iteratee ByteString m (TrackNo, Maybe Packet)
 readPacketPred specs p = do
     trackNo <- readInt32be
-    entryTime <- TS <$> readInt64be
-    exitTime <- TS <$> readInt64be
+    entryTime <- SO <$> readInt64be
+    exitTime <- SO <$> readInt64be
     count <- readInt32be
     byteLength <- readInt32be
     packet <- if (p (trackNo, entryTime, exitTime))
@@ -335,7 +335,7 @@ readPacket specs = readPacketPred specs (const True)
 readPacketData :: (Functor m, MonadIO m)
                => IntMap TrackSpec
                -> TrackNo
-               -> TimeStamp -> TimeStamp
+               -> SampleOffset -> SampleOffset
                -> Int
                -> Int
                -> Iteratee ByteString m (Maybe Packet)
@@ -343,8 +343,8 @@ readPacketData specs trackNo entryTime exitTime count byteLength =
     case IM.lookup trackNo specs of
         Just TrackSpec{..} -> do
             let readDTS :: (Functor m, Monad m)
-                        => Iteratee ByteString m (ZoomRaw, [TimeStamp])
-                readDTS = readDataTimeStamps specType specDeltaEncode specDRType
+                        => Iteratee ByteString m (ZoomRaw, [SampleOffset])
+                readDTS = readDataSampleOffsets specType specDeltaEncode specSRType
             (d, ts) <- if specZlibCompress
                 then do
                     z <- I.joinI $ enumInflateZlib I.stream2stream
@@ -371,32 +371,32 @@ readPacketData specs trackNo entryTime exitTime count byteLength =
                   => a -> Iteratee ByteString m a
         readRawAs = const readRaw
 
-        readDataTimeStamps :: (Functor m, Monad m)
-                           => Codec -> Bool -> DataRateType
-                           -> Iteratee ByteString m (ZoomRaw, [TimeStamp])
-        readDataTimeStamps codec delta drType = do
+        readDataSampleOffsets :: (Functor m, Monad m)
+                           => Codec -> Bool -> SampleRateType
+                           -> Iteratee ByteString m (ZoomRaw, [SampleOffset])
+        readDataSampleOffsets codec delta drType = do
             d <- readRawCodec codec delta
-            ts <- readTimeStamps drType
+            ts <- readSampleOffsets drType
             return (d, ts)
 
-        readTimeStamps :: (Functor m, Monad m)
-                       => DataRateType
-                       -> Iteratee ByteString m [TimeStamp]
-        readTimeStamps drType = map TS <$> case drType of
-            ConstantDR -> do
-                return $ take count [unTS entryTime ..]
-            VariableDR -> do
+        readSampleOffsets :: (Functor m, Monad m)
+                       => SampleRateType
+                       -> Iteratee ByteString m [SampleOffset]
+        readSampleOffsets drType = map SO <$> case drType of
+            ConstantSR -> do
+                return $ take count [unSO entryTime ..]
+            VariableSR -> do
                 deltaDecode <$> replicateM count readInt64be
 
 readSummaryBlockPred :: (Functor m, Monad m)
                      => IntMap TrackSpec
-                     -> ((TrackNo, Int, TimeStamp, TimeStamp) -> Bool)
+                     -> ((TrackNo, Int, SampleOffset, SampleOffset) -> Bool)
                      -> Iteratee ByteString m (TrackNo, Maybe ZoomSummary)
 readSummaryBlockPred specs p = do
     trackNo <- readInt32be
     lvl <- readInt32be
-    entryTime <- TS <$> readInt64be
-    exitTime <- TS <$> readInt64be
+    entryTime <- SO <$> readInt64be
+    exitTime <- SO <$> readInt64be
     byteLength <- readInt32be
     summary <- if (p (trackNo, lvl, entryTime, exitTime))
         then do
@@ -422,7 +422,7 @@ readSummaryBlockData :: (Functor m, Monad m)
                      => IntMap TrackSpec
                      -> TrackNo
                      -> Int
-                     -> TimeStamp -> TimeStamp
+                     -> SampleOffset -> SampleOffset
                      -> Int
                      -> Iteratee ByteString m (Maybe ZoomSummary)
 readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
@@ -464,12 +464,12 @@ parseCodec :: [IdentifyCodec] -> IdentifyCodec
 parseCodec identifiers h = msum . map ($ h) $ identifiers
 
 readFlags :: (Functor m, Monad m)
-          => Iteratee ByteString m (DataRateType, Bool, Bool)
+          => Iteratee ByteString m (SampleRateType, Bool, Bool)
 readFlags = do
     (n :: Int16) <- readInt16be
     let drType = case n .&. 1 of
-            0 -> ConstantDR
-            _ -> VariableDR
+            0 -> ConstantSR
+            _ -> VariableSR
         delta = case n .&. 2 of
             0 -> False
             _ -> True

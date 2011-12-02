@@ -17,7 +17,7 @@
 
 Default codec implementation for values of type (). Elements of type ()
 are useful for marking events, and variable rate tracks written with
-type (TimeStamp, ()) are useful for recording times of events.
+type (SampleOffset, ()) are useful for recording times of events.
 
 This module implements the interfaces documented in "Data.ZoomCache.Codec".
 
@@ -102,7 +102,7 @@ prettySummaryUnit SummaryUnit{..} = printf "count: %d" summaryUnitCount
 instance ZoomWrite () where
     write = writeData
 
-instance ZoomWrite (TimeStamp, ()) where
+instance ZoomWrite (SampleOffset, ()) where
     write = writeDataVBR
 
 instance ZoomWritable () where
@@ -118,12 +118,12 @@ instance ZoomWritable () where
     updateSummaryData = updateSummaryUnit
     appendSummaryData = appendSummaryUnit
 
-initSummaryUnit :: TimeStamp -> SummaryWork ()
+initSummaryUnit :: SampleOffset -> SummaryWork ()
 initSummaryUnit _ = SummaryWorkUnit
     { swUnitCount = 0
     }
 
-mkSummaryUnit :: TimeStampDiff -> SummaryWork () -> SummaryData ()
+mkSummaryUnit :: SampleOffsetDiff -> SummaryWork () -> SummaryData ()
 mkSummaryUnit _dur SummaryWorkUnit{..} = SummaryUnit
     { summaryUnitCount = swUnitCount
     }
@@ -133,14 +133,14 @@ fromSummaryUnit SummaryUnit{..} = mconcat $ map fromIntegral32be
     [ summaryUnitCount
     ]
 
-updateSummaryUnit :: TimeStamp  -> () -> SummaryWork ()
+updateSummaryUnit :: SampleOffset  -> () -> SummaryWork ()
                  -> SummaryWork ()
 updateSummaryUnit _t _ SummaryWorkUnit{..} = SummaryWorkUnit
     { swUnitCount = swUnitCount + 1
     }
 
-appendSummaryUnit :: TimeStampDiff -> SummaryData ()
-                  -> TimeStampDiff -> SummaryData ()
+appendSummaryUnit :: SampleOffsetDiff -> SummaryData ()
+                  -> SampleOffsetDiff -> SummaryData ()
                   -> SummaryData ()
 appendSummaryUnit _dur1 s1 _dur2 s2 = SummaryUnit
     { summaryUnitCount = summaryUnitCount s1 + summaryUnitCount s2

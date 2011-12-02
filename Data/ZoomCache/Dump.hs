@@ -66,9 +66,9 @@ dumpData :: Stream -> IO ()
 dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
     where
         pretty = case streamRate s of
-            Just r  -> prettyTimeStamp r
-            Nothing -> show . unTS
-        tds = zip (map pretty (packetTimeStamps strmPacket)) vals
+            Just r  -> prettySampleOffset r
+            Nothing -> show . unSO
+        tds = zip (map pretty (packetSampleOffsets strmPacket)) vals
         vals = f (packetData strmPacket)
         f (ZoomRaw a) = map prettyRaw a
 dumpData _ = return ()

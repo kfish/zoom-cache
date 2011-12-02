@@ -14,13 +14,13 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Common (
-    -- * TimeStamps
-      TimeStamp(..)
-    , TimeStampDiff(..)
-    , timeStampDiff
+    -- * SampleOffsets
+      SampleOffset(..)
+    , SampleOffsetDiff(..)
+    , sampleOffsetDiff
 
     -- * Types
-    , DataRateType(..)
+    , SampleRateType(..)
     , TrackNo
 
     -- * Global header
@@ -36,15 +36,15 @@ import Data.Int
 
 type TrackNo = Int
 
-data TimeStamp = TS { unTS :: {-# UNPACK #-}!Int64 }
+data SampleOffset = SO { unSO :: {-# UNPACK #-}!Int64 }
     deriving (Eq, Ord, Show)
 
-data TimeStampDiff = TSDiff { unTSDiff :: {-# UNPACK #-}!Int64 }
+data SampleOffsetDiff = SODiff { unSODiff :: {-# UNPACK #-}!Int64 }
     deriving (Eq, Ord, Show)
 
--- | @timeStampDiff (TS t1) (TS t2) = TSDiff (t1 - t2)@
-timeStampDiff :: TimeStamp -> TimeStamp -> TimeStampDiff
-timeStampDiff (TS t1) (TS t2) = TSDiff (t1 - t2)
+-- | @sampleOffsetDiff (SO t1) (SO t2) = SODiff (t1 - t2)@
+sampleOffsetDiff :: SampleOffset -> SampleOffset -> SampleOffsetDiff
+sampleOffsetDiff (SO t1) (SO t2) = SODiff (t1 - t2)
 
 data Version = Version !Int !Int
     deriving (Eq, Show)
@@ -58,10 +58,10 @@ data Global = Global
     }
     deriving (Show)
 
--- | Constant or Variable datarate.
--- For constant datarate, timestamps are implied as incrementing by 1/datarate
--- For variable datarate, explicit timestamps are attached to each datum, encoded
--- as a separate block of timestamps in the Raw Data packet.
-data DataRateType = ConstantDR | VariableDR
+-- | Constant or Variable samplerate.
+-- For constant samplerate, timestamps are implied as incrementing by 1/samplerate
+-- For variable samplerate, explicit timestamps are attached to each datum, encoded
+-- as a separate block of 'SampleOffset' in the Raw Data packet.
+data SampleRateType = ConstantSR | VariableSR
     deriving (Eq, Show)
 

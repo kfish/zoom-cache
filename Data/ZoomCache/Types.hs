@@ -68,7 +68,7 @@ data TrackSpec = TrackSpec
     { specType         :: !Codec
     , specDeltaEncode  :: !Bool
     , specZlibCompress :: !Bool
-    , specDRType       :: !DataRateType
+    , specSRType       :: !SampleRateType
     , specRate         :: {-# UNPACK #-}!Rational
     , specName         :: !ByteString
     }
@@ -113,27 +113,27 @@ fiFull (CacheFile g specs) = IM.size specs == noTracks g
 
 data Packet = Packet
     { packetTrack      :: {-# UNPACK #-}!TrackNo
-    , packetEntryTime  :: {-# UNPACK #-}!TimeStamp
-    , packetExitTime   :: {-# UNPACK #-}!TimeStamp
+    , packetEntryTime  :: {-# UNPACK #-}!SampleOffset
+    , packetExitTime   :: {-# UNPACK #-}!SampleOffset
     , packetCount      :: {-# UNPACK #-}!Int
     , packetData       :: !ZoomRaw
-    , packetTimeStamps :: ![TimeStamp]
+    , packetSampleOffsets :: ![SampleOffset]
     }
 
 ------------------------------------------------------------
 -- | A recorded block of summary data
 data Summary a = Summary
-    { summaryTrack     :: {-# UNPACK #-}!TrackNo
-    , summaryLevel     :: {-# UNPACK #-}!Int
-    , summaryEntryTime :: {-# UNPACK #-}!TimeStamp
-    , summaryExitTime  :: {-# UNPACK #-}!TimeStamp
-    , summaryData      :: !(SummaryData a)
+    { summaryTrack   :: {-# UNPACK #-}!TrackNo
+    , summaryLevel   :: {-# UNPACK #-}!Int
+    , summaryEntrySO :: {-# UNPACK #-}!SampleOffset
+    , summaryExitSO  :: {-# UNPACK #-}!SampleOffset
+    , summaryData    :: !(SummaryData a)
     }
     deriving (Typeable)
 
 -- | The duration covered by a summary, in units of 1 / the track's datarate
-summaryDuration :: Summary a -> TimeStampDiff
-summaryDuration s = TSDiff $ (unTS $ summaryExitTime s) - (unTS $ summaryEntryTime s)
+summaryDuration :: Summary a -> SampleOffsetDiff
+summaryDuration s = SODiff $ (unSO $ summaryExitSO s) - (unSO $ summaryEntrySO s)
 
 ------------------------------------------------------------
 -- Read
@@ -190,20 +190,20 @@ class ZoomReadable a => ZoomWritable a where
     fromSummaryData    :: SummaryData a -> Builder
 
     -- | Generate a new 'SummaryWork a', given an initial timestamp.
-    initSummaryWork    :: TimeStamp -> SummaryWork a
+    initSummaryWork    :: SampleOffset -> SummaryWork a
 
     -- | Update a 'SummaryData' with the value of 'a' occuring at the
-    -- given 'TimeStamp'.
-    updateSummaryData  :: TimeStamp -> a
+    -- given 'SampleOffset'.
+    updateSummaryData  :: SampleOffset -> a
                        -> SummaryWork a
                        -> SummaryWork a
 
     -- | Finalize a 'SummaryWork a', generating a 'SummaryData a'.
-    toSummaryData      :: TimeStampDiff -> SummaryWork a -> SummaryData a
+    toSummaryData      :: SampleOffsetDiff -> SummaryWork a -> SummaryData a
 
     -- | Append two 'SummaryData'
-    appendSummaryData  :: TimeStampDiff -> SummaryData a
-                       -> TimeStampDiff -> SummaryData a
+    appendSummaryData  :: SampleOffsetDiff -> SummaryData a
+                       -> SampleOffsetDiff -> SummaryData a
                        -> SummaryData a
 
     -- | Delta-encode a value.

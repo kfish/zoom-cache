@@ -16,7 +16,7 @@
 
 module Blaze.ByteString.Builder.ZoomCache (
     -- * Creating builders for ZoomCache types
-      fromTimeStamp
+      fromSampleOffset
 
     -- * Creating builders from numeric types used by ZoomCache
     , fromFloat
@@ -39,9 +39,9 @@ import Data.ZoomCache.Common
 -- Creating builders for ZoomCache types.
 
 -- | Serialize a 'TimeStamp' in 64bit big endian format.
-fromTimeStamp :: TimeStamp -> Builder
-fromTimeStamp = fromInt64be . fromIntegral . unTS
-{-# INLINE fromTimeStamp #-}
+fromSampleOffset :: SampleOffset -> Builder
+fromSampleOffset = fromInt64be . fromIntegral . unSO
+{-# INLINE fromSampleOffset #-}
 
 ----------------------------------------------------------------------
 -- Creating builders from numeric types used by ZoomCache.

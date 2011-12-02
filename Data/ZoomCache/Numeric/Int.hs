@@ -215,12 +215,12 @@ instance ZoomReadable Int where
 instance ZoomWrite Int where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Int) where
+instance ZoomWrite (SampleOffset, Int) where
     write = writeDataVBR
 
 instance ZoomWritable Int where
     data SummaryWork Int = SummaryWorkInt
-        { swIntTime  :: {-# UNPACK #-}!TimeStamp
+        { swIntTime  :: {-# UNPACK #-}!SampleOffset
         , swIntEntry :: !(Maybe Int)
         , swIntExit  :: {-# UNPACK #-}!Int
         , swIntMin   :: {-# UNPACK #-}!Int
@@ -246,7 +246,7 @@ instance ZoomNum Int where
     numAvg = summaryIntAvg
     numRMS = summaryIntRMS
 
-    numWorkTime = swIntTime
+    numWorkSO = swIntTime
     numWorkEntry = swIntEntry
     numWorkExit = swIntExit
     numWorkMin = swIntMin
@@ -259,10 +259,10 @@ instance ZoomNum Int where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int -> SummaryData Int #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int -> TimeStampDiff -> SummaryData Int -> SummaryData Int #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int -> SummaryWork Int -> SummaryWork Int #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Int #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Int -> SummaryData Int #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Int -> SampleOffsetDiff -> SummaryData Int -> SummaryData Int #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Int -> SummaryWork Int -> SummaryWork Int #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -295,12 +295,12 @@ instance ZoomReadable Int8 where
 instance ZoomWrite Int8 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Int8) where
+instance ZoomWrite (SampleOffset, Int8) where
     write = writeDataVBR
 
 instance ZoomWritable Int8 where
     data SummaryWork Int8 = SummaryWorkInt8
-        { swInt8Time  :: {-# UNPACK #-}!TimeStamp
+        { swInt8Time  :: {-# UNPACK #-}!SampleOffset
         , swInt8Entry :: !(Maybe Int8)
         , swInt8Exit  :: {-# UNPACK #-}!Int8
         , swInt8Min   :: {-# UNPACK #-}!Int8
@@ -326,7 +326,7 @@ instance ZoomNum Int8 where
     numAvg = summaryInt8Avg
     numRMS = summaryInt8RMS
 
-    numWorkTime = swInt8Time
+    numWorkSO = swInt8Time
     numWorkEntry = swInt8Entry
     numWorkExit = swInt8Exit
     numWorkMin = swInt8Min
@@ -339,10 +339,10 @@ instance ZoomNum Int8 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int8 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int8 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int8 -> SummaryData Int8 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int8 -> TimeStampDiff -> SummaryData Int8 -> SummaryData Int8 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int8 -> SummaryWork Int8 -> SummaryWork Int8 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Int8 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Int8 -> SummaryData Int8 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Int8 -> SampleOffsetDiff -> SummaryData Int8 -> SummaryData Int8 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Int8 -> SummaryWork Int8 -> SummaryWork Int8 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -375,12 +375,12 @@ instance ZoomReadable Int16 where
 instance ZoomWrite Int16 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Int16) where
+instance ZoomWrite (SampleOffset, Int16) where
     write = writeDataVBR
 
 instance ZoomWritable Int16 where
     data SummaryWork Int16 = SummaryWorkInt16
-        { swInt16Time  :: {-# UNPACK #-}!TimeStamp
+        { swInt16Time  :: {-# UNPACK #-}!SampleOffset
         , swInt16Entry :: !(Maybe Int16)
         , swInt16Exit  :: {-# UNPACK #-}!Int16
         , swInt16Min   :: {-# UNPACK #-}!Int16
@@ -406,7 +406,7 @@ instance ZoomNum Int16 where
     numAvg = summaryInt16Avg
     numRMS = summaryInt16RMS
 
-    numWorkTime = swInt16Time
+    numWorkSO = swInt16Time
     numWorkEntry = swInt16Entry
     numWorkExit = swInt16Exit
     numWorkMin = swInt16Min
@@ -419,10 +419,10 @@ instance ZoomNum Int16 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int16 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int16 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int16 -> SummaryData Int16 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int16 -> TimeStampDiff -> SummaryData Int16 -> SummaryData Int16 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int16 -> SummaryWork Int16 -> SummaryWork Int16 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Int16 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Int16 -> SummaryData Int16 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Int16 -> SampleOffsetDiff -> SummaryData Int16 -> SummaryData Int16 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Int16 -> SummaryWork Int16 -> SummaryWork Int16 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -455,12 +455,12 @@ instance ZoomReadable Int32 where
 instance ZoomWrite Int32 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Int32) where
+instance ZoomWrite (SampleOffset, Int32) where
     write = writeDataVBR
 
 instance ZoomWritable Int32 where
     data SummaryWork Int32 = SummaryWorkInt32
-        { swInt32Time  :: {-# UNPACK #-}!TimeStamp
+        { swInt32Time  :: {-# UNPACK #-}!SampleOffset
         , swInt32Entry :: !(Maybe Int32)
         , swInt32Exit  :: {-# UNPACK #-}!Int32
         , swInt32Min   :: {-# UNPACK #-}!Int32
@@ -486,7 +486,7 @@ instance ZoomNum Int32 where
     numAvg = summaryInt32Avg
     numRMS = summaryInt32RMS
 
-    numWorkTime = swInt32Time
+    numWorkSO = swInt32Time
     numWorkEntry = swInt32Entry
     numWorkExit = swInt32Exit
     numWorkMin = swInt32Min
@@ -499,10 +499,10 @@ instance ZoomNum Int32 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int32 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int32 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int32 -> SummaryData Int32 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int32 -> TimeStampDiff -> SummaryData Int32 -> SummaryData Int32 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int32 -> SummaryWork Int32 -> SummaryWork Int32 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Int32 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Int32 -> SummaryData Int32 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Int32 -> SampleOffsetDiff -> SummaryData Int32 -> SummaryData Int32 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Int32 -> SummaryWork Int32 -> SummaryWork Int32 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -535,12 +535,12 @@ instance ZoomReadable Int64 where
 instance ZoomWrite Int64 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Int64) where
+instance ZoomWrite (SampleOffset, Int64) where
     write = writeDataVBR
 
 instance ZoomWritable Int64 where
     data SummaryWork Int64 = SummaryWorkInt64
-        { swInt64Time  :: {-# UNPACK #-}!TimeStamp
+        { swInt64Time  :: {-# UNPACK #-}!SampleOffset
         , swInt64Entry :: !(Maybe Int64)
         , swInt64Exit  :: {-# UNPACK #-}!Int64
         , swInt64Min   :: {-# UNPACK #-}!Int64
@@ -566,7 +566,7 @@ instance ZoomNum Int64 where
     numAvg = summaryInt64Avg
     numRMS = summaryInt64RMS
 
-    numWorkTime = swInt64Time
+    numWorkSO = swInt64Time
     numWorkEntry = swInt64Entry
     numWorkExit = swInt64Exit
     numWorkMin = swInt64Min
@@ -579,10 +579,10 @@ instance ZoomNum Int64 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Int64 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Int64 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Int64 -> SummaryData Int64 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Int64 -> TimeStampDiff -> SummaryData Int64 -> SummaryData Int64 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Int64 -> SummaryWork Int64 -> SummaryWork Int64 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Int64 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Int64 -> SummaryData Int64 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Int64 -> SampleOffsetDiff -> SummaryData Int64 -> SummaryData Int64 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Int64 -> SummaryWork Int64 -> SummaryWork Int64 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -615,12 +615,12 @@ instance ZoomReadable Integer where
 instance ZoomWrite Integer where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Integer) where
+instance ZoomWrite (SampleOffset, Integer) where
     write = writeDataVBR
 
 instance ZoomWritable Integer where
     data SummaryWork Integer = SummaryWorkInteger
-        { swIntegerTime  :: {-# UNPACK #-}!TimeStamp
+        { swIntegerTime  :: {-# UNPACK #-}!SampleOffset
         , swIntegerEntry :: !(Maybe Integer)
         , swIntegerExit  :: !Integer
         , swIntegerMin   :: !(Maybe Integer)
@@ -646,7 +646,7 @@ instance ZoomNum Integer where
     numAvg = summaryIntegerAvg
     numRMS = summaryIntegerRMS
 
-    numWorkTime = swIntegerTime
+    numWorkSO = swIntegerTime
     numWorkEntry = swIntegerEntry
     numWorkExit = swIntegerExit
     numWorkMin = error "numWorkMin undefined for Integer"
@@ -659,16 +659,16 @@ instance ZoomNum Integer where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Integer -> Builder #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Integer -> SummaryData Integer #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Integer -> TimeStampDiff -> SummaryData Integer -> SummaryData Integer #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Integer -> SummaryWork Integer -> SummaryWork Integer #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Integer -> SummaryData Integer #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Integer -> SampleOffsetDiff -> SummaryData Integer -> SummaryData Integer #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Integer -> SummaryWork Integer -> SummaryWork Integer #-}
 #endif
 
-initSummaryInteger :: TimeStamp -> SummaryWork Integer
+initSummaryInteger :: SampleOffset -> SummaryWork Integer
 initSummaryInteger entry = SummaryWorkInteger entry Nothing 0 Nothing Nothing 0.0 0.0
 
-toSummaryInteger :: TimeStampDiff -> SummaryWork Integer -> SummaryData Integer
-toSummaryInteger (TSDiff dur) SummaryWorkInteger{..} = SummaryInteger
+toSummaryInteger :: SampleOffsetDiff -> SummaryWork Integer -> SummaryData Integer
+toSummaryInteger (SODiff dur) SummaryWorkInteger{..} = SummaryInteger
     { summaryIntegerEntry = fromMaybe 0 swIntegerEntry
     , summaryIntegerExit  = swIntegerExit
     , summaryIntegerMin = fromMaybe 0 swIntegerMin
@@ -677,7 +677,7 @@ toSummaryInteger (TSDiff dur) SummaryWorkInteger{..} = SummaryInteger
     , summaryIntegerRMS = sqrt $ swIntegerSumSq / fromIntegral dur
     }
 
-updateSummaryInteger :: TimeStamp -> Integer
+updateSummaryInteger :: SampleOffset -> Integer
                      -> SummaryWork Integer
                      -> SummaryWork Integer
 updateSummaryInteger t d SummaryWorkInteger{..} = SummaryWorkInteger
@@ -690,7 +690,7 @@ updateSummaryInteger t d SummaryWorkInteger{..} = SummaryWorkInteger
     , swIntegerSumSq = swIntegerSumSq + realToFrac (d*d * fromIntegral dur)
     }
     where
-        !(TSDiff dur) = timeStampDiff t swIntegerTime
+        !(SODiff dur) = sampleOffsetDiff t swIntegerTime
 
 ----------------------------------------------------------------------
 

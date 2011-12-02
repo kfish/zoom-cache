@@ -89,12 +89,12 @@ data ZoomWHandle = ZoomWHandle
 data TrackWork = TrackWork
     { twSpec      :: TrackSpec
     , twBuilder   :: Builder
-    , twReverseTS :: [TimeStamp]
+    , twReverseSO :: [SampleOffset]
     , twWriter    :: Maybe ZoomWork
     , twCount     :: {-# UNPACK #-}!Int
     , twWatermark :: {-# UNPACK #-}!Int
-    , twEntryTime :: {-# UNPACK #-}!TimeStamp
-    , twExitTime  :: {-# UNPACK #-}!TimeStamp
+    , twEntryTime :: {-# UNPACK #-}!SampleOffset
+    , twExitTime  :: {-# UNPACK #-}!SampleOffset
     }
 
 ----------------------------------------------------------------------
@@ -172,18 +172,18 @@ openWrite trackMap doRaw path = do
                  -> IntMap TrackWork
         addTrack trackNo spec = IM.insert trackNo trackState
             where
-                trackState = mkTrackWork spec (TS 0) 1024
+                trackState = mkTrackWork spec (SO 0) 1024
 
 closeWrite :: ZoomWHandle -> IO ()
 closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
-oneTrack :: (ZoomReadable a) => a -> Bool -> Bool -> DataRateType -> Rational -> ByteString -> TrackMap
+oneTrack :: (ZoomReadable a) => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString -> TrackMap
 oneTrack a delta zlib !drType !rate !name = IM.singleton 1 (mkTrackSpec a delta zlib drType rate name)
 {-# INLINABLE oneTrack #-}
 
 mkTrackSpec :: (ZoomReadable a)
-            => a -> Bool -> Bool -> DataRateType -> Rational -> ByteString -> TrackSpec
+            => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString -> TrackSpec
 mkTrackSpec a = TrackSpec (Codec a)
 
 -- | Query the maximum number of data points to buffer for a given track before
@@ -217,7 +217,7 @@ writeTrackHeader h trackNo TrackSpec{..} = do
         , toByteString $ mconcat
             [ fromTrackNo trackNo
             , fromCodec specType
-            , fromFlags specDeltaEncode specZlibCompress specDRType
+            , fromFlags specDeltaEncode specZlibCompress specSRType
             , fromRational64 specRate
             , fromIntegral32be . C.length $ specName
             ]
@@ -227,18 +227,18 @@ writeTrackHeader h trackNo TrackSpec{..} = do
 ----------------------------------------------------------------------
 -- Data
 
-incTimeStamp :: TimeStamp -> TimeStamp
-incTimeStamp (TS t) = let t' = (t+1) in t' `seq` (TS t')
+incSampleOffset :: SampleOffset -> SampleOffset
+incSampleOffset (SO t) = let t' = (t+1) in t' `seq` (SO t')
 
 incTime :: TrackNo -> ZoomW ()
 incTime trackNo = modifyTrack trackNo $ \tw -> tw
     { twEntryTime = if twCount tw == 0
-                        then (incTimeStamp (twEntryTime tw))
+                        then (incSampleOffset (twEntryTime tw))
                         else twEntryTime tw
-    , twExitTime = incTimeStamp (twExitTime tw)
+    , twExitTime = incSampleOffset (twExitTime tw)
     }
 
-setTime :: TrackNo -> TimeStamp -> ZoomW ()
+setTime :: TrackNo -> SampleOffset -> ZoomW ()
 setTime trackNo t = modifyTrack trackNo $ \tw -> tw
     { twEntryTime = if twCount tw == 0 then t else twEntryTime tw
     , twExitTime = t
@@ -273,7 +273,7 @@ writeData trackNo d = do
     flushIfNeeded trackNo
 
 writeDataVBR :: (Typeable a, ZoomWrite a, ZoomWritable a)
-             => TrackNo -> (TimeStamp, a) -> ZoomW ()
+             => TrackNo -> (SampleOffset, a) -> ZoomW ()
 writeDataVBR trackNo (t, d) = do
     setTime trackNo t
 
@@ -282,7 +282,7 @@ writeDataVBR trackNo (t, d) = do
         modifyTrack trackNo $ \z -> z
             { twBuilder = twBuilder z <>
                   (deltaEncodeWork (specDeltaEncode . twSpec $ z) (twWriter z) d)
-            , twReverseTS = t : twReverseTS z
+            , twReverseSO = t : twReverseSO z
             }
 
     modifyTrack trackNo $ \z -> let c = (twCount z) in c `seq` z
@@ -326,8 +326,8 @@ bsFromTrack trackNo TrackWork{..} = mconcat
     [ L.pack . B.unpack $ packetHeader
     , toLazyByteString $ mconcat
         [ fromIntegral32be trackNo
-        , fromTimeStamp twEntryTime
-        , fromTimeStamp twExitTime
+        , fromSampleOffset twEntryTime
+        , fromSampleOffset twExitTime
         , fromIntegral32be twCount
         , fromIntegral32be (L.length rawBS)
         ]
@@ -335,16 +335,16 @@ bsFromTrack trackNo TrackWork{..} = mconcat
     ]
     where
         tsBuilder = mconcat . map fromInt64be .
-                    deltaEncode . map unTS .  reverse $ twReverseTS
+                    deltaEncode . map unSO .  reverse $ twReverseSO
         rawBS = c $ toLazyByteString (twBuilder <> tsBuilder)
         c | specZlibCompress twSpec = compress
           | otherwise               = id
 
-mkTrackWork :: TrackSpec -> TimeStamp -> Int -> TrackWork
+mkTrackWork :: TrackSpec -> SampleOffset -> Int -> TrackWork
 mkTrackWork !spec !entry !w = TrackWork
         { twSpec = spec
         , twBuilder = mempty
-        , twReverseTS = []
+        , twReverseSO = []
         , twCount = 0
         , twWatermark = w
         , twEntryTime = entry
@@ -359,7 +359,7 @@ clearWork :: ZoomWork -> ZoomWork
 clearWork (ZoomWork l _) = ZoomWork l Nothing
 
 updateWork :: (Typeable b, ZoomWritable b)
-           => TimeStamp -> b
+           => SampleOffset -> b
            -> Maybe ZoomWork
            -> Maybe ZoomWork
 
@@ -459,21 +459,21 @@ finishLevels l = snd $ foldl' propagate (Nothing, IM.empty) [1 .. fst $ IM.findM
                 let new = saved `appendSummary` bub in
                 (Just (incLevel new), IM.insert k (fromSummary new) bs)
 
-flushWork :: TimeStamp -> TimeStamp
+flushWork :: SampleOffset -> SampleOffset
           -> TrackNo -> ZoomWork -> (ZoomWork, IntMap Builder)
 flushWork _         _        _       op@(ZoomWork _ Nothing) = (op, IM.empty)
-flushWork entryTime exitTime trackNo (ZoomWork l (Just cw))  =
+flushWork entrySO exitSO trackNo (ZoomWork l (Just cw))  =
     (ZoomWork l' (Just cw), bs)
     where
         (bs, l') = pushSummary s IM.empty l
         s = Summary
             { summaryTrack = trackNo
             , summaryLevel = 1
-            , summaryEntryTime = entryTime
-            , summaryExitTime = exitTime
+            , summaryEntrySO = entrySO
+            , summaryExitSO = exitSO
             , summaryData = toSummaryData dur cw
             }
-        dur = TSDiff $ (unTS exitTime) - (unTS entryTime)
+        dur = sampleOffsetDiff exitSO entrySO
 
 pushSummary :: (ZoomWritable a)
             => Summary a
@@ -497,8 +497,8 @@ appendSummary :: (ZoomWritable a) => Summary a -> Summary a -> Summary a
 appendSummary s1 s2 = Summary
     { summaryTrack = summaryTrack s1
     , summaryLevel = summaryLevel s1
-    , summaryEntryTime = summaryEntryTime s1
-    , summaryExitTime = summaryExitTime s2
+    , summaryEntrySO = summaryEntrySO s1
+    , summaryExitSO = summaryExitSO s2
     , summaryData = appendSummaryData (dur s1) (summaryData s1)
                                       (dur s2) (summaryData s2)
     }

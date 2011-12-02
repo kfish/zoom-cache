@@ -29,7 +29,7 @@ class (Ord a, Real a, ZoomReadable a, ZoomWritable a) => ZoomNum a where
     -- | Root mean square value in the summary interval
     numRMS   :: SummaryData a -> Double
 
-    numWorkTime  :: SummaryWork a -> TimeStamp
+    numWorkSO    :: SummaryWork a -> SampleOffset
     numWorkEntry :: SummaryWork a -> Maybe a
     numWorkExit  :: SummaryWork a -> a
     numWorkMin   :: SummaryWork a -> a
@@ -38,5 +38,5 @@ class (Ord a, Real a, ZoomReadable a, ZoomWritable a) => ZoomNum a where
     numWorkSumSq :: SummaryWork a -> Double
 
     numMkSummary :: a -> a -> a -> a -> Double -> Double -> SummaryData a
-    numMkSummaryWork :: TimeStamp -> Maybe a -> a -> a -> a -> Double -> Double
+    numMkSummaryWork :: SampleOffset -> Maybe a -> a -> a -> a -> Double -> Double
                      -> SummaryWork a

@@ -138,11 +138,11 @@ wholeTrackSummaryDouble identifiers trackNo = I.joinI $ enumCacheFile identifier
         toSD (ZoomSummary s) = toSummaryDouble s
 
 enumDouble :: (Functor m, MonadIO m)
-           => I.Enumeratee [Stream] [(TimeStamp, Double)] m a
+           => I.Enumeratee [Stream] [(SampleOffset, Double)] m a
 enumDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
     where
-        f :: Packet -> [(TimeStamp, Double)]
-        f Packet{..} = zip packetTimeStamps (rawToDouble packetData)
+        f :: Packet -> [(SampleOffset, Double)]
+        f Packet{..} = zip packetSampleOffsets (rawToDouble packetData)
 
 enumSummaryDouble :: (Functor m, MonadIO m)
                   => Int

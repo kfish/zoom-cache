@@ -100,13 +100,13 @@ prettySummaryBool SummaryBool{..} = printf "expected: %.3f" summaryBoolExpected
 instance ZoomWrite Bool where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Bool) where
+instance ZoomWrite (SampleOffset, Bool) where
     write = writeDataVBR
 
 instance ZoomWritable Bool where
     data SummaryWork Bool = SummaryWorkBool
-        { swBoolTime     :: {-# UNPACK #-}!TimeStamp
-        , swBoolTrueTime :: {-# UNPACK #-}!Int64
+        { swBoolSO      :: {-# UNPACK #-}!SampleOffset
+        , swBoolTrueTotal :: {-# UNPACK #-}!Int64
         }
 
     fromRaw           = fromBool
@@ -121,34 +121,34 @@ fromBool :: Bool -> Builder
 fromBool False = fromInt8 0
 fromBool True  = fromInt8 1
 
-initSummaryBool :: TimeStamp -> SummaryWork Bool
+initSummaryBool :: SampleOffset -> SummaryWork Bool
 initSummaryBool entry = SummaryWorkBool
-    { swBoolTime = entry
-    , swBoolTrueTime = 0
+    { swBoolSO = entry
+    , swBoolTrueTotal = 0
     }
 
-mkSummaryBool :: TimeStampDiff -> SummaryWork Bool -> SummaryData Bool
-mkSummaryBool (TSDiff dur) SummaryWorkBool{..} = SummaryBool
-    { summaryBoolExpected = fromIntegral swBoolTrueTime / fromIntegral dur
+mkSummaryBool :: SampleOffsetDiff -> SummaryWork Bool -> SummaryData Bool
+mkSummaryBool (SODiff dur) SummaryWorkBool{..} = SummaryBool
+    { summaryBoolExpected = fromIntegral swBoolTrueTotal / fromIntegral dur
     }
 
 fromSummaryBool :: SummaryData Bool -> Builder
 fromSummaryBool SummaryBool{..} = fromDouble summaryBoolExpected
 
-updateSummaryBool :: TimeStamp  -> Bool -> SummaryWork Bool
+updateSummaryBool :: SampleOffset  -> Bool -> SummaryWork Bool
                   -> SummaryWork Bool
-updateSummaryBool t False sw = sw { swBoolTime = t }
+updateSummaryBool t False sw = sw { swBoolSO = t }
 updateSummaryBool t True SummaryWorkBool{..} = SummaryWorkBool
-    { swBoolTime = t
-    , swBoolTrueTime = swBoolTrueTime + dur
+    { swBoolSO = t
+    , swBoolTrueTotal = swBoolTrueTotal + dur
     }
     where
-        !(TSDiff dur) = timeStampDiff t swBoolTime
+        !(SODiff dur) = sampleOffsetDiff t swBoolSO
 
-appendSummaryBool :: TimeStampDiff -> SummaryData Bool
-                  -> TimeStampDiff -> SummaryData Bool
+appendSummaryBool :: SampleOffsetDiff -> SummaryData Bool
+                  -> SampleOffsetDiff -> SummaryData Bool
                   -> SummaryData Bool
-appendSummaryBool (TSDiff dur1) s1 (TSDiff dur2) s2 = SummaryBool
+appendSummaryBool (SODiff dur1) s1 (SODiff dur2) s2 = SummaryBool
     { summaryBoolExpected = ((summaryBoolExpected s1 * fromIntegral dur1) +
                              (summaryBoolExpected s2 * fromIntegral dur2)) /
                             fromIntegral durSum

@@ -57,9 +57,9 @@ module Data.ZoomCache.Codec (
 
     -- * ZoomCache Types
     , Codec
-    , TimeStamp(..)
-    , TimeStampDiff(..)
-    , timeStampDiff
+    , SampleOffset(..)
+    , SampleOffsetDiff(..)
+    , sampleOffsetDiff
 
     -- * Delta encoding
     , module Data.ZoomCache.Numeric.Delta

@@ -37,14 +37,14 @@ import Data.ZoomCache.Types
 ----------------------------------------------------------------------
 -- Creating builders for ZoomCache types.
 
-fromFlags :: Bool -> Bool -> DataRateType -> Builder
+fromFlags :: Bool -> Bool -> SampleRateType -> Builder
 fromFlags delta zlib drType = fromInt16be (zl .|. dl .|. dr)
     where
         zl | zlib                 = 4
            | otherwise            = 0
         dl | delta                = 2
            | otherwise            = 0
-        dr | drType == VariableDR = 1
+        dr | drType == VariableSR = 1
            | otherwise            = 0
 
 fromGlobal :: Global -> Builder
@@ -70,8 +70,8 @@ fromSummaryHeader s = mconcat
     [ fromByteString summaryHeader
     , fromIntegral32be . summaryTrack $ s
     , fromIntegral32be . summaryLevel $ s
-    , fromTimeStamp . summaryEntryTime $ s
-    , fromTimeStamp . summaryExitTime $ s
+    , fromSampleOffset . summaryEntrySO $ s
+    , fromSampleOffset . summaryExitSO $ s
     ]
 
 fromTrackNo :: TrackNo -> Builder

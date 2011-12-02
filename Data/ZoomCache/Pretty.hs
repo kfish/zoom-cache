@@ -16,7 +16,7 @@
 module Data.ZoomCache.Pretty (
       prettyGlobal
     , prettyTrackSpec
-    , prettyTimeStamp
+    , prettySampleOffset
     , prettySummary
 ) where
 
@@ -48,7 +48,7 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
     , "\tName:\t" ++ C.unpack specName
     , "\tType:\t" ++ show specType
     , "\tEnc:\t"  ++ unwords [encoding, compression]
-    , "\tRate:\t" ++ show specDRType ++ " " ++ ratShow specRate
+    , "\tRate:\t" ++ show specSRType ++ " " ++ ratShow specRate
     ]
     where
         encoding | specDeltaEncode = "Delta"
@@ -56,9 +56,9 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
         compression | specZlibCompress = "Zlib"
                     | otherwise        = "Uncompressed"
 
--- | Pretty-print a 'TimeStamp', given a datarate
-prettyTimeStamp :: Rational -> TimeStamp -> String
-prettyTimeStamp r (TS t)
+-- | Pretty-print a 'SampleOffset', given a datarate
+prettySampleOffset :: Rational -> SampleOffset -> String
+prettySampleOffset r (SO t)
     | d == 0    = "00:00:00.000"
     {-
     | d < 100   = printf "%02d:%02d:%02d::%02d" hrs minN secN framesN
@@ -82,8 +82,8 @@ prettySummary r s = concat
 
 prettySummaryTimes :: Rational -> Summary a -> String
 prettySummaryTimes r s = concat
-    [ "[", (prettyTimeStamp r $ summaryEntryTime s)
-    , "-", (prettyTimeStamp r $ summaryExitTime s), "] "
+    [ "[", (prettySampleOffset r $ summaryEntrySO s)
+    , "-", (prettySampleOffset r $ summaryExitSO s), "] "
     ]
 
 prettySummaryLevel :: Summary a -> String

@@ -122,12 +122,12 @@ instance ZoomReadable Float where
 instance ZoomWrite Float where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Float) where
+instance ZoomWrite (SampleOffset, Float) where
     write = writeDataVBR
 
 instance ZoomWritable Float where
     data SummaryWork Float = SummaryWorkFloat
-        { swFloatTime  :: {-# UNPACK #-}!TimeStamp
+        { swFloatTime  :: {-# UNPACK #-}!SampleOffset
         , swFloatEntry :: !(Maybe Float)
         , swFloatExit  :: {-# UNPACK #-}!Float
         , swFloatMin   :: {-# UNPACK #-}!Float
@@ -152,7 +152,7 @@ instance ZoomNum Float where
     numAvg   = summaryFloatAvg
     numRMS   = summaryFloatRMS
 
-    numWorkTime  = swFloatTime
+    numWorkSO  = swFloatTime
     numWorkEntry = swFloatEntry
     numWorkExit  = swFloatExit
     numWorkMin   = swFloatMin
@@ -165,9 +165,9 @@ instance ZoomNum Float where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Float -> Builder #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Float -> SummaryData Float #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Float -> TimeStampDiff -> SummaryData Float -> SummaryData Float #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Float -> SummaryWork Float -> SummaryWork Float #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Float -> SummaryData Float #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Float -> SampleOffsetDiff -> SummaryData Float -> SummaryData Float #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Float -> SummaryWork Float -> SummaryWork Float #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -200,12 +200,12 @@ instance ZoomReadable Double where
 instance ZoomWrite Double where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Double) where
+instance ZoomWrite (SampleOffset, Double) where
     write = writeDataVBR
 
 instance ZoomWritable Double where
     data SummaryWork Double = SummaryWorkDouble
-        { swDoubleTime  :: {-# UNPACK #-}!TimeStamp
+        { swDoubleTime  :: {-# UNPACK #-}!SampleOffset
         , swDoubleEntry :: !(Maybe Double)
         , swDoubleExit  :: {-# UNPACK #-}!Double
         , swDoubleMin   :: {-# UNPACK #-}!Double
@@ -230,7 +230,7 @@ instance ZoomNum Double where
     numAvg   = summaryDoubleAvg
     numRMS   = summaryDoubleRMS
 
-    numWorkTime  = swDoubleTime
+    numWorkSO  = swDoubleTime
     numWorkEntry = swDoubleEntry
     numWorkExit  = swDoubleExit
     numWorkMin   = swDoubleMin
@@ -243,9 +243,9 @@ instance ZoomNum Double where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Double -> Builder #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Double -> SummaryData Double #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Double -> TimeStampDiff -> SummaryData Double -> SummaryData Double #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Double -> SummaryWork Double -> SummaryWork Double #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Double -> SummaryData Double #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Double -> SampleOffsetDiff -> SummaryData Double -> SummaryData Double #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Double -> SummaryWork Double -> SummaryWork Double #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -262,7 +262,7 @@ prettySummaryFloat s = concat
     ]
 
 initSummaryFloat :: (RealFloat a, ZoomNum a)
-                 => TimeStamp -> SummaryWork a
+                 => SampleOffset -> SummaryWork a
 initSummaryFloat entry = numMkSummaryWork
     entry
     Nothing

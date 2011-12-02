@@ -183,12 +183,12 @@ instance ZoomReadable Word where
 instance ZoomWrite Word where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Word) where
+instance ZoomWrite (SampleOffset, Word) where
     write = writeDataVBR
 
 instance ZoomWritable Word where
     data SummaryWork Word = SummaryWorkWord
-        { swWordTime  :: {-# UNPACK #-}!TimeStamp
+        { swWordTime  :: {-# UNPACK #-}!SampleOffset
         , swWordEntry :: !(Maybe Word)
         , swWordExit  :: {-# UNPACK #-}!Word
         , swWordMin   :: {-# UNPACK #-}!Word
@@ -213,7 +213,7 @@ instance ZoomNum Word where
     numAvg = summaryWordAvg
     numRMS = summaryWordRMS
 
-    numWorkTime = swWordTime
+    numWorkSO = swWordTime
     numWorkEntry = swWordEntry
     numWorkExit = swWordExit
     numWorkMin = swWordMin
@@ -226,10 +226,10 @@ instance ZoomNum Word where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word -> SummaryData Word #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Word -> TimeStampDiff -> SummaryData Word -> SummaryData Word #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Word -> SummaryWork Word -> SummaryWork Word #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Word #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Word -> SummaryData Word #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Word -> SampleOffsetDiff -> SummaryData Word -> SummaryData Word #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Word -> SummaryWork Word -> SummaryWork Word #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -260,12 +260,12 @@ instance ZoomReadable Word8 where
 instance ZoomWrite Word8 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Word8) where
+instance ZoomWrite (SampleOffset, Word8) where
     write = writeDataVBR
 
 instance ZoomWritable Word8 where
     data SummaryWork Word8 = SummaryWorkWord8
-        { swWord8Time  :: {-# UNPACK #-}!TimeStamp
+        { swWord8Time  :: {-# UNPACK #-}!SampleOffset
         , swWord8Entry :: !(Maybe Word8)
         , swWord8Exit  :: {-# UNPACK #-}!Word8
         , swWord8Min   :: {-# UNPACK #-}!Word8
@@ -290,7 +290,7 @@ instance ZoomNum Word8 where
     numAvg = summaryWord8Avg
     numRMS = summaryWord8RMS
 
-    numWorkTime = swWord8Time
+    numWorkSO = swWord8Time
     numWorkEntry = swWord8Entry
     numWorkExit = swWord8Exit
     numWorkMin = swWord8Min
@@ -303,10 +303,10 @@ instance ZoomNum Word8 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word8 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word8 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word8 -> SummaryData Word8 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Word8 -> TimeStampDiff -> SummaryData Word8 -> SummaryData Word8 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Word8 -> SummaryWork Word8 -> SummaryWork Word8 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Word8 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Word8 -> SummaryData Word8 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Word8 -> SampleOffsetDiff -> SummaryData Word8 -> SummaryData Word8 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Word8 -> SummaryWork Word8 -> SummaryWork Word8 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -337,12 +337,12 @@ instance ZoomReadable Word16 where
 instance ZoomWrite Word16 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Word16) where
+instance ZoomWrite (SampleOffset, Word16) where
     write = writeDataVBR
 
 instance ZoomWritable Word16 where
     data SummaryWork Word16 = SummaryWorkWord16
-        { swWord16Time  :: {-# UNPACK #-}!TimeStamp
+        { swWord16Time  :: {-# UNPACK #-}!SampleOffset
         , swWord16Entry :: !(Maybe Word16)
         , swWord16Exit  :: {-# UNPACK #-}!Word16
         , swWord16Min   :: {-# UNPACK #-}!Word16
@@ -367,7 +367,7 @@ instance ZoomNum Word16 where
     numAvg = summaryWord16Avg
     numRMS = summaryWord16RMS
 
-    numWorkTime = swWord16Time
+    numWorkSO = swWord16Time
     numWorkEntry = swWord16Entry
     numWorkExit = swWord16Exit
     numWorkMin = swWord16Min
@@ -380,10 +380,10 @@ instance ZoomNum Word16 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word16 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word16 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word16 -> SummaryData Word16 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Word16 -> TimeStampDiff -> SummaryData Word16 -> SummaryData Word16 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Word16 -> SummaryWork Word16 -> SummaryWork Word16 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Word16 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Word16 -> SummaryData Word16 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Word16 -> SampleOffsetDiff -> SummaryData Word16 -> SummaryData Word16 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Word16 -> SummaryWork Word16 -> SummaryWork Word16 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -414,12 +414,12 @@ instance ZoomReadable Word32 where
 instance ZoomWrite Word32 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Word32) where
+instance ZoomWrite (SampleOffset, Word32) where
     write = writeDataVBR
 
 instance ZoomWritable Word32 where
     data SummaryWork Word32 = SummaryWorkWord32
-        { swWord32Time  :: {-# UNPACK #-}!TimeStamp
+        { swWord32Time  :: {-# UNPACK #-}!SampleOffset
         , swWord32Entry :: !(Maybe Word32)
         , swWord32Exit  :: {-# UNPACK #-}!Word32
         , swWord32Min   :: {-# UNPACK #-}!Word32
@@ -444,7 +444,7 @@ instance ZoomNum Word32 where
     numAvg = summaryWord32Avg
     numRMS = summaryWord32RMS
 
-    numWorkTime = swWord32Time
+    numWorkSO = swWord32Time
     numWorkEntry = swWord32Entry
     numWorkExit = swWord32Exit
     numWorkMin = swWord32Min
@@ -457,10 +457,10 @@ instance ZoomNum Word32 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word32 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word32 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word32 -> SummaryData Word32 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Word32 -> TimeStampDiff -> SummaryData Word32 -> SummaryData Word32 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Word32 -> SummaryWork Word32 -> SummaryWork Word32 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Word32 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Word32 -> SummaryData Word32 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Word32 -> SampleOffsetDiff -> SummaryData Word32 -> SummaryData Word32 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Word32 -> SummaryWork Word32 -> SummaryWork Word32 #-}
 #endif
 
 ----------------------------------------------------------------------
@@ -491,12 +491,12 @@ instance ZoomReadable Word64 where
 instance ZoomWrite Word64 where
     write = writeData
 
-instance ZoomWrite (TimeStamp, Word64) where
+instance ZoomWrite (SampleOffset, Word64) where
     write = writeDataVBR
 
 instance ZoomWritable Word64 where
     data SummaryWork Word64 = SummaryWorkWord64
-        { swWord64Time  :: {-# UNPACK #-}!TimeStamp
+        { swWord64Time  :: {-# UNPACK #-}!SampleOffset
         , swWord64Entry :: !(Maybe Word64)
         , swWord64Exit  :: {-# UNPACK #-}!Word64
         , swWord64Min   :: {-# UNPACK #-}!Word64
@@ -521,7 +521,7 @@ instance ZoomNum Word64 where
     numAvg = summaryWord64Avg
     numRMS = summaryWord64RMS
 
-    numWorkTime = swWord64Time
+    numWorkSO = swWord64Time
     numWorkEntry = swWord64Entry
     numWorkExit = swWord64Exit
     numWorkMin = swWord64Min
@@ -534,10 +534,10 @@ instance ZoomNum Word64 where
 
 #if __GLASGOW_HASKELL__ >= 702
 {-# SPECIALIZE fromSummaryNum :: SummaryData Word64 -> Builder #-}
-{-# SPECIALIZE initSummaryNumBounded :: TimeStamp -> SummaryWork Word64 #-}
-{-# SPECIALIZE mkSummaryNum :: TimeStampDiff -> SummaryWork Word64 -> SummaryData Word64 #-}
-{-# SPECIALIZE appendSummaryNum :: TimeStampDiff -> SummaryData Word64 -> TimeStampDiff -> SummaryData Word64 -> SummaryData Word64 #-}
-{-# SPECIALIZE updateSummaryNum :: TimeStamp -> Word64 -> SummaryWork Word64 -> SummaryWork Word64 #-}
+{-# SPECIALIZE initSummaryNumBounded :: SampleOffset -> SummaryWork Word64 #-}
+{-# SPECIALIZE mkSummaryNum :: SampleOffsetDiff -> SummaryWork Word64 -> SummaryData Word64 #-}
+{-# SPECIALIZE appendSummaryNum :: SampleOffsetDiff -> SummaryData Word64 -> SampleOffsetDiff -> SummaryData Word64 -> SummaryData Word64 #-}
+{-# SPECIALIZE updateSummaryNum :: SampleOffset -> Word64 -> SummaryWork Word64 -> SummaryWork Word64 #-}
 #endif
 
 ----------------------------------------------------------------------

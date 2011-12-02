@@ -43,14 +43,14 @@ fromSummaryNum s = mconcat $
 {-# INLINABLE fromSummaryNum #-}
 
 initSummaryNumBounded :: (Bounded a, ZoomNum a)
-                      => TimeStamp -> SummaryWork a
+                      => SampleOffset -> SummaryWork a
 initSummaryNumBounded entry = numMkSummaryWork entry Nothing 0 maxBound minBound 0.0 0.0
 {-# INLINEABLE initSummaryNumBounded #-}
 
 mkSummaryNum :: ZoomNum a
-             => TimeStampDiff -> SummaryWork a
+             => SampleOffsetDiff -> SummaryWork a
              -> SummaryData a
-mkSummaryNum (TSDiff dur) sw =
+mkSummaryNum (SODiff dur) sw =
     numMkSummary (fromMaybe 0 $ numWorkEntry sw) (numWorkExit sw)
                  (numWorkMin sw) (numWorkMax sw)
                  (numWorkSum sw / fromIntegral dur)
@@ -58,10 +58,10 @@ mkSummaryNum (TSDiff dur) sw =
 {-# INLINEABLE mkSummaryNum #-}
 
 appendSummaryNum :: ZoomNum a
-                 => TimeStampDiff -> SummaryData a
-                 -> TimeStampDiff -> SummaryData a
+                 => SampleOffsetDiff -> SummaryData a
+                 -> SampleOffsetDiff -> SummaryData a
                  -> SummaryData a
-appendSummaryNum (TSDiff dur1) s1 (TSDiff dur2) s2 = numMkSummary
+appendSummaryNum (SODiff dur1) s1 (SODiff dur2) s2 = numMkSummary
     (numEntry s1)
     (numExit s2)
     (min (numMin s1) (numMin s2))
@@ -75,7 +75,7 @@ appendSummaryNum (TSDiff dur1) s1 (TSDiff dur2) s2 = numMkSummary
 {-# INLINEABLE appendSummaryNum #-}
 
 updateSummaryNum :: ZoomNum a
-                 => TimeStamp -> a
+                 => SampleOffset -> a
                  -> SummaryWork a
                  -> SummaryWork a
 updateSummaryNum t d sw =
@@ -86,7 +86,7 @@ updateSummaryNum t d sw =
                        ((numWorkSum sw) + realToFrac (d * fromIntegral dur))
                        ((numWorkSumSq sw) + realToFrac (d*d * fromIntegral dur))
     where
-        !(TSDiff dur) = timeStampDiff t (numWorkTime sw)
+        !(SODiff dur) = sampleOffsetDiff t (numWorkSO sw)
 {-# INLINEABLE updateSummaryNum #-}
 
 deltaDecodeNum :: ZoomNum a => [a] -> [a]
