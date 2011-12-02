@@ -14,8 +14,14 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Common (
+    -- * TimeStamps
+      TimeStamp (..)
+    , TimeStampDiff(..)
+    , timeStampDiff
+    , timeStampFromSO
+
     -- * SampleOffsets
-      SampleOffset(..)
+    , SampleOffset(..)
     , SampleOffsetDiff(..)
     , sampleOffsetDiff
 
@@ -31,6 +37,7 @@ module Data.ZoomCache.Common (
 ) where
 
 import Data.Int
+import Data.Ratio
 
 ------------------------------------------------------------
 
@@ -65,3 +72,18 @@ data Global = Global
 data SampleRateType = ConstantSR | VariableSR
     deriving (Eq, Show)
 
+newtype TimeStamp = TS Double
+
+newtype TimeStampDiff = TSDiff Double
+
+-- | @timeStampDiff (TS t1) (TS t2) = TSDiff (t1 - t2)@
+timeStampDiff :: TimeStamp -> TimeStamp -> TimeStampDiff
+timeStampDiff (TS t1) (TS t2) = TSDiff (t1 - t2)
+
+timeStampFromSO :: Rational -> SampleOffset -> TimeStamp
+timeStampFromSO r (SO so)
+    | n == 0    = TS 0.0
+    | otherwise = TS (fromIntegral so * d / n)
+    where
+          n = fromIntegral $ numerator r
+          d = fromIntegral $ denominator r
