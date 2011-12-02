@@ -13,8 +13,14 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache (
+    -- * TimeStamps
+      TimeStamp (..)
+    , TimeStampDiff(..)
+    , timeStampDiff
+    , timeStampFromSO
+
     -- * Types
-      SampleOffset(..)
+    , SampleOffset(..)
     , TrackNo
     , Codec(..)
     , IdentifyCodec

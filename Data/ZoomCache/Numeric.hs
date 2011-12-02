@@ -23,11 +23,12 @@ module Data.ZoomCache.Numeric (
   , numAvg
   , numRMS
 
+  , toSummaryDouble
   , toSummarySODouble
 
-  , wholeTrackSummarySODouble
+  , wholeTrackSummaryDouble
   , enumDouble
-  , enumSummarySODouble
+  , enumSummaryDouble
 
   , module Data.ZoomCache
 ) where
@@ -80,36 +81,68 @@ rawToDouble (ZoomRaw xs) | typeOf xs == typeOf (undefined :: [Double]) =
 
 ----------------------------------------------------------------------
 
--- | Coercion of numeric summaries to type SummarySO Double.
+-- | Coercion of numeric Summary to type SummarySO Double.
+toSummaryDouble :: Typeable a => Summary a -> Maybe (Summary Double)
+toSummaryDouble s | typeOf s == typeOf (undefined :: Summary Double) =
+                                id (cast s :: Maybe (Summary Double))
+                  | typeOf s == typeOf (undefined :: Summary Float) =
+                            sd <$> (cast s :: Maybe (Summary Float))
+                  | typeOf s == typeOf (undefined :: Summary Int) =
+                            sd <$> (cast s :: Maybe (Summary Int))
+                  | typeOf s == typeOf (undefined :: Summary Int8) =
+                            sd <$> (cast s :: Maybe (Summary Int8))
+                  | typeOf s == typeOf (undefined :: Summary Int16) =
+                            sd <$> (cast s :: Maybe (Summary Int16))
+                  | typeOf s == typeOf (undefined :: Summary Int32) =
+                            sd <$> (cast s :: Maybe (Summary Int32))
+                  | typeOf s == typeOf (undefined :: Summary Int64) =
+                            sd <$> (cast s :: Maybe (Summary Int64))
+                  | typeOf s == typeOf (undefined :: Summary Integer) =
+                            sd <$> (cast s :: Maybe (Summary Integer))
+                  | typeOf s == typeOf (undefined :: Summary Word) =
+                            sd <$> (cast s :: Maybe (Summary Word))
+                  | typeOf s == typeOf (undefined :: Summary Word8) =
+                            sd <$> (cast s :: Maybe (Summary Word8))
+                  | typeOf s == typeOf (undefined :: Summary Word16) =
+                            sd <$> (cast s :: Maybe (Summary Word16))
+                  | typeOf s == typeOf (undefined :: Summary Word32) =
+                            sd <$> (cast s :: Maybe (Summary Word32))
+                  | typeOf s == typeOf (undefined :: Summary Word64) =
+                            sd <$> (cast s :: Maybe (Summary Word64))
+                  | otherwise = Nothing
+    where
+        sd :: ZoomNum a => Summary a -> Summary Double
+        sd s' = s' { summaryData = toSummaryDataDouble (summaryData s') }
+
+-- | Coercion of numeric SummarySO to type SummarySO Double.
 toSummarySODouble :: Typeable a => SummarySO a -> Maybe (SummarySO Double)
 toSummarySODouble s | typeOf s == typeOf (undefined :: SummarySO Double) =
-                                id (cast s :: Maybe (SummarySO Double))
-                  | typeOf s == typeOf (undefined :: SummarySO Float) =
-                            sd <$> (cast s :: Maybe (SummarySO Float))
-                  | typeOf s == typeOf (undefined :: SummarySO Int) =
-                            sd <$> (cast s :: Maybe (SummarySO Int))
-                  | typeOf s == typeOf (undefined :: SummarySO Int8) =
-                            sd <$> (cast s :: Maybe (SummarySO Int8))
-                  | typeOf s == typeOf (undefined :: SummarySO Int16) =
-                            sd <$> (cast s :: Maybe (SummarySO Int16))
-                  | typeOf s == typeOf (undefined :: SummarySO Int32) =
-                            sd <$> (cast s :: Maybe (SummarySO Int32))
-                  | typeOf s == typeOf (undefined :: SummarySO Int64) =
-                            sd <$> (cast s :: Maybe (SummarySO Int64))
-                  | typeOf s == typeOf (undefined :: SummarySO Integer) =
-                            sd <$> (cast s :: Maybe (SummarySO Integer))
-                  | typeOf s == typeOf (undefined :: SummarySO Word) =
-                            sd <$> (cast s :: Maybe (SummarySO Word))
-                  | typeOf s == typeOf (undefined :: SummarySO Word8) =
-                            sd <$> (cast s :: Maybe (SummarySO Word8))
-                  | typeOf s == typeOf (undefined :: SummarySO Word16) =
-                            sd <$> (cast s :: Maybe (SummarySO Word16))
-                  | typeOf s == typeOf (undefined :: SummarySO Word32) =
-                            sd <$> (cast s :: Maybe (SummarySO Word32))
-                  | typeOf s == typeOf (undefined :: SummarySO Word64) =
-                            sd <$> (cast s :: Maybe (SummarySO Word64))
-                  | otherwise = Nothing
-
+                                  id (cast s :: Maybe (SummarySO Double))
+                    | typeOf s == typeOf (undefined :: SummarySO Float) =
+                                  sd <$> (cast s :: Maybe (SummarySO Float))
+                    | typeOf s == typeOf (undefined :: SummarySO Int) =
+                              sd <$> (cast s :: Maybe (SummarySO Int))
+                    | typeOf s == typeOf (undefined :: SummarySO Int8) =
+                              sd <$> (cast s :: Maybe (SummarySO Int8))
+                    | typeOf s == typeOf (undefined :: SummarySO Int16) =
+                              sd <$> (cast s :: Maybe (SummarySO Int16))
+                    | typeOf s == typeOf (undefined :: SummarySO Int32) =
+                              sd <$> (cast s :: Maybe (SummarySO Int32))
+                    | typeOf s == typeOf (undefined :: SummarySO Int64) =
+                              sd <$> (cast s :: Maybe (SummarySO Int64))
+                    | typeOf s == typeOf (undefined :: SummarySO Integer) =
+                              sd <$> (cast s :: Maybe (SummarySO Integer))
+                    | typeOf s == typeOf (undefined :: SummarySO Word) =
+                              sd <$> (cast s :: Maybe (SummarySO Word))
+                    | typeOf s == typeOf (undefined :: SummarySO Word8) =
+                              sd <$> (cast s :: Maybe (SummarySO Word8))
+                    | typeOf s == typeOf (undefined :: SummarySO Word16) =
+                              sd <$> (cast s :: Maybe (SummarySO Word16))
+                    | typeOf s == typeOf (undefined :: SummarySO Word32) =
+                              sd <$> (cast s :: Maybe (SummarySO Word32))
+                    | typeOf s == typeOf (undefined :: SummarySO Word64) =
+                              sd <$> (cast s :: Maybe (SummarySO Word64))
+                    | otherwise = Nothing
     where
         sd :: ZoomNum a => SummarySO a -> SummarySO Double
         sd s' = s' { summarySOData = toSummaryDataDouble (summarySOData s') }
@@ -126,30 +159,30 @@ toSummaryDataDouble s = numMkSummary
 ----------------------------------------------------------------------
 
 -- | Read the summary of an entire track.
-wholeTrackSummarySODouble :: (Functor m, MonadIO m)
-                          => [IdentifyCodec]
-                          -> TrackNo
-                          -> I.Iteratee ByteString m (SummarySO Double)
-wholeTrackSummarySODouble identifiers trackNo = I.joinI $ enumCacheFile identifiers .
+wholeTrackSummaryDouble :: (Functor m, MonadIO m)
+                        => [IdentifyCodec]
+                        -> TrackNo
+                        -> I.Iteratee ByteString m (Summary Double)
+wholeTrackSummaryDouble identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
     where
-        e = I.joinI . enumSummarySOs . I.mapChunks (catMaybes . map toSD)
-        toSD :: ZoomSummarySO -> Maybe (SummarySO Double)
-        toSD (ZoomSummarySO s) = toSummarySODouble s
+        e = I.joinI . enumSummaries . I.mapChunks (catMaybes . map toSD)
+        toSD :: ZoomSummary -> Maybe (Summary Double)
+        toSD (ZoomSummary s) = toSummaryDouble s
 
 enumDouble :: (Functor m, MonadIO m)
-           => I.Enumeratee [Stream] [(SampleOffset, Double)] m a
-enumDouble = I.joinI . enumPacketSOs . I.mapChunks (concatMap f)
+           => I.Enumeratee [Stream] [(TimeStamp, Double)] m a
+enumDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
     where
-        f :: PacketSO -> [(SampleOffset, Double)]
-        f PacketSO{..} = zip packetSOSampleOffsets (rawToDouble packetSOData)
+        f :: Packet -> [(TimeStamp, Double)]
+        f Packet{..} = zip packetTimeStamps (rawToDouble packetData)
 
-enumSummarySODouble :: (Functor m, MonadIO m)
-                    => Int
-                    -> I.Enumeratee [Stream] [SummarySO Double] m a
-enumSummarySODouble level =
-    I.joinI . enumSummarySOLevel level .
+enumSummaryDouble :: (Functor m, MonadIO m)
+                  => Int
+                  -> I.Enumeratee [Stream] [Summary Double] m a
+enumSummaryDouble level =
+    I.joinI . enumSummaryLevel level .
     I.mapChunks (catMaybes . map toSD)
     where
-        toSD :: ZoomSummarySO -> Maybe (SummarySO Double)
-        toSD (ZoomSummarySO s) = toSummarySODouble s
+        toSD :: ZoomSummary -> Maybe (Summary Double)
+        toSD (ZoomSummary s) = toSummaryDouble s
