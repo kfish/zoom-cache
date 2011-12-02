@@ -73,6 +73,7 @@ data SampleRateType = ConstantSR | VariableSR
     deriving (Eq, Show)
 
 newtype TimeStamp = TS Double
+    deriving (Eq, Ord, Show)
 
 newtype TimeStampDiff = TSDiff Double
 
