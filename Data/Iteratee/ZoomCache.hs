@@ -331,9 +331,10 @@ readTrackHeader identifiers = do
     trackNo <- readInt32be
     (drType, delta, zlib) <- readFlags
     rate <- readRational64be
-    trackType <- readCodec identifiers
-    byteLength <- readInt32be
-    name <- B.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
+    identLength <- readInt32be
+    trackType <- readCodec identifiers identLength
+    nameLength <- readInt32be
+    name <- B.pack <$> (I.joinI $ I.takeUpTo nameLength I.stream2list)
 
     return (trackNo, TrackSpec trackType delta zlib drType rate name)
 
@@ -496,9 +497,10 @@ readVersion = Version <$> readInt16be <*> readInt16be
 
 readCodec :: (Functor m, Monad m)
           => [IdentifyCodec]
+          -> Int
           -> Iteratee ByteString m Codec
-readCodec identifiers = do
-    tt <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
+readCodec identifiers n = do
+    tt <- B.pack <$> (I.joinI $ I.takeUpTo n I.stream2list)
     maybe (error "Unknown track type") return (parseCodec identifiers tt)
 
 parseCodec :: [IdentifyCodec] -> IdentifyCodec

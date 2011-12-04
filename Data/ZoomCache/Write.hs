@@ -218,11 +218,14 @@ writeTrackHeader h trackNo TrackSpec{..} = do
             [ fromTrackNo trackNo
             , fromFlags specDeltaEncode specZlibCompress specSRType
             , fromRational64 specRate
-            , fromCodec specType
-            , fromIntegral32be . C.length $ specName
+            , fromIntegral32be . C.length $ ident
             ]
+        , ident
+        , toByteString . fromIntegral32be . C.length $ specName
         , specName
         ]
+    where
+        ident = toByteString $ fromCodec specType
 
 ----------------------------------------------------------------------
 -- Data
