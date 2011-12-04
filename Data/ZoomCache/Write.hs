@@ -216,9 +216,9 @@ writeTrackHeader h trackNo TrackSpec{..} = do
         [ trackHeader
         , toByteString $ mconcat
             [ fromTrackNo trackNo
-            , fromCodec specType
             , fromFlags specDeltaEncode specZlibCompress specSRType
             , fromRational64 specRate
+            , fromCodec specType
             , fromIntegral32be . C.length $ specName
             ]
         , specName

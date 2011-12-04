@@ -329,9 +329,9 @@ readTrackHeader :: (Functor m, Monad m)
                 -> Iteratee ByteString m (TrackNo, TrackSpec)
 readTrackHeader identifiers = do
     trackNo <- readInt32be
-    trackType <- readCodec identifiers
     (drType, delta, zlib) <- readFlags
     rate <- readRational64be
+    trackType <- readCodec identifiers
     byteLength <- readInt32be
     name <- B.pack <$> (I.joinI $ I.takeUpTo byteLength I.stream2list)
 
