@@ -99,6 +99,10 @@ data Stream =
         , strmSummary :: ZoomSummarySO
         }
 
+instance Timestampable Stream where
+    timestamp (StreamPacket c t p) = timestamp (packetFromCTPSO (c,t,p))
+    timestamp (StreamSummary c t s) = timestamp (summaryFromCTSO (c,t,s))
+
 ----------------------------------------------------------------------
 
 -- | Read the summary of an entire track.

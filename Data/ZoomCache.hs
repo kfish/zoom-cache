@@ -18,6 +18,8 @@ module Data.ZoomCache (
     , TimeStampDiff(..)
     , timeStampDiff
     , timeStampFromSO
+    , Timestampable(..)
+    , before
 
     -- * Types
     , SampleOffset(..)

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -26,6 +27,9 @@ module Data.ZoomCache.Types (
     , IdentifyCodec
 
     -- * Classes
+    , Timestampable(..)
+    , before
+
     , ZoomReadable(..)
     , ZoomWritable(..)
 
@@ -62,6 +66,7 @@ import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
+import Data.Maybe (fromJust)
 
 import Data.ZoomCache.Common
 
@@ -117,6 +122,20 @@ fiFull (CacheFile g specs) = IM.size specs == noTracks g
 
 ------------------------------------------------------------
 
+class Timestampable a where
+    timestamp :: a -> Maybe TimeStamp
+
+before :: (Timestampable a) => Maybe TimeStamp -> a -> Bool
+before Nothing _ = True
+before (Just b) x = t == Nothing || (fromJust t) <= b
+  where
+    t = timestamp x
+
+instance Timestampable (TimeStamp, a) where
+    timestamp = Just . fst
+
+------------------------------------------------------------
+
 data PacketSO = PacketSO
     { packetSOTrack         :: {-# UNPACK #-}!TrackNo
     , packetSOEntry         :: {-# UNPACK #-}!SampleOffset
@@ -144,6 +163,9 @@ packetFromPacketSO r PacketSO{..} = Packet {
     , packetData  = packetSOData
     , packetTimeStamps = map (timeStampFromSO r) packetSOSampleOffsets
     }
+
+instance Timestampable Packet where
+    timestamp = Just . packetEntry
 
 ------------------------------------------------------------
 -- | A recorded block of summary data
@@ -180,6 +202,9 @@ summaryFromSummarySO r SummarySO{..} = Summary {
     , summaryExit  = timeStampFromSO r summarySOExit
     , summaryData  = summarySOData
     } 
+
+instance Timestampable (Summary a) where
+    timestamp = Just . summaryEntry
 
 ------------------------------------------------------------
 -- Read
@@ -222,6 +247,9 @@ data ZoomRaw = forall a . ZoomReadable a => ZoomRaw [a]
 data ZoomSummarySO = forall a . ZoomReadable a => ZoomSummarySO (SummarySO a)
 
 data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
+
+instance Timestampable ZoomSummary where
+    timestamp (ZoomSummary s) = timestamp s
 
 ------------------------------------------------------------
 -- Write
