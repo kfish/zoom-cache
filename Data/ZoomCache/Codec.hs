@@ -47,6 +47,7 @@ module Data.ZoomCache.Codec (
     -- * ZoomWrite instance helpers
     , writeData
     , writeDataVBR
+    , ZoomW
 
     -- * Builders
     , fromRational64
@@ -57,9 +58,14 @@ module Data.ZoomCache.Codec (
 
     -- * ZoomCache Types
     , Codec
+    , TimeStamp (..)
+    , TimeStampDiff(..)
+    , timeStampDiff
+    , timeStampFromSO
     , SampleOffset(..)
     , SampleOffsetDiff(..)
     , sampleOffsetDiff
+    , TrackNo
 
     -- * Delta encoding
     , module Data.ZoomCache.Numeric.Delta

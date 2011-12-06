@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -55,6 +56,7 @@ import Data.Monoid (mconcat)
 import Data.Typeable
 import Data.TypeLevel.Num hiding ((==))
 import Test.QuickCheck.Arbitrary
+import Unsafe.Coerce
 
 import Data.ZoomCache.Codec
 
@@ -66,8 +68,24 @@ trackTypeNList = "ZOOMmchn"
 
 ----------------------------------------------------------------------
 
-listToNList :: Nat n => [a] -> NList n a
-listToNList xs = reifyIntegral (length xs) (\_ -> NList (undefined :: n) xs)
+-- I'm going to hell for this one too
+reifyTypeableIntegral :: Integral i => i -> (forall n . (Nat n, Typeable n) => n -> r) -> r
+reifyTypeableIntegral i = reifyIntegral i . unsafeCoerce
+
+listToNList :: (Nat n, Typeable n) => [a] -> NList n a
+listToNList xs = reifyIntegral (length xs) (\_ -> NList undefined xs)
+
+instance (ZoomWrite a, ZoomWritable a) => ZoomWrite [a] where
+    write = writeList
+
+writeList :: (ZoomWrite a, ZoomWritable a) => TrackNo -> [a] -> ZoomW ()
+writeList tn xs = reifyTypeableIntegral (length xs) (\n -> write tn (NList n xs))
+
+instance (ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, [a]) where
+    write = writeSOList
+
+writeSOList :: (ZoomWrite a, ZoomWritable a) => TrackNo -> (SampleOffset, [a]) -> ZoomW ()
+writeSOList tn (ts, xs) = reifyTypeableIntegral (length xs) (\n -> write tn (ts, (NList n xs)))
 
 ----------------------------------------------------------------------
 
@@ -83,6 +101,7 @@ instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
             unify = undefined
 
 ----------------------------------------------------------------------
+
 -- Read
 
 instance (Nat n, Typeable n, ZoomReadable a) => ZoomReadable (NList n a) where
