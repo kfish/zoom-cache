@@ -86,6 +86,7 @@ Library
     MonadCatchIO-transformers >  0.2     && < 0.3,
     mtl                       >= 2.0.0.0 && < 3,
     transformers              >= 0.2     && < 0.3,
+    type-level,
     zlib
 
   Exposed-modules:

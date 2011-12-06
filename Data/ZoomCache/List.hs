@@ -1,8 +1,11 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
@@ -48,6 +51,8 @@ import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
 import Data.Monoid (mconcat)
+import Data.Typeable
+import Data.TypeLevel.Num
 
 import Data.ZoomCache.Codec
 
@@ -57,14 +62,21 @@ import Data.ZoomCache.Codec
 trackTypeNList :: ByteString
 trackTypeNList = "ZOOMmchn"
 
-nChannelsLOL :: Int
-nChannelsLOL = 8
+----------------------------------------------------------------------
+
+listToNList :: Nat n => [a] -> NList n a
+listToNList xs = reifyIntegral (length xs) (\_ -> NList (undefined :: n) xs)
+
+----------------------------------------------------------------------
+
+data NList n a = NList n [a]
+    deriving Typeable
 
 ----------------------------------------------------------------------
 -- Read
 
-instance ZoomReadable a => ZoomReadable [a] where
-    data SummaryData [a] = SummaryNList [SummaryData a]
+instance (Nat n, Typeable n, ZoomReadable a) => ZoomReadable (NList n a) where
+    data SummaryData (NList n a) = SummaryNList (NList n (SummaryData a))
 
     trackIdentifier = mkTrackTypeNList
 
@@ -74,38 +86,43 @@ instance ZoomReadable a => ZoomReadable [a] where
     prettyRaw         = prettyPacketNList
     prettySummaryData = prettySummaryNList
 
-mkTrackTypeNList :: ZoomReadable a => [a] -> ByteString
-mkTrackTypeNList l = mconcat
+mkTrackTypeNList :: (Nat n, ZoomReadable a) => (NList n a) -> ByteString
+mkTrackTypeNList (NList nv l) = mconcat
     [ trackTypeNList
-    , toByteString . fromIntegral32be . length $ l
+    , toByteString . fromIntegral32be . toInt $ nv
     , trackIdentifier (head l)
     ]
 
-prettyPacketNList :: ZoomReadable a => [a] -> String
-prettyPacketNList l = show (map prettyRaw l)
+prettyPacketNList :: (Nat n, ZoomReadable a) => NList n a -> String
+prettyPacketNList (NList _ l) = show (map prettyRaw l)
 
-readNList :: (Functor m, Monad m, ZoomReadable a)
-          => Iteratee ByteString m [a]
-readNList = replicateM nChannelsLOL readRaw
+readNList :: (Functor m, Monad m, Nat n, ZoomReadable a)
+          => Iteratee ByteString m (NList n a)
+readNList = NList unify <$> replicateM (toInt unify) readRaw
+    where
+        unify = undefined
 
-readSummaryNList :: (Functor m, Monad m, ZoomReadable a)
-                 => Iteratee ByteString m (SummaryData [a])
-readSummaryNList = SummaryNList <$> replicateM nChannelsLOL readSummary
+readSummaryNList :: (Functor m, Monad m, Nat n, ZoomReadable a)
+                 => Iteratee ByteString m (SummaryData (NList n a))
+readSummaryNList = SummaryNList .
+    NList unify <$> replicateM (toInt unify) readSummary
+    where
+        unify = undefined
 
-prettySummaryNList :: ZoomReadable a => SummaryData [a] -> String
-prettySummaryNList (SummaryNList l) = show (map prettySummaryData l)
+prettySummaryNList :: (Nat n, ZoomReadable a) => SummaryData (NList n a) -> String
+prettySummaryNList (SummaryNList (NList _ l)) = show (map prettySummaryData l)
 
 ----------------------------------------------------------------------
 -- Write
 
-instance (ZoomWrite a, ZoomWritable a) => ZoomWrite [a] where
+instance (Nat n, Typeable n, ZoomWrite a, ZoomWritable a) => ZoomWrite (NList n a) where
     write = writeData
 
-instance (ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, [a]) where
+instance (Nat n, Typeable n, ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, (NList n a)) where
     write = writeDataVBR
 
-instance ZoomWritable a => ZoomWritable [a] where
-    data SummaryWork [a] = SummaryWorkNList [SummaryWork a]
+instance (Nat n, NatI n, Typeable n, ZoomWritable a) => ZoomWritable (NList n a) where
+    data SummaryWork (NList n a) = SummaryWorkNList (NList n (SummaryWork a))
 
     fromRaw           = fromNList
     fromSummaryData   = fromSummaryNList
@@ -115,29 +132,36 @@ instance ZoomWritable a => ZoomWritable [a] where
     updateSummaryData = updateSummaryNList
     appendSummaryData = appendSummaryNList
 
-fromNList :: ZoomWritable a => [a] -> Builder
-fromNList = mconcat . map fromRaw
+fromNList :: ZoomWritable a => (NList n a) -> Builder
+fromNList (NList _ l) = mconcat $ map fromRaw l
 
-initSummaryNList :: ZoomWritable a => SampleOffset -> SummaryWork [a]
-initSummaryNList entry = SummaryWorkNList (replicate nChannelsLOL (initSummaryWork entry))
+initSummaryNList :: (Nat n, ZoomWritable a)
+                 => SampleOffset -> SummaryWork (NList n a)
+initSummaryNList entry = SummaryWorkNList $
+    NList unify (replicate (toInt unify) (initSummaryWork entry))
+    where
+        unify = undefined
 
-mkSummaryNList :: ZoomWritable a => SampleOffsetDiff -> SummaryWork [a] -> SummaryData [a]
-mkSummaryNList dur (SummaryWorkNList l) = SummaryNList (map (toSummaryData dur) l)
+mkSummaryNList :: ZoomWritable a
+               => SampleOffsetDiff -> SummaryWork (NList n a) -> SummaryData (NList n a)
+mkSummaryNList dur (SummaryWorkNList (NList _ l)) =
+    SummaryNList (NList undefined (map (toSummaryData dur) l))
 
-fromSummaryNList :: ZoomWritable a => SummaryData [a] -> Builder
-fromSummaryNList (SummaryNList l) = mconcat $ map fromSummaryData l
+fromSummaryNList :: ZoomWritable a
+                 => SummaryData (NList n a) -> Builder
+fromSummaryNList (SummaryNList (NList _ l)) = mconcat $ map fromSummaryData l
 
 updateSummaryNList :: ZoomWritable a
-                   => SampleOffset  -> [a] -> SummaryWork [a]
-                   -> SummaryWork [a]
-updateSummaryNList t xs (SummaryWorkNList ws) =
-    SummaryWorkNList (zipWith (updateSummaryData t) xs ws)
+                   => SampleOffset  -> (NList n a) -> SummaryWork (NList n a)
+                   -> SummaryWork (NList n a)
+updateSummaryNList t (NList _ xs) (SummaryWorkNList (NList _ ws)) =
+    SummaryWorkNList (NList undefined (zipWith (updateSummaryData t) xs ws))
 
 appendSummaryNList :: ZoomWritable a
-                   => SampleOffsetDiff -> SummaryData [a]
-                   -> SampleOffsetDiff -> SummaryData [a]
-                   -> SummaryData [a]
-appendSummaryNList dur1 (SummaryNList l1) dur2 (SummaryNList l2) =
-    SummaryNList (zipWith a l1 l2)
+                   => SampleOffsetDiff -> SummaryData (NList n a)
+                   -> SampleOffsetDiff -> SummaryData (NList n a)
+                   -> SummaryData (NList n a)
+appendSummaryNList dur1 (SummaryNList (NList _ l1)) dur2 (SummaryNList (NList _ l2)) =
+    SummaryNList (NList undefined (zipWith a l1 l2))
     where
         a s1 s2 = appendSummaryData dur1 s1 dur2 s2
