@@ -45,6 +45,7 @@ module Data.ZoomCache.List (
       SummaryData(..)
     , SummaryWork(..)
     , NList(..)
+    , nListToList
 )where
 
 import Blaze.ByteString.Builder
@@ -100,8 +101,10 @@ instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
         where
             unify = undefined
 
-----------------------------------------------------------------------
+nListToList :: NList n a -> [a]
+nListToList (NList _ xs) = xs
 
+----------------------------------------------------------------------
 -- Read
 
 instance (Nat n, Typeable n, ZoomReadable a) => ZoomReadable (NList n a) where
