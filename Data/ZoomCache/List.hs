@@ -43,6 +43,7 @@ Field encoding formats:
 module Data.ZoomCache.List (
       SummaryData(..)
     , SummaryWork(..)
+    , NList(..)
 )where
 
 import Blaze.ByteString.Builder
@@ -52,7 +53,8 @@ import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
 import Data.Monoid (mconcat)
 import Data.Typeable
-import Data.TypeLevel.Num
+import Data.TypeLevel.Num hiding ((==))
+import Test.QuickCheck.Arbitrary
 
 import Data.ZoomCache.Codec
 
@@ -70,7 +72,15 @@ listToNList xs = reifyIntegral (length xs) (\_ -> NList (undefined :: n) xs)
 ----------------------------------------------------------------------
 
 data NList n a = NList n [a]
-    deriving Typeable
+    deriving (Show, Typeable)
+
+instance Eq a => Eq (NList n a) where
+    (NList _ a1) == (NList _ a2) = a1 == a2
+
+instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
+    arbitrary = NList unify <$> sequence [ arbitrary | _ <- [1..(toInt unify)] ]
+        where
+            unify = undefined
 
 ----------------------------------------------------------------------
 -- Read

@@ -85,6 +85,7 @@ Library
     ListLike                  >= 1.0     && < 4,
     MonadCatchIO-transformers >  0.2     && < 0.3,
     mtl                       >= 2.0.0.0 && < 3,
+    QuickCheck                 >= 2.4.0.1,
     transformers              >= 0.2     && < 0.3,
     type-level,
     zlib
@@ -147,6 +148,7 @@ Test-suite tests
     QuickCheck                 >= 2.4.0.1,
     random                     == 1.0.*,
     transformers               >= 0.2     && < 0.3,
+    type-level,
     zoom-cache
 
 

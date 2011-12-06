@@ -6,9 +6,11 @@ import Blaze.ByteString.Builder
 import Data.Functor.Identity
 import Data.Int
 import qualified Data.Iteratee as I
+import Data.TypeLevel.Num hiding ((==))
 import Data.Word
 import Data.ZoomCache
 import Data.ZoomCache.Codec
+import Data.ZoomCache.List
 
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -71,6 +73,9 @@ roundTripFloat = roundTrip
 roundTripDouble :: Double -> Bool
 roundTripDouble = roundTrip
 
+roundTripNListD7Double :: NList D7 Double -> Bool
+roundTripNListD7Double = roundTrip
+
 ----------------------------------------------------------------------
 -- * Delta encoding roundtrips
 
@@ -121,6 +126,7 @@ tests =
       , testProperty "Integer" roundTripInteger
       , testProperty "Float" roundTripFloat
       , testProperty "Double" roundTripDouble
+      , testProperty "NList D7 Double" roundTripNListD7Double
       ]
     , testGroup "Delta Encoding"
       [ testProperty "Int" deltaEncDecInt
