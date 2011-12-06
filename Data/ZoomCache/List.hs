@@ -45,6 +45,7 @@ module Data.ZoomCache.List (
       SummaryData(..)
     , SummaryWork(..)
     , NList(..)
+    , listToNList
     , nListToList
 )where
 
