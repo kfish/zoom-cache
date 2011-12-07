@@ -47,6 +47,7 @@ module Data.ZoomCache.List (
     , NList(..)
     , listToNList
     , nListToList
+    , identifyCodecMultichannel
     , oneTrackMultichannel
     , mkTrackSpecMultichannel
 )where
@@ -54,22 +55,49 @@ module Data.ZoomCache.List (
 import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
 import Control.Monad (replicateM)
+import qualified Data.ByteString as B
 import Data.ByteString (ByteString)
+import Data.Functor.Identity
 import qualified Data.IntMap as IM
+import qualified Data.Iteratee as I
 import Data.Iteratee (Iteratee)
 import Data.Monoid (mconcat)
 import Data.Typeable
 import Data.TypeLevel.Num hiding ((==))
 import Test.QuickCheck.Arbitrary
 
-import Data.ZoomCache
 import Data.ZoomCache.Codec
+import Data.ZoomCache.Common
+import Data.ZoomCache.Types
+import Data.Iteratee.ZoomCache.Utils
 
 ----------------------------------------------------------------------
 
 -- Identifier for track headers
 trackTypeNList :: ByteString
 trackTypeNList = "ZOOMmchn"
+
+----------------------------------------------------------------------
+
+runner1 :: Identity (I.Iteratee s Identity c) -> c
+runner1 = runIdentity . I.run . runIdentity
+
+identifyCodecMultichannel :: [IdentifyCodec] -> IdentifyCodec
+identifyCodecMultichannel identifiers bs = runner1 $ I.enumPure1Chunk bs identifyMulti
+    where
+        identifyMulti :: (Functor m, Monad m) => I.Iteratee ByteString m (Maybe Codec)
+        identifyMulti = do
+            mIdent <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
+            if mIdent == trackTypeNList
+                then do
+                    channels <- readInt32be
+                    subIdentLength <- readInt32be
+                    subCodec <- readCodec identifiers subIdentLength
+                    return (fmap (foo channels) subCodec)
+                else return Nothing
+
+        foo :: Int -> Codec -> Codec
+        foo channels (Codec a) = reifyIntegral channels (\n -> Codec (NList n [a]))
 
 ----------------------------------------------------------------------
 
@@ -140,8 +168,11 @@ mkTrackTypeNList :: (Nat n, ZoomReadable a) => (NList n a) -> ByteString
 mkTrackTypeNList (NList nv l) = mconcat
     [ trackTypeNList
     , toByteString . fromIntegral32be . toInt $ nv
-    , trackIdentifier (head l)
+    , toByteString . fromIntegral32be . B.length $ subIdent
+    , subIdent
     ]
+    where
+        subIdent = trackIdentifier (head l)
 
 prettyPacketNList :: (Nat n, ZoomReadable a) => NList n a -> String
 prettyPacketNList (NList _ l) = show (map prettyRaw l)
