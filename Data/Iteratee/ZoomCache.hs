@@ -49,6 +49,9 @@ module Data.Iteratee.ZoomCache (
   , enumStream
   , enumStreamTrackNo
 
+  -- * Seeking
+  , seekTimeStamp
+
   -- * Stream enumeratees
   , enumPackets
   , enumSummaryLevel

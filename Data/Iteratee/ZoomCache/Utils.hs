@@ -15,8 +15,11 @@
 ----------------------------------------------------------------------
 
 module Data.Iteratee.ZoomCache.Utils (
+    -- * Seeking
+      seekTimeStamp
+
     -- * Raw data reading iteratees
-      readInt8
+    , readInt8
     , readInt16be
     , readInt32be
     , readInt64be
@@ -40,6 +43,43 @@ import qualified Data.ListLike as LL
 import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
+
+import Data.ZoomCache.Common
+import Data.ZoomCache.Types
+
+----------------------------------------------------------------------
+
+seekTimeStamp :: (LL.ListLike s el, I.Nullable s, I.NullPoint s, Timestampable el, Monad m)
+              => Maybe TimeStamp -> Iteratee s m ()
+seekTimeStamp ts = do
+    I.seek 0
+    dropWhileB (before ts)
+
+-- |Skip all elements while the predicate is true, but also return the last false element
+--
+-- The analogue of @List.dropWhile@
+dropWhileB :: (Monad m, LL.ListLike s el) => (el -> Bool) -> I.Iteratee s m ()
+dropWhileB p = I.liftI step
+  where
+    step (I.Chunk str)
+      | LL.null left = I.liftI step
+      | otherwise    = I.idone () (I.Chunk left)
+      where
+        left = llDropWhileB p str
+    step stream      = I.idone () stream
+{-# INLINE dropWhileB #-}
+
+{- | Drops all elements form the start of the list that satisfy the
+       function. -}
+llDropWhileB :: LL.ListLike full item => (item -> Bool) -> full -> full
+llDropWhileB = dw LL.empty
+    where
+        dw prev func l
+            | LL.null l = LL.empty
+            | func (LL.head l) = dw (LL.take 1 l) func (LL.tail l)
+            | otherwise = LL.append prev l
+
+----------------------------------------------------------------------
 
 -- | Read 1 byte as a signed Integral
 readInt8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
