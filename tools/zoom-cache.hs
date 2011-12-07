@@ -85,7 +85,7 @@ genOptions =
              "Set track rate"
     , Option ['c'] ["channels"] (ReqArg Channels "channels")
              "Set number of channels"
-    , Option ['w'] ["watermark"] (ReqArg Rate "watermark")
+    , Option ['w'] ["watermark"] (ReqArg Watermark "watermark")
              "Set high-watermark level"
     , Option ['t'] ["track"] (ReqArg Track "trackNo")
              "Set or select track number"
