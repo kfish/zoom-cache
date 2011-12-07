@@ -17,6 +17,8 @@ import UI.Command
 
 import Data.ZoomCache
 import Data.ZoomCache.Dump
+import Data.ZoomCache.List
+import Data.ZoomCache.Types
 
 ------------------------------------------------------------
 
@@ -28,6 +30,7 @@ data Config = Config
     , intData  :: Bool
     , label    :: ByteString
     , rate     :: Integer
+    , channels :: Int
     , wmLevel  :: Int
     , track    :: TrackNo
     }
@@ -44,6 +47,7 @@ defConfig = Config
     , intData  = False
     , label    = "gen"
     , rate     = 1000
+    , channels = 1
     , wmLevel  = 1024
     , track    = 1
     }
@@ -55,6 +59,7 @@ data Option = NoRaw
             | IntData
             | Label String
             | Rate String
+            | Channels String
             | Watermark String
             | Track String
     deriving (Eq)
@@ -78,6 +83,8 @@ genOptions =
              "Set track label"
     , Option ['r'] ["rate"] (ReqArg Rate "data-rate")
              "Set track rate"
+    , Option ['c'] ["channels"] (ReqArg Channels "channels")
+             "Set number of channels"
     , Option ['w'] ["watermark"] (ReqArg Rate "watermark")
              "Set high-watermark level"
     , Option ['t'] ["track"] (ReqArg Track "trackNo")
@@ -109,6 +116,8 @@ processConfig = foldM processOneOption
             return $ config {label = C.pack s}
         processOneOption config (Rate s) = do
             return $ config {rate = read s}
+        processOneOption config (Channels s) = do
+            return $ config {channels = read s}
         processOneOption config (Watermark s) = do
             return $ config {wmLevel = read s}
         processOneOption config (Track s) = do
@@ -136,15 +145,21 @@ zoomWriteFile Config{..} (path:_)
     | intData   = w ints path
     | otherwise = w doubles path
     where
-    w :: (ZoomReadable a, ZoomWrite a, ZoomWrite (SampleOffset, a))
+    w :: (ZoomReadable a, ZoomWrite a, ZoomWritable a, ZoomWrite (SampleOffset, a))
       => [a] -> FilePath -> IO ()
     w d
-        | variable  = withFileWrite (oneTrack (head d) delta zlib VariableSR rate' label)
+        | variable && channels == 1 = withFileWrite (oneTrack (head d) delta zlib VariableSR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) (zip (map SO [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack (head d) delta zlib ConstantSR rate' label)
+        | channels == 1 = withFileWrite (oneTrack (head d) delta zlib ConstantSR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) d)
+        | variable  = withFileWrite (oneTrackMultichannel channels (head d) delta zlib VariableSR rate' label)
+                          (not noRaw)
+                          (sW >> mapM_ (write track) (zip (map SO [1,3..]) (replicate channels d)))
+        | otherwise = withFileWrite (oneTrackMultichannel channels (head d) delta zlib ConstantSR rate' label)
+                          (not noRaw)
+                          (sW >> mapM_ (write track) (replicate channels d))
     rate' = fromInteger rate
     sW = setWatermark 1 wmLevel
 
