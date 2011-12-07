@@ -47,19 +47,22 @@ module Data.ZoomCache.List (
     , NList(..)
     , listToNList
     , nListToList
+    , oneTrackMultichannel
+    , mkTrackSpecMultichannel
 )where
 
 import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
 import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
+import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import Data.Monoid (mconcat)
 import Data.Typeable
 import Data.TypeLevel.Num hiding ((==))
 import Test.QuickCheck.Arbitrary
-import Unsafe.Coerce
 
+import Data.ZoomCache
 import Data.ZoomCache.Codec
 
 ----------------------------------------------------------------------
@@ -70,32 +73,46 @@ trackTypeNList = "ZOOMmchn"
 
 ----------------------------------------------------------------------
 
--- I'm going to hell for this one too
-reifyTypeableIntegral :: Integral i => i -> (forall n . (Nat n, Typeable n) => n -> r) -> r
-reifyTypeableIntegral i = reifyIntegral i . unsafeCoerce
+-- | Create a track map for a stream of a given type, as track no. 1
+oneTrackMultichannel :: (ZoomReadable a)
+                     => Int -> a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString -> TrackMap
+oneTrackMultichannel channels a delta zlib !drType !rate !name =
+    IM.singleton 1 (mkTrackSpecMultichannel channels a delta zlib drType rate name)
+{-# INLINABLE oneTrackMultichannel #-}
 
-listToNList :: (Nat n, Typeable n) => [a] -> NList n a
+mkTrackSpecMultichannel :: (ZoomReadable a)
+                        => Int -> a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
+                        -> TrackSpec
+mkTrackSpecMultichannel channels a = reifyIntegral channels
+    (\n -> TrackSpec (Codec (NList n [a])))
+
+----------------------------------------------------------------------
+
+listToNList :: (Nat n) => [a] -> NList n a
 listToNList xs = reifyIntegral (length xs) (\_ -> NList undefined xs)
 
 instance (ZoomWrite a, ZoomWritable a) => ZoomWrite [a] where
     write = writeList
 
 writeList :: (ZoomWrite a, ZoomWritable a) => TrackNo -> [a] -> ZoomW ()
-writeList tn xs = reifyTypeableIntegral (length xs) (\n -> write tn (NList n xs))
+writeList tn xs = reifyIntegral (length xs) (\n -> write tn (NList n xs))
 
 instance (ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, [a]) where
     write = writeSOList
 
 writeSOList :: (ZoomWrite a, ZoomWritable a) => TrackNo -> (SampleOffset, [a]) -> ZoomW ()
-writeSOList tn (ts, xs) = reifyTypeableIntegral (length xs) (\n -> write tn (ts, (NList n xs)))
+writeSOList tn (ts, xs) = reifyIntegral (length xs) (\n -> write tn (ts, (NList n xs)))
 
 ----------------------------------------------------------------------
 
 data NList n a = NList n [a]
-    deriving (Show, Typeable)
+    deriving (Show)
 
 instance Eq a => Eq (NList n a) where
     (NList _ a1) == (NList _ a2) = a1 == a2
+
+instance Typeable a => Typeable (NList n a) where
+    typeOf (NList _ a) = mkTyConApp (mkTyCon3 "zoom-cache" "Data.ZoomCache.List" "NList") [typeOf a]
 
 instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
     arbitrary = NList unify <$> sequence [ arbitrary | _ <- [1..(toInt unify)] ]
@@ -108,7 +125,7 @@ nListToList (NList _ xs) = xs
 ----------------------------------------------------------------------
 -- Read
 
-instance (Nat n, Typeable n, ZoomReadable a) => ZoomReadable (NList n a) where
+instance (Nat n, ZoomReadable a) => ZoomReadable (NList n a) where
     data SummaryData (NList n a) = SummaryNList (NList n (SummaryData a))
 
     trackIdentifier = mkTrackTypeNList
@@ -148,13 +165,13 @@ prettySummaryNList (SummaryNList (NList _ l)) = show (map prettySummaryData l)
 ----------------------------------------------------------------------
 -- Write
 
-instance (Nat n, Typeable n, ZoomWrite a, ZoomWritable a) => ZoomWrite (NList n a) where
+instance (Nat n, ZoomWrite a, ZoomWritable a) => ZoomWrite (NList n a) where
     write = writeData
 
-instance (Nat n, Typeable n, ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, (NList n a)) where
+instance (Nat n, ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, (NList n a)) where
     write = writeDataVBR
 
-instance (Nat n, NatI n, Typeable n, ZoomWritable a) => ZoomWritable (NList n a) where
+instance (Nat n, ZoomWritable a) => ZoomWritable (NList n a) where
     data SummaryWork (NList n a) = SummaryWorkNList (NList n (SummaryWork a))
 
     fromRaw           = fromNList
