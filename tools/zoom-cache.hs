@@ -78,7 +78,7 @@ genOptions =
              "Set track label"
     , Option ['r'] ["rate"] (ReqArg Rate "data-rate")
              "Set track rate"
-    , Option ['w'] ["watermark"] (ReqArg Rate "watermark")
+    , Option ['w'] ["watermark"] (ReqArg Watermark "watermark")
              "Set high-watermark level"
     , Option ['t'] ["track"] (ReqArg Track "trackNo")
              "Set or select track number"
