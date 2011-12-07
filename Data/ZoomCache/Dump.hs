@@ -63,7 +63,7 @@ streamRate :: Stream -> Maybe Rational
 streamRate s = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
 
 dumpData :: Stream -> IO ()
-dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> printf "%s: %s\n" t d) tds
+dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> putStrLn $ printf "%s: %s" t d) tds
     where
         pretty = case streamRate s of
             Just r  -> prettySampleOffset r

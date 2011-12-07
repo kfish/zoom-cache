@@ -61,6 +61,7 @@ import Data.Functor.Identity
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
 import Data.Iteratee (Iteratee)
+import Data.List (intersperse)
 import Data.Monoid (mconcat)
 import Data.Typeable
 import Data.TypeLevel.Num hiding ((==))
@@ -175,7 +176,7 @@ mkTrackTypeNList (NList nv l) = mconcat
         subIdent = trackIdentifier (head l)
 
 prettyPacketNList :: (Nat n, ZoomReadable a) => NList n a -> String
-prettyPacketNList (NList _ l) = show (map prettyRaw l)
+prettyPacketNList (NList _ l) = "[" ++ (concat $ intersperse "," (map prettyRaw l)) ++ "]"
 
 readNList :: (Functor m, Monad m, Nat n, ZoomReadable a)
           => Iteratee ByteString m (NList n a)
@@ -191,7 +192,8 @@ readSummaryNList = SummaryNList .
         unify = undefined
 
 prettySummaryNList :: (Nat n, ZoomReadable a) => SummaryData (NList n a) -> String
-prettySummaryNList (SummaryNList (NList _ l)) = show (map prettySummaryData l)
+prettySummaryNList (SummaryNList (NList _ l)) =
+    "[" ++ (concat $ intersperse "," (map prettySummaryData l)) ++ "]"
 
 ----------------------------------------------------------------------
 -- Write
