@@ -65,7 +65,7 @@ module Data.Iteratee.ZoomCache (
 ) where
 
 import Control.Applicative
-import Control.Monad (msum, replicateM)
+import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import Data.Bits
 import Data.ByteString (ByteString)
@@ -336,7 +336,7 @@ readTrackHeader identifiers = do
     (drType, delta, zlib) <- readFlags
     rate <- readRational64be
     identLength <- readInt32be
-    trackType <- readCodec identifiers identLength
+    trackType <- maybe (error "Unknown track type") return =<< readCodec identifiers identLength
     nameLength <- readInt32be
     name <- B.pack <$> (I.joinI $ I.takeUpTo nameLength I.stream2list)
 
@@ -498,17 +498,6 @@ readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
 readVersion :: (Functor m, Monad m)
             => Iteratee ByteString m Version
 readVersion = Version <$> readInt16be <*> readInt16be
-
-readCodec :: (Functor m, Monad m)
-          => [IdentifyCodec]
-          -> Int
-          -> Iteratee ByteString m Codec
-readCodec identifiers n = do
-    tt <- B.pack <$> (I.joinI $ I.takeUpTo n I.stream2list)
-    maybe (error "Unknown track type") return (parseCodec identifiers tt)
-
-parseCodec :: [IdentifyCodec] -> IdentifyCodec
-parseCodec identifiers h = msum . map ($ h) $ identifiers
 
 readFlags :: (Functor m, Monad m)
           => Iteratee ByteString m (SampleRateType, Bool, Bool)

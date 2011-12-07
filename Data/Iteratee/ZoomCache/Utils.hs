@@ -28,11 +28,16 @@ module Data.Iteratee.ZoomCache.Utils (
     , readFloat32be
     , readDouble64be
     , readRational64be
+
+    -- * Codec reading
+    , readCodec
 ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad (msum)
 import Data.Bits
 import qualified Data.ByteString as B
+import Data.ByteString (ByteString)
 import Data.Int
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
@@ -40,6 +45,8 @@ import qualified Data.ListLike as LL
 import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
+
+import Data.ZoomCache.Types
 
 -- | Read 1 byte as a signed Integral
 readInt8 :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m, Integral a)
@@ -178,4 +185,16 @@ readRational64be = do
         then return 0
         else return (num % den)
 
+----------------------------------------------------------------------
+
+readCodec :: (Functor m, Monad m)
+          => [IdentifyCodec]
+          -> Int
+          -> Iteratee ByteString m (Maybe Codec)
+readCodec identifiers n = do
+    tt <- B.pack <$> (I.joinI $ I.takeUpTo n I.stream2list)
+    return (parseCodec identifiers tt)
+
+parseCodec :: [IdentifyCodec] -> IdentifyCodec
+parseCodec identifiers h = msum . map ($ h) $ identifiers
 
