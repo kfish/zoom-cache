@@ -47,6 +47,7 @@ module Data.ZoomCache.List (
     , NList(..)
     , listToNList
     , nListToList
+    , supportMultichannel
     , identifyCodecMultichannel
     , oneTrackMultichannel
     , mkTrackSpecMultichannel
@@ -79,6 +80,10 @@ trackTypeNList :: ByteString
 trackTypeNList = "ZOOMmchn"
 
 ----------------------------------------------------------------------
+
+supportMultichannel :: [IdentifyCodec] -> [IdentifyCodec]
+supportMultichannel = f
+    where f x = x ++ [identifyCodecMultichannel (f x)]
 
 runner1 :: Identity (I.Iteratee s Identity c) -> c
 runner1 = runIdentity . I.run . runIdentity

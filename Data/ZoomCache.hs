@@ -94,8 +94,6 @@ import Data.ZoomCache.Numeric.IEEE754()
 import Data.ZoomCache.Numeric.Int()
 import Data.ZoomCache.Numeric.Word()
 
-import Data.ZoomCache.List
-
 ----------------------------------------------------------------------
 
 -- | 'IdentifyTrack' functions provided for standard codecs provided
@@ -117,6 +115,5 @@ standardIdentifiers =
     , identifyCodec (undefined :: Integer)
     , identifyCodec (undefined :: ())
     , identifyCodec (undefined :: Bool)
-    , identifyCodecMultichannel standardIdentifiers
     ]
 

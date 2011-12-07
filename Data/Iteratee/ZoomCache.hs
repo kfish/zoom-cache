@@ -82,6 +82,7 @@ import Data.Maybe
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
+import Data.ZoomCache.List (supportMultichannel)
 import Data.ZoomCache.Numeric.Delta
 import Data.ZoomCache.Types
 
@@ -336,11 +337,13 @@ readTrackHeader identifiers = do
     (drType, delta, zlib) <- readFlags
     rate <- readRational64be
     identLength <- readInt32be
-    trackType <- maybe (error "Unknown track type") return =<< readCodec identifiers identLength
+    trackType <- maybe (error "Unknown track type") return =<< readCodecMultichannel identLength
     nameLength <- readInt32be
     name <- B.pack <$> (I.joinI $ I.takeUpTo nameLength I.stream2list)
 
     return (trackNo, TrackSpec trackType delta zlib drType rate name)
+    where
+        readCodecMultichannel = readCodec (supportMultichannel identifiers)
 
 ------------------------------------------------------------
 -- Packet, Summary reading
