@@ -102,6 +102,7 @@ Library
     Data.ZoomCache.Format
     Data.ZoomCache.Identify
     Data.ZoomCache.List
+    Data.ZoomCache.NList
     Data.ZoomCache.Numeric
     Data.ZoomCache.Numeric.Delta
     Data.ZoomCache.Numeric.FloatMinMax

@@ -1,12 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
@@ -32,8 +26,6 @@ for type a.
 module Data.ZoomCache.List (
       SummaryData(..)
     , SummaryWork(..)
-    , NList(..)
-    , nListToList
     , supportMultichannel
     , identifyCodecMultichannel
     , oneTrackMultichannel
@@ -51,12 +43,11 @@ import qualified Data.Iteratee as I
 import Data.Iteratee (Iteratee)
 import Data.List (intersperse)
 import Data.Monoid (mconcat)
-import Data.Typeable
 import Data.TypeLevel.Num hiding ((==))
-import Test.QuickCheck.Arbitrary
 
 import Data.ZoomCache.Codec
 import Data.ZoomCache.Common
+import Data.ZoomCache.NList
 import Data.ZoomCache.Types
 import Data.Iteratee.ZoomCache.Utils
 
@@ -120,25 +111,6 @@ instance (ZoomWrite a, ZoomWritable a) => ZoomWrite (SampleOffset, [a]) where
 
 writeSOList :: (ZoomWrite a, ZoomWritable a) => TrackNo -> (SampleOffset, [a]) -> ZoomW ()
 writeSOList tn (ts, xs) = reifyIntegral (length xs) (\n -> write tn (ts, (NList n xs)))
-
-----------------------------------------------------------------------
-
-data NList n a = NList n [a]
-    deriving (Show)
-
-instance Eq a => Eq (NList n a) where
-    (NList _ a1) == (NList _ a2) = a1 == a2
-
-instance Typeable a => Typeable (NList n a) where
-    typeOf (NList _ a) = mkTyConApp (mkTyCon3 "zoom-cache" "Data.ZoomCache.List" "NList") [typeOf a]
-
-instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
-    arbitrary = NList unify <$> sequence [ arbitrary | _ <- [1..(toInt unify)] ]
-        where
-            unify = undefined
-
-nListToList :: NList n a -> [a]
-nListToList (NList _ xs) = xs
 
 ----------------------------------------------------------------------
 -- Read
