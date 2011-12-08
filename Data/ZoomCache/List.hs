@@ -33,7 +33,6 @@ module Data.ZoomCache.List (
       SummaryData(..)
     , SummaryWork(..)
     , NList(..)
-    , listToNList
     , nListToList
     , supportMultichannel
     , identifyCodecMultichannel
@@ -109,9 +108,6 @@ mkTrackSpecMultichannel channels a = reifyIntegral channels
     (\n -> TrackSpec (Codec (NList n [a])))
 
 ----------------------------------------------------------------------
-
-listToNList :: (Nat n) => [a] -> NList n a
-listToNList xs = reifyIntegral (length xs) (\_ -> NList undefined xs)
 
 instance (ZoomWrite a, ZoomWritable a) => ZoomWrite [a] where
     write = writeList
