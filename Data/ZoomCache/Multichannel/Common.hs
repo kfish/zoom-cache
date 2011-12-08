@@ -1,7 +1,7 @@
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 -- |
--- Module      : Data.ZoomCache.Multichannel
+-- Module      : Data.ZoomCache.Multichannel.Common
 -- Copyright   : Conrad Parker
 -- License     : BSD3-style (see LICENSE)
 --
@@ -12,14 +12,17 @@
 -- ZoomCache multichannel API
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.Multichannel (
+module Data.ZoomCache.Multichannel.Common (
       trackTypeMultichannel
-
-    -- * Multichannel codecs
-    , module Data.ZoomCache.Multichannel.List
 ) where
 
-import Data.ZoomCache.Multichannel.Common
-import Data.ZoomCache.Multichannel.List
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as C
+
+----------------------------------------------------------------------
+
+-- Identifier for track headers
+trackTypeMultichannel :: ByteString
+trackTypeMultichannel = C.pack "ZOOMmchn"
 
 ----------------------------------------------------------------------

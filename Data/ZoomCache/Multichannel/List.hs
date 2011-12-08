@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
@@ -47,15 +46,10 @@ import Data.TypeLevel.Num hiding ((==))
 
 import Data.ZoomCache.Codec
 import Data.ZoomCache.Common
+import Data.ZoomCache.Multichannel.Common
 import Data.ZoomCache.NList
 import Data.ZoomCache.Types
 import Data.Iteratee.ZoomCache.Utils
-
-----------------------------------------------------------------------
-
--- Identifier for track headers
-trackTypeNList :: ByteString
-trackTypeNList = "ZOOMmchn"
 
 ----------------------------------------------------------------------
 
@@ -72,7 +66,7 @@ identifyCodecMultichannel identifiers bs = runner1 $ I.enumPure1Chunk bs identif
         identifyMulti :: (Functor m, Monad m) => I.Iteratee ByteString m (Maybe Codec)
         identifyMulti = do
             mIdent <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
-            if mIdent == trackTypeNList
+            if mIdent == trackTypeMultichannel
                 then do
                     channels <- readInt32be
                     subIdentLength <- readInt32be
@@ -128,7 +122,7 @@ instance (Nat n, ZoomReadable a) => ZoomReadable (NList n a) where
 
 mkTrackTypeNList :: (Nat n, ZoomReadable a) => (NList n a) -> ByteString
 mkTrackTypeNList (NList nv l) = mconcat
-    [ trackTypeNList
+    [ trackTypeMultichannel
     , toByteString . fromIntegral32be . toInt $ nv
     , toByteString . fromIntegral32be . B.length $ subIdent
     , subIdent
