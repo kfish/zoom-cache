@@ -49,6 +49,9 @@ module Data.Iteratee.ZoomCache (
   , enumStream
   , enumStreamTrackNo
 
+  -- * Seeking
+  , seekTimeStamp
+
   -- * Stream enumeratees
   , enumPackets
   , enumSummaryLevel
@@ -236,7 +239,7 @@ enumStreamTrackNo :: (Functor m, MonadIO m)
                   => CacheFile
                   -> TrackNo
                   -> I.Enumeratee ByteString [Stream] m a
-enumStreamTrackNo cf0 trackNo = I.unfoldConvStream go cf0
+enumStreamTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go cf0
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
@@ -259,7 +262,7 @@ enumStreamTrackNo cf0 trackNo = I.unfoldConvStream go cf0
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
             -> I.Enumeratee ByteString [Stream] m a
-enumStream = I.unfoldConvStream go
+enumStream = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
