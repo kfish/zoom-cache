@@ -156,10 +156,10 @@ zoomWriteFile Config{..} (path:_)
                           (sW >> mapM_ (write track) d)
         | variable  = withFileWrite (oneTrackMultichannel channels (head d) delta zlib VariableSR rate' label)
                           (not noRaw)
-                          (sW >> mapM_ (write track) (zip (map SO [1,3..]) (replicate channels d)))
+                          (sW >> mapM_ (write track) (zip (map SO [1,3..]) (map (replicate channels) d)))
         | otherwise = withFileWrite (oneTrackMultichannel channels (head d) delta zlib ConstantSR rate' label)
                           (not noRaw)
-                          (sW >> mapM_ (write track) (replicate channels d))
+                          (sW >> mapM_ (write track) (map (replicate channels) d))
     rate' = fromInteger rate
     sW = setWatermark 1 wmLevel
 
