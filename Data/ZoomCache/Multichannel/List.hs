@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 {- |
-   Module      : Data.ZoomCache.List
+   Module      : Data.ZoomCache.Multichannel.List
    Copyright   : Conrad Parker
    License     : BSD3-style (see LICENSE)
 
@@ -23,7 +23,7 @@ for type a.
 -}
 ----------------------------------------------------------------------
 
-module Data.ZoomCache.List (
+module Data.ZoomCache.Multichannel.List (
       SummaryData(..)
     , SummaryWork(..)
     , supportMultichannel

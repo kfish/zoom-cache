@@ -101,7 +101,8 @@ Library
     Data.ZoomCache.Dump
     Data.ZoomCache.Format
     Data.ZoomCache.Identify
-    Data.ZoomCache.List
+    Data.ZoomCache.Multichannel
+    Data.ZoomCache.Multichannel.List
     Data.ZoomCache.NList
     Data.ZoomCache.Numeric
     Data.ZoomCache.Numeric.Delta
