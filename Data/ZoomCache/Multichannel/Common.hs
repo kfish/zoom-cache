@@ -25,4 +25,3 @@ import qualified Data.ByteString.Char8 as C
 trackTypeMultichannel :: ByteString
 trackTypeMultichannel = C.pack "ZOOMmchn"
 
-----------------------------------------------------------------------

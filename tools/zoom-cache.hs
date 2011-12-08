@@ -18,7 +18,6 @@ import UI.Command
 import Data.ZoomCache
 import Data.ZoomCache.Dump
 import Data.ZoomCache.Multichannel
-import Data.ZoomCache.Types
 
 ------------------------------------------------------------
 
