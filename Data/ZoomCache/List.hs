@@ -23,20 +23,8 @@ Default codec implementation for multichannel values of type [a].
 
 This module implements the interfaces documented in "Data.ZoomCache.Codec".
 
-The table below describes the encoding of SummaryData for List.
-
-@
-   | ...                                                           |   -35
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Expected value (double)                                       | 36-39
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | ...                                                           | 40-43
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-@
-
-Field encoding formats:
-
-  @double@: big-endian IEEE 754-2008 binary64 (IEEE 754-1985 double)
+Multichannel SummaryData is simply a concatenation of n blocks of SummaryData
+for type a.
 
 -}
 ----------------------------------------------------------------------
