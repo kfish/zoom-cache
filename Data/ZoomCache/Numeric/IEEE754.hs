@@ -125,6 +125,9 @@ instance ZoomWrite Float where
 instance ZoomWrite (SampleOffset, Float) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Float) where
+    write = writeDataTS
+
 instance ZoomWritable Float where
     data SummaryWork Float = SummaryWorkFloat
         { swFloatTime  :: {-# UNPACK #-}!SampleOffset
@@ -202,6 +205,9 @@ instance ZoomWrite Double where
 
 instance ZoomWrite (SampleOffset, Double) where
     write = writeDataVBR
+
+instance ZoomWrite (TimeStamp, Double) where
+    write = writeDataTS
 
 instance ZoomWritable Double where
     data SummaryWork Double = SummaryWorkDouble

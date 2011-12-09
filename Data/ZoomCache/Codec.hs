@@ -58,6 +58,10 @@ module Data.ZoomCache.Codec (
 
     -- * ZoomCache Types
     , Codec
+    , TimeStamp (..)
+    , TimeStampDiff(..)
+    , timeStampDiff
+    , timeStampFromSO
     , SampleOffset(..)
     , SampleOffsetDiff(..)
     , sampleOffsetDiff

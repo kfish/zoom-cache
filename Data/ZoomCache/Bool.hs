@@ -103,6 +103,9 @@ instance ZoomWrite Bool where
 instance ZoomWrite (SampleOffset, Bool) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Bool) where
+    write = writeDataTS
+
 instance ZoomWritable Bool where
     data SummaryWork Bool = SummaryWorkBool
         { swBoolSO      :: {-# UNPACK #-}!SampleOffset

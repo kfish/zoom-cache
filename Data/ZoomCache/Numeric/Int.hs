@@ -218,6 +218,9 @@ instance ZoomWrite Int where
 instance ZoomWrite (SampleOffset, Int) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Int) where
+    write = writeDataTS
+
 instance ZoomWritable Int where
     data SummaryWork Int = SummaryWorkInt
         { swIntTime  :: {-# UNPACK #-}!SampleOffset
@@ -297,6 +300,9 @@ instance ZoomWrite Int8 where
 
 instance ZoomWrite (SampleOffset, Int8) where
     write = writeDataVBR
+
+instance ZoomWrite (TimeStamp, Int8) where
+    write = writeDataTS
 
 instance ZoomWritable Int8 where
     data SummaryWork Int8 = SummaryWorkInt8
@@ -378,6 +384,9 @@ instance ZoomWrite Int16 where
 instance ZoomWrite (SampleOffset, Int16) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Int16) where
+    write = writeDataTS
+
 instance ZoomWritable Int16 where
     data SummaryWork Int16 = SummaryWorkInt16
         { swInt16Time  :: {-# UNPACK #-}!SampleOffset
@@ -457,6 +466,9 @@ instance ZoomWrite Int32 where
 
 instance ZoomWrite (SampleOffset, Int32) where
     write = writeDataVBR
+
+instance ZoomWrite (TimeStamp, Int32) where
+    write = writeDataTS
 
 instance ZoomWritable Int32 where
     data SummaryWork Int32 = SummaryWorkInt32
@@ -538,6 +550,9 @@ instance ZoomWrite Int64 where
 instance ZoomWrite (SampleOffset, Int64) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Int64) where
+    write = writeDataTS
+
 instance ZoomWritable Int64 where
     data SummaryWork Int64 = SummaryWorkInt64
         { swInt64Time  :: {-# UNPACK #-}!SampleOffset
@@ -617,6 +632,9 @@ instance ZoomWrite Integer where
 
 instance ZoomWrite (SampleOffset, Integer) where
     write = writeDataVBR
+
+instance ZoomWrite (TimeStamp, Integer) where
+    write = writeDataTS
 
 instance ZoomWritable Integer where
     data SummaryWork Integer = SummaryWorkInteger

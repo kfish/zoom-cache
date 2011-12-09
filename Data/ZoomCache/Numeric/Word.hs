@@ -186,6 +186,9 @@ instance ZoomWrite Word where
 instance ZoomWrite (SampleOffset, Word) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Word) where
+    write = writeDataTS
+
 instance ZoomWritable Word where
     data SummaryWork Word = SummaryWorkWord
         { swWordTime  :: {-# UNPACK #-}!SampleOffset
@@ -262,6 +265,9 @@ instance ZoomWrite Word8 where
 
 instance ZoomWrite (SampleOffset, Word8) where
     write = writeDataVBR
+
+instance ZoomWrite (TimeStamp, Word8) where
+    write = writeDataTS
 
 instance ZoomWritable Word8 where
     data SummaryWork Word8 = SummaryWorkWord8
@@ -340,6 +346,9 @@ instance ZoomWrite Word16 where
 instance ZoomWrite (SampleOffset, Word16) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Word16) where
+    write = writeDataTS
+
 instance ZoomWritable Word16 where
     data SummaryWork Word16 = SummaryWorkWord16
         { swWord16Time  :: {-# UNPACK #-}!SampleOffset
@@ -417,6 +426,9 @@ instance ZoomWrite Word32 where
 instance ZoomWrite (SampleOffset, Word32) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, Word32) where
+    write = writeDataTS
+
 instance ZoomWritable Word32 where
     data SummaryWork Word32 = SummaryWorkWord32
         { swWord32Time  :: {-# UNPACK #-}!SampleOffset
@@ -493,6 +505,9 @@ instance ZoomWrite Word64 where
 
 instance ZoomWrite (SampleOffset, Word64) where
     write = writeDataVBR
+
+instance ZoomWrite (TimeStamp, Word64) where
+    write = writeDataTS
 
 instance ZoomWritable Word64 where
     data SummaryWork Word64 = SummaryWorkWord64
