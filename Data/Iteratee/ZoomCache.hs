@@ -85,7 +85,7 @@ import Data.Maybe
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
-import Data.ZoomCache.Multichannel (supportMultichannel)
+import Data.ZoomCache.Multichannel.Internal (supportMultichannel)
 import Data.ZoomCache.Numeric.Delta
 import Data.ZoomCache.Types
 
