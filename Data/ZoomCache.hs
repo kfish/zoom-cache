@@ -47,6 +47,7 @@ module Data.ZoomCache (
 
     -- * The ZoomWrite class
     , ZoomWrite(..)
+    , ZoomWritable(..)
 
     -- * The ZoomW monad
     , ZoomW
