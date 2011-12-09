@@ -3,6 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
 {- |
@@ -47,6 +48,7 @@ module Data.Iteratee.ZoomCache (
 
   , iterHeaders
   , enumStream
+  , enumStreamIncomplete
   , enumStreamTrackNo
 
   -- * Seeking
@@ -68,7 +70,7 @@ module Data.Iteratee.ZoomCache (
 ) where
 
 import Control.Applicative
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, liftM)
 import Control.Monad.Trans (MonadIO)
 import Data.Bits
 import Data.ByteString (ByteString)
@@ -257,26 +259,57 @@ enumStreamTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore 
                     return (cf, res)
                 _ -> return (cf, [])
 
--- | An enumeratee of zoom-cache data, after global and track headers
+-- | An iteratee of zoom-cache which produces a singleton list of zoom-cache
+-- stream, if it can.
+iterStream :: (Functor m, MonadIO m) =>
+              CacheFile -> Iteratee ByteString m [Stream]
+iterStream cf = do
+    header <- I.joinI $ I.takeUpTo 8 I.stream2list
+    case parseHeader (B.pack header) of
+        Just PacketHeader -> do
+             (trackNo, packet) <- readPacket (cfSpecs cf)
+             return [StreamPacket cf trackNo (fromJust packet)]
+        Just SummaryHeader -> do
+             (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
+             return [StreamSummary cf trackNo (fromJust summary)]
+        _ -> return []
+
+-- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
+
+-- Unfortunately the iteratee library does not have a convStreamCheck function
+-- (yet), so we end up doing a (trivial) fold when we really just want to do a
+-- map.
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
             -> I.Enumeratee ByteString [Stream] m a
-enumStream = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go
-    where
-        go :: (Functor m, MonadIO m)
-           => CacheFile
-           -> Iteratee ByteString m (CacheFile, [Stream])
-        go cf = do
-            header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (B.pack header) of
-                Just PacketHeader -> do
-                    (trackNo, packet) <- readPacket (cfSpecs cf)
-                    return (cf, [StreamPacket cf trackNo (fromJust packet)])
-                Just SummaryHeader -> do
-                    (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
-                    return (cf, [StreamSummary cf trackNo (fromJust summary)])
-                _ -> return (cf, [])
+enumStream = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
+             liftM (cf, ) (iterStream cf)
+
+-- | A version of convStream which will not fail in case EOF is reached at an
+-- unexpected point.
+convStreamIncomplete :: (Monad m, I.Nullable s) =>
+                        I.Iteratee s m s'
+                     -> I.Enumeratee s s' m a
+convStreamIncomplete fi = I.eneeCheckIfDonePass check
+  where
+    check k (Just e) = do
+      I.throwRecoverableErr e (const I.identity)
+      check k Nothing
+    check k Nothing = do
+      isEOF <- I.isStreamFinished
+      case isEOF of
+        Nothing -> do
+          str <- either (I.EOF . Just) I.Chunk `liftM` I.checkErr fi
+          I.eneeCheckIfDonePass check $ k str
+        e@(Just _) -> I.eneeCheckIfDonePass check . k $ I.EOF e
+
+-- | A version of enumStream which won't fail with an EofException if the last
+-- bit is incomplete (perhaps still being written to).
+enumStreamIncomplete :: (Functor m, MonadIO m) =>
+                        CacheFile
+                     -> I.Enumeratee ByteString [Stream] m a
+enumStreamIncomplete = convStreamIncomplete . iterStream
 
 ------------------------------------------------------------
 
