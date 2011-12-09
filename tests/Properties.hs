@@ -10,7 +10,7 @@ import Data.TypeLevel.Num hiding ((==))
 import Data.Word
 import Data.ZoomCache
 import Data.ZoomCache.Codec
-import Data.ZoomCache.List
+import Data.ZoomCache.NList
 
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
