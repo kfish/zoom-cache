@@ -134,6 +134,10 @@ before (Just b) x = t == Nothing || (fromJust t) <= b
 instance Timestampable (TimeStamp, a) where
     timestamp = Just . fst
 
+instance Timestampable a => Timestampable [a] where
+    timestamp []    = Nothing
+    timestamp (x:_) = timestamp x
+
 ------------------------------------------------------------
 
 data PacketSO = PacketSO
