@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
@@ -33,7 +34,7 @@ instance Eq a => Eq (NList n a) where
     (NList _ a1) == (NList _ a2) = a1 == a2
 
 instance Typeable a => Typeable (NList n a) where
-    typeOf (NList _ a) = mkTyConApp (mkTyCon3 "zoom-cache" "Data.ZoomCache.NList" "NList") [typeOf a]
+    typeOf _ = mkTyConApp (mkTyCon3 "zoom-cache" "Data.ZoomCache.NList" "NList") [typeOf (undefined :: a)]
 
 instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
     arbitrary = NList unify <$> sequence [ arbitrary | _ <- [1..(toInt unify)] ]
