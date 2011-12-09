@@ -47,6 +47,7 @@ module Data.ZoomCache.Codec (
     -- * ZoomWrite instance helpers
     , writeData
     , writeDataVBR
+    , writeDataTS
 
     -- * Builders
     , fromRational64

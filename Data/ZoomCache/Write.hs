@@ -25,6 +25,7 @@ module Data.ZoomCache.Write (
     -- * Instance helpers
     , writeData
     , writeDataVBR
+    , writeDataTS
 
     -- * The ZoomW monad
     , ZoomW
@@ -293,6 +294,16 @@ writeDataVBR trackNo (t, d) = do
         , twWriter = updateWork t d (twWriter z)
         }
     flushIfNeeded trackNo
+
+writeDataTS :: (Typeable a, ZoomWrite a, ZoomWritable a)
+            => TrackNo -> (TimeStamp, a) -> ZoomW ()
+writeDataTS trackNo (TS ts, d) = do
+    tw <- IM.lookup trackNo <$> gets whTrackWork
+    case tw of
+        Just TrackWork{..} -> do
+            let so = floor (ts * fromRational (specRate twSpec))
+            writeDataVBR trackNo (SO so, d)
+        _ -> return ()
 
 deltaEncodeWork :: (Typeable a, ZoomWritable a)
                 => Bool -> Maybe ZoomWork -> a -> Builder
