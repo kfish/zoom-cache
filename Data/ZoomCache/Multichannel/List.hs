@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 {- |
@@ -25,6 +26,7 @@ module Data.ZoomCache.Multichannel.List (
     , SummaryWork(..)
 
     , wholeTrackSummaryListDouble
+    , enumListDouble
     , enumSummaryListDouble
 )where
 
@@ -59,6 +61,42 @@ writeSOList :: (ZoomWrite a, ZoomWritable a) => TrackNo -> (SampleOffset, [a]) -
 writeSOList tn (ts, xs) = reifyIntegral (length xs) (\n -> write tn (ts, (NList n xs)))
 
 ----------------------------------------------------------------------
+
+rawToListDouble :: ZoomRaw -> [[Double]]
+rawToListDouble (ZoomRaw xs) | not (null d) = [d]
+                             | typeOf xs == typeOf (undefined :: [NList D1 Double]) =
+                                             l (cast xs :: Maybe [NList D1 Double])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Float]) =
+                                             f (cast xs :: Maybe [NList D1 Float])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Int]) =
+                                             f (cast xs :: Maybe [NList D1 Int])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Int8]) =
+                                             f (cast xs :: Maybe [NList D1 Int8])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Int16]) =
+                                             f (cast xs :: Maybe [NList D1 Int16])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Int32]) =
+                                             f (cast xs :: Maybe [NList D1 Int32])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Int64]) =
+                                             f (cast xs :: Maybe [NList D1 Int64])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Integer]) =
+                                             f (cast xs :: Maybe [NList D1 Integer])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Word]) =
+                                             f (cast xs :: Maybe [NList D1 Word])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Word8]) =
+                                             f (cast xs :: Maybe [NList D1 Word8])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Word16]) =
+                                             f (cast xs :: Maybe [NList D1 Word16])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Word32]) =
+                                             f (cast xs :: Maybe [NList D1 Word32])
+                             | typeOf xs == typeOf (undefined :: [NList D1 Word64]) =
+                                             f (cast xs :: Maybe [NList D1 Word64])
+                             | otherwise = []
+    where
+        d = rawToDouble (ZoomRaw xs)
+        l :: Maybe [NList D1 a] -> [[a]]
+        l = maybe [] (map nListToList)
+        f :: (ZoomReadable a, Real a) => Maybe [NList D1 a] -> [[Double]]
+        f = map (rawToDouble . ZoomRaw) . l
 
 toSummaryListDouble :: Typeable a => Summary a -> Maybe [Summary Double]
 toSummaryListDouble s | isJust sd = (:[]) <$> sd
@@ -110,6 +148,13 @@ wholeTrackSummaryListDouble identifiers trackNo =
         e = I.joinI . enumSummaries . I.mapChunks (catMaybes . map toSLD)
         toSLD :: ZoomSummary -> Maybe [Summary Double]
         toSLD (ZoomSummary s) = toSummaryListDouble s
+
+enumListDouble :: (Functor m, MonadIO m)
+               => I.Enumeratee [Stream] [(TimeStamp, [Double])] m a
+enumListDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
+    where
+        f :: Packet -> [(TimeStamp, [Double])]
+        f Packet{..} = zip packetTimeStamps (rawToListDouble packetData)
 
 enumSummaryListDouble :: (Functor m, MonadIO m)
                       => Int

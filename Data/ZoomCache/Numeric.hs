@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS -Wall #-}
 ----------------------------------------------------------------------
@@ -23,6 +22,7 @@ module Data.ZoomCache.Numeric (
   , numAvg
   , numRMS
 
+  , rawToDouble
   , toSummaryDouble
   , toSummarySODouble
 
