@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
@@ -24,6 +25,8 @@ for type a.
 module Data.ZoomCache.Multichannel.NList (
       SummaryData(..)
     , SummaryWork(..)
+
+    , summaryNListToList
 )where
 
 import Blaze.ByteString.Builder
@@ -39,6 +42,17 @@ import Data.TypeLevel.Num hiding ((==))
 import Data.ZoomCache.Codec
 import Data.ZoomCache.Multichannel.Common
 import Data.ZoomCache.NList
+import Data.ZoomCache.Types
+
+----------------------------------------------------------------------
+
+summaryNListToList :: Summary (NList n a) -> [Summary a]
+summaryNListToList s = map mkSummary (expandData (summaryData s))
+    where
+        mkSummary :: SummaryData a -> Summary a
+        mkSummary sd = s { summaryData = sd }
+        expandData :: SummaryData (NList n a) -> [SummaryData a]
+        expandData (SummaryNList (NList _ l)) = l
 
 ----------------------------------------------------------------------
 -- Read
