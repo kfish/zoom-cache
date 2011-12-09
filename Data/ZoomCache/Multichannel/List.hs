@@ -61,7 +61,8 @@ writeSOList tn (ts, xs) = reifyIntegral (length xs) (\n -> write tn (ts, (NList 
 ----------------------------------------------------------------------
 
 toSummaryListDouble :: Typeable a => Summary a -> Maybe [Summary Double]
-toSummaryListDouble s | typeOf s == typeOf (undefined :: Summary (NList D1 Double)) =
+toSummaryListDouble s | isJust sd = (:[]) <$> sd
+                      | typeOf s == typeOf (undefined :: Summary (NList D1 Double)) =
                                 sl <$> (cast s :: Maybe (Summary (NList D1 Double)))
                       | typeOf s == typeOf (undefined :: Summary (NList D1 Float)) =
                                sld <$> (cast s :: Maybe (Summary (NList D1 Float)))
@@ -89,6 +90,7 @@ toSummaryListDouble s | typeOf s == typeOf (undefined :: Summary (NList D1 Doubl
                                sld <$> (cast s :: Maybe (Summary (NList D1 Word64)))
                       | otherwise = Nothing
     where
+        sd = toSummaryDouble s
         sl :: Summary (NList D1 a) -> [Summary a]
         sl = summaryNListToList
         sld :: Typeable a => Summary (NList D1 a) -> [Summary Double]
