@@ -105,6 +105,9 @@ instance ZoomWrite () where
 instance ZoomWrite (SampleOffset, ()) where
     write = writeDataVBR
 
+instance ZoomWrite (TimeStamp, ()) where
+    write = writeDataTS
+
 instance ZoomWritable () where
     data SummaryWork () = SummaryWorkUnit
         { swUnitCount :: {-# UNPACK #-}!Int
