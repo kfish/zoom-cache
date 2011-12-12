@@ -81,7 +81,7 @@ rawToDouble (ZoomRaw xs) | typeOf xs == typeOf (undefined :: [Double]) =
 
 ----------------------------------------------------------------------
 
--- | Coercion of numeric Summary to type SummarySO Double.
+-- | Coercion of numeric Summary to type Summary Double.
 toSummaryDouble :: Typeable a => Summary a -> Maybe (Summary Double)
 toSummaryDouble s | typeOf s == typeOf (undefined :: Summary Double) =
                                 id (cast s :: Maybe (Summary Double))
