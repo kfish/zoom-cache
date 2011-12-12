@@ -160,7 +160,7 @@ zoomWriteFile Config{..} (path:_)
                           (not noRaw)
                           (sW >> mapM_ (write track) (map (replicate channels) d))
     rate' = fromInteger rate
-    sW = setWatermark 1 wmLevel
+    sW = setWatermark track wmLevel
 
 ------------------------------------------------------------
 
