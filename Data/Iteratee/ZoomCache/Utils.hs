@@ -80,7 +80,7 @@ llDropWhileB :: LL.ListLike full item => (item -> Bool) -> full -> full
 llDropWhileB = dw LL.empty
     where
         dw prev func l
-            | LL.null l = LL.empty
+            | LL.null l = prev
             | func (LL.head l) = dw (LL.take 1 l) func (LL.tail l)
             | otherwise = LL.append prev l
 
