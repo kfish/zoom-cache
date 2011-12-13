@@ -116,6 +116,7 @@ Library
     Data.ZoomCache.Numeric.Types
     Data.ZoomCache.Numeric.Word
     Data.ZoomCache.Pretty
+    Data.ZoomCache.TrackSpec
     Data.ZoomCache.Types
     Data.ZoomCache.Unit
     Data.ZoomCache.Write
