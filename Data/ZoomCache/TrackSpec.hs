@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
@@ -14,9 +15,15 @@
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.TrackSpec (
+    -- * TrackSpec helpers
+      setCodec
+    , mkTrackSpec
+    , oneTrack
 ) where
 
+import Data.ByteString (ByteString)
 import Data.Default
+import qualified Data.IntMap as IM
 
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
@@ -34,4 +41,22 @@ instance Default TrackSpec where
         , specRate = 1000
         , specName = ""
         } 
+
+------------------------------------------------------------
+
+-- | Create a track map for a stream of a given type, as track no. 1
+oneTrack :: (ZoomReadable a)
+         => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
+         -> TrackMap
+oneTrack a delta zlib !drType !rate !name =
+    IM.singleton 1 (mkTrackSpec a delta zlib drType rate name)
+{-# INLINABLE oneTrack #-}
+
+mkTrackSpec :: (ZoomReadable a)
+            => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
+            -> TrackSpec
+mkTrackSpec a = TrackSpec (Codec a)
+
+setCodec :: ZoomReadable a => a -> TrackSpec -> TrackSpec
+setCodec a t = t { specType = Codec a }
 

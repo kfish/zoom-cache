@@ -64,6 +64,7 @@ module Data.ZoomCache (
     , setWatermark
 
     -- * TrackSpec helpers
+    , setCodec
     , mkTrackSpec
     , oneTrack
 
@@ -86,6 +87,7 @@ import Data.Iteratee.ZoomCache
 import Data.ZoomCache.Common
 import Data.ZoomCache.Identify
 import Data.ZoomCache.Pretty
+import Data.ZoomCache.TrackSpec
 import Data.ZoomCache.Types
 
 -- Track Types
