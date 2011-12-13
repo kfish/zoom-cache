@@ -127,7 +127,7 @@ class Timestampable a where
 
 before :: (Timestampable a) => Maybe TimeStamp -> a -> Bool
 before Nothing _ = True
-before (Just b) x = t == Nothing || (fromJust t) <= b
+before (Just b) x = t == Nothing || (fromJust t) < b
   where
     t = timestamp x
 
