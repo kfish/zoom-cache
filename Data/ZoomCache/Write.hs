@@ -42,6 +42,7 @@ module Data.ZoomCache.Write (
     , setWatermark
 
     -- * TrackSpec helpers
+    , setCodec
     , mkTrackSpec
     , oneTrack
 ) where
@@ -179,13 +180,20 @@ closeWrite :: ZoomWHandle -> IO ()
 closeWrite z = hClose (whHandle z)
 
 -- | Create a track map for a stream of a given type, as track no. 1
-oneTrack :: (ZoomReadable a) => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString -> TrackMap
-oneTrack a delta zlib !drType !rate !name = IM.singleton 1 (mkTrackSpec a delta zlib drType rate name)
+oneTrack :: (ZoomReadable a)
+         => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
+         -> TrackMap
+oneTrack a delta zlib !drType !rate !name =
+    IM.singleton 1 (mkTrackSpec a delta zlib drType rate name)
 {-# INLINABLE oneTrack #-}
 
 mkTrackSpec :: (ZoomReadable a)
-            => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString -> TrackSpec
+            => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
+            -> TrackSpec
 mkTrackSpec a = TrackSpec (Codec a)
+
+setCodec :: ZoomReadable a => a -> TrackSpec -> TrackSpec
+setCodec a t = t { specType = Codec a }
 
 -- | Query the maximum number of data points to buffer for a given track before
 -- forcing a flush of all buffered data and summaries.
