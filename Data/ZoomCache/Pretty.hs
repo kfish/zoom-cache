@@ -16,6 +16,7 @@
 module Data.ZoomCache.Pretty (
       prettyGlobal
     , prettyTrackSpec
+    , prettyTimeStamp
     , prettySampleOffset
     , prettySummarySO
 ) where
@@ -55,6 +56,16 @@ prettyTrackSpec trackNo TrackSpec{..} = unlines
                  | otherwise       = "Raw"
         compression | specZlibCompress = "Zlib"
                     | otherwise        = "Uncompressed"
+
+-- | Pretty-print a 'SampleOffset', given a datarate
+prettyTimeStamp :: TimeStamp -> String
+prettyTimeStamp (TS ts) = printf "%02d:%02d:%02d.%03d" hrs minN secN msN
+    where
+          secT, msN :: Integer
+          secT = floor ts
+          msN = round (1000 * (ts - fromIntegral secT))
+          (minT, secN) = quotRem secT 60
+          (hrs, minN) = quotRem minT 60
 
 -- | Pretty-print a 'SampleOffset', given a datarate
 prettySampleOffset :: Rational -> SampleOffset -> String
