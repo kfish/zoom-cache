@@ -61,10 +61,11 @@ fromUTCBaseTime :: Maybe UTCTime -> Builder
 fromUTCBaseTime Nothing = mconcat $ replicate 3 (fromIntegerVLC 0)
 fromUTCBaseTime (Just UTCTime{..}) = mconcat . map fromIntegerVLC $
     [ toModifiedJulianDay utctDay
-    , fromIntegral . fromEnum $ utctDayTime
+    , round . toRational . (pico *) $ utctDayTime
     , pico
     ]
     where
+        pico :: forall a . Num a => a
         pico = 1000000000000
 
 fromSummarySO :: ZoomWritable a => SummarySO a -> Builder
