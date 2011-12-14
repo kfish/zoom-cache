@@ -56,17 +56,42 @@ Global header:
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    | No. tracks (int32)                                            | 12-15
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | UTC                                                           | 16-19
+   | Modified Julian Day (intVLC)                                  | 16-
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | ...                                                           | 20-23
+   | ...                                                           | ...
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | ...                                                           | 28-31
+   | Seconds since midnight Numerator (intVLC)                     | ...
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | ...                                                           | 32-35
+   | ...                                                           | ...
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | ...                                                           | 36-39
+   | Seconds since midnight Denominator (intVLC)                   | ...
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | ...                                                           | ...
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @
+
+The Universal Time corresponding to data timestamp 0 is uniquely given
+by the fields "Modified Julian Day", "Seconds since midnight Numerator"
+and "Seconds since midnight Denominator".
+
+The Modified Julian Day is a standard count of days, with zero being
+the day 1858-11-17.
+Seconds since midnight: 0 <= t <= 86401s (because of leap seconds)
+
+If the correspondence to Universal Time is meaningless or unknown when
+writing data, these fields shall be given the special values 0, 0, 0.
+
+When reading, a value of 0 for "Seconds since midnight Denominator"
+should be interpreted as no corresponding Universal Time.
+
+Field encoding formats:
+
+  @int16@:  16bit big endian signed integer
+
+  @int32@:  32bit big endian signed integer
+
+  @intVLC@: Variable-length-coded signed integer
+
 -}
 
 -- Magic identifier at the beginning of a zoom-cache file.

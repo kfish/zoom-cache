@@ -38,6 +38,7 @@ module Data.ZoomCache.Common (
 
 import Data.Int
 import Data.Ratio
+import Data.Time.Clock (UTCTime)
 
 ------------------------------------------------------------
 
@@ -59,9 +60,8 @@ data Version = Version !Int !Int
 data Global = Global
     { version          :: Version
     , noTracks         :: Int
-    , baseUTC          :: Maybe Int -- UTCTime
+    , baseUTC          :: Maybe UTCTime
     }
-    deriving (Show)
 
 -- | Constant or Variable samplerate.
 -- For constant samplerate, timestamps are implied as incrementing by 1/samplerate

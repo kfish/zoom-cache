@@ -23,6 +23,8 @@ module Data.ZoomCache.Pretty (
 
 import qualified Data.ByteString.Char8 as C
 import Data.Ratio
+import Data.Time (UTCTime, formatTime)
+import System.Locale (defaultTimeLocale)
 import Text.Printf
 
 import Data.ZoomCache.Common
@@ -35,10 +37,12 @@ prettyGlobal :: Global -> String
 prettyGlobal Global{..} = unlines
     [ "Version:\t\t" ++ show vMaj ++ "." ++ show vMin
     , "No. tracks:\t\t" ++ show noTracks
-    , "UTC baseTime:\t\t" ++ maybe "undefined" show baseUTC
+    , "UTC baseTime:\t\t" ++ maybe "undefined" showUTC baseUTC
     ]
     where
         Version vMaj vMin = version
+        showUTC :: UTCTime -> String
+        showUTC = formatTime defaultTimeLocale "%Y-%m-%d %T"
 
 -- | Pretty-print a 'TrackSpec'
 prettyTrackSpec :: TrackNo -> TrackSpec -> String
