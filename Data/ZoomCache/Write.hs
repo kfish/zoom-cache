@@ -55,6 +55,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.List (foldl')
 import Data.Monoid
+import Data.Time (UTCTime)
 import System.IO
 
 import Blaze.ByteString.Builder.ZoomCache
@@ -102,13 +103,14 @@ type ZoomW = StateT ZoomWHandle IO
 -- | Run a @ZoomW ()@ action on a given file handle, using the specified
 -- 'TrackMap' specification
 withFileWrite :: TrackMap
+              -> Maybe UTCTime
               -> Bool          -- ^ Whether or not to write raw data packets.
                                -- If False, only summary blocks are written.
               -> ZoomW ()
               -> FilePath
               -> IO ()
-withFileWrite ztypes doRaw f path = do
-    z <- openWrite ztypes doRaw path
+withFileWrite ztypes utc doRaw f path = do
+    z <- openWrite ztypes utc doRaw path
     z' <- execStateT (f >> flush >> finish) z
     hClose (whHandle z')
 
@@ -151,13 +153,14 @@ diskTracks fSummarySO = do
 
 -- | Open a new ZoomCache file for writing, using a specified 'TrackMap'.
 openWrite :: TrackMap
+          -> Maybe UTCTime
           -> Bool              -- ^ Whether or not to write raw data packets.
                                -- If False, only summary blocks are written.
           -> FilePath
           -> IO ZoomWHandle
-openWrite trackMap doRaw path = do
+openWrite trackMap utc doRaw path = do
     h <- openFile path WriteMode
-    let global = mkGlobal (IM.size trackMap)
+    let global = mkGlobal (IM.size trackMap) utc
     writeGlobalHeader h global
     let tracks = IM.foldWithKey addTrack IM.empty trackMap
     mapM_ (uncurry (writeTrackHeader h)) (IM.assocs trackMap)
@@ -303,11 +306,11 @@ deltaEncodeWork _    _                              d = fromRaw d
 ----------------------------------------------------------------------
 -- Global
 
-mkGlobal :: Int -> Global
-mkGlobal n = Global
+mkGlobal :: Int -> Maybe UTCTime -> Global
+mkGlobal n utc = Global
     { version = Version versionMajor versionMinor
     , noTracks = n
-    , baseUTC = Nothing
+    , baseUTC = utc
     }
 
 ----------------------------------------------------------------------

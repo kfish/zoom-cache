@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -83,6 +84,8 @@ import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import Data.Iteratee.ZLib
 import Data.Maybe
+import Data.Ratio
+import Data.Time
 
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
@@ -361,8 +364,13 @@ readGlobalHeader = do
     v <- readVersion
     checkVersion v
     n <- readInt32be
-    _u <- B.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
-    return $ Global v n Nothing
+    jDay <- readIntegerVLC
+    sN <- readIntegerVLC
+    sD <- readIntegerVLC
+    let !u = if (sD == 0)
+                then Nothing
+                else Just $ UTCTime (ModifiedJulianDay jDay) (fromRational (sN % sD))
+    return $ Global v n u
     where
         checkVersion (Version major minor)
             | major == versionMajor && minor >= versionMinor = return ()

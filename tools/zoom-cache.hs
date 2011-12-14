@@ -148,19 +148,19 @@ zoomWriteFile Config{..} path
     w :: (ZoomReadable a, ZoomWrite a, ZoomWritable a, ZoomWrite (SampleOffset, a))
       => [a] -> FilePath -> IO ()
     w d
-        | variable && channels == 1 = withFileWrite trackMap
+        | variable && channels == 1 = withFileWrite trackMap Nothing
                           (not noRaw)
                           (sW >> mapM_ (write track)
                                        (zip (map SO [1,3..]) d))
-        | channels == 1 = withFileWrite trackMap
+        | channels == 1 = withFileWrite trackMap Nothing
                           (not noRaw)
                           (sW >> mapM_ (write track) d)
-        | variable  = withFileWrite trackMap
+        | variable  = withFileWrite trackMap Nothing
                           (not noRaw)
                           (sW >> mapM_ (write track)
                                        (zip (map SO [1,3..])
                                             (map (replicate channels) d)))
-        | otherwise = withFileWrite trackMap
+        | otherwise = withFileWrite trackMap Nothing
                           (not noRaw)
                           (sW >> mapM_ (write track)
                                        (map (replicate channels) d))

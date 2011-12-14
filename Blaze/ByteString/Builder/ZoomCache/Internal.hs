@@ -26,8 +26,8 @@ module Blaze.ByteString.Builder.ZoomCache.Internal (
 import Blaze.ByteString.Builder
 import Data.Bits
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as C
 import Data.Monoid
+import Data.Time
 
 import Blaze.ByteString.Builder.ZoomCache
 import Data.ZoomCache.Common
@@ -53,9 +53,19 @@ fromGlobal Global{..} = mconcat
     , mconcat $
         [ fromVersion version
         , fromIntegral32be noTracks
+        , fromUTCBaseTime baseUTC
         ]
-    , fromByteString $ C.pack (replicate 20 '\0') -- UTCTime
     ]
+
+fromUTCBaseTime :: Maybe UTCTime -> Builder
+fromUTCBaseTime Nothing = mconcat $ replicate 3 (fromIntegerVLC 0)
+fromUTCBaseTime (Just UTCTime{..}) = mconcat . map fromIntegerVLC $
+    [ toModifiedJulianDay utctDay
+    , fromIntegral . fromEnum $ utctDayTime
+    , pico
+    ]
+    where
+        pico = 1000000000000
 
 fromSummarySO :: ZoomWritable a => SummarySO a -> Builder
 fromSummarySO s@SummarySO{..} = mconcat [ fromSummarySOHeader s, l, d]
