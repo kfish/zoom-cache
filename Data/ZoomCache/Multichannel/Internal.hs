@@ -69,10 +69,11 @@ oneTrackMultichannel :: (ZoomReadable a)
 oneTrackMultichannel channels a delta zlib !drType !rate !name =
     IM.singleton 1 (mkTrackSpecMultichannel channels a delta zlib drType rate name)
 {-# INLINABLE oneTrackMultichannel #-}
+{-# DEPRECATED oneTrackMultichannel "Use setCodecMultichannel instead" #-}
 
 mkTrackSpecMultichannel :: (ZoomReadable a)
                         => Int -> a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
                         -> TrackSpec
 mkTrackSpecMultichannel channels a = reifyIntegral channels
     (\n -> TrackSpec (Codec (NList n [a])))
-
+{-# DEPRECATED mkTrackSpecMultichannel "Use setCodecMultichannel instead" #-}

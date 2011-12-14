@@ -55,11 +55,13 @@ oneTrack :: (ZoomReadable a)
 oneTrack a delta zlib !drType !rate !name =
     IM.singleton 1 (mkTrackSpec a delta zlib drType rate name)
 {-# INLINABLE oneTrack #-}
+{-# DEPRECATED oneTrack "Use setCodec instead" #-}
 
 mkTrackSpec :: (ZoomReadable a)
             => a -> Bool -> Bool -> SampleRateType -> Rational -> ByteString
             -> TrackSpec
 mkTrackSpec a = TrackSpec (Codec a)
+{-# DEPRECATED mkTrackSpec "Use setCodec instead" #-}
 
 setCodec :: ZoomReadable a => a -> TrackSpec -> TrackSpec
 setCodec a t = t { specType = Codec a }
