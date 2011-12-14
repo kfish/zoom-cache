@@ -132,7 +132,7 @@ zoomGen = defCmd {
         , cmdHandler = zoomGenHandler
         , cmdCategory = "Writing"
         , cmdShortDesc = "Generate zoom-cache data"
-        , cmdExamples = [("Generate a file called foo.zxd", "foo.zxd")]
+        , cmdExamples = [("Generate a file called foo.zoom", "foo.zoom")]
         }
 
 zoomGenHandler :: App () ()
@@ -188,7 +188,7 @@ zoomInfo = defCmd {
         , cmdHandler = zoomInfoHandler
         , cmdCategory = "Reading"
         , cmdShortDesc = "Display basic info about a zoom-cache file"
-        , cmdExamples = [("Display info about foo.zxd", "foo.zxd")]
+        , cmdExamples = [("Display info about foo.zoom", "foo.zoom")]
         }
 
 zoomInfoHandler :: App () ()
@@ -218,7 +218,7 @@ zoomSummary = defCmd {
         , cmdHandler = zoomSummaryHandler
         , cmdCategory = "Reading"
         , cmdShortDesc = "Read zoom-cache summary data"
-        , cmdExamples = [("Read summary level 3 from foo.zxd", "3 foo.zxd")]
+        , cmdExamples = [("Read summary level 3 from foo.zoom", "3 foo.zoom")]
         }
 
 zoomSummaryHandler :: App () ()
@@ -228,7 +228,7 @@ zoomSummaryHandler = do
     where
         f trackNo (lvl:paths) = mapM_ (zoomDumpSummaryLevel (read lvl)
                                        standardIdentifiers trackNo) paths
-        f _ _ = putStrLn "Usage: zoom-cache summary n file.zxd"
+        f _ _ = putStrLn "Usage: zoom-cache summary n file.zoom"
 
 ------------------------------------------------------------
 -- The Application
