@@ -53,8 +53,6 @@ fromGlobal Global{..} = mconcat
     , mconcat $
         [ fromVersion version
         , fromIntegral32be noTracks
-        , fromRational64 presentationTime
-        , fromRational64 baseTime
         ]
     , fromByteString $ C.pack (replicate 20 '\0') -- UTCTime
     ]

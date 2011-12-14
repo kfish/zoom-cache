@@ -35,8 +35,6 @@ prettyGlobal :: Global -> String
 prettyGlobal Global{..} = unlines
     [ "Version:\t\t" ++ show vMaj ++ "." ++ show vMin
     , "No. tracks:\t\t" ++ show noTracks
-    , "Presentation-time:\t" ++ ratShow presentationTime
-    , "Base-time:\t\t" ++ ratShow baseTime
     , "UTC baseTime:\t\t" ++ maybe "undefined" show baseUTC
     ]
     where

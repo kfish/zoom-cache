@@ -361,10 +361,8 @@ readGlobalHeader = do
     v <- readVersion
     checkVersion v
     n <- readInt32be
-    p <- readRational64be
-    b <- readRational64be
     _u <- B.pack <$> (I.joinI $ I.takeUpTo 20 I.stream2list)
-    return $ Global v n p b Nothing
+    return $ Global v n Nothing
     where
         checkVersion (Version major minor)
             | major == versionMajor && minor >= versionMinor = return ()

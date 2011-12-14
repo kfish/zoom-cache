@@ -307,8 +307,6 @@ mkGlobal :: Int -> Global
 mkGlobal n = Global
     { version = Version versionMajor versionMinor
     , noTracks = n
-    , presentationTime = 0
-    , baseTime = 0
     , baseUTC = Nothing
     }
 

@@ -59,8 +59,6 @@ data Version = Version !Int !Int
 data Global = Global
     { version          :: Version
     , noTracks         :: Int
-    , presentationTime :: Rational
-    , baseTime         :: Rational
     , baseUTC          :: Maybe Int -- UTCTime
     }
     deriving (Show)
