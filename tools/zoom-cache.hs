@@ -138,11 +138,10 @@ zoomGen = defCmd {
 zoomGenHandler :: App () ()
 zoomGenHandler = do
     (config, filenames) <- liftIO . processArgs =<< appArgs
-    liftIO $ zoomWriteFile config filenames
+    liftIO $ mapM_ (zoomWriteFile config) filenames
 
-zoomWriteFile :: Config -> [FilePath] -> IO ()
-zoomWriteFile _          []       = return ()
-zoomWriteFile Config{..} (path:_)
+zoomWriteFile :: Config -> FilePath -> IO ()
+zoomWriteFile Config{..} path
     | intData   = w ints path
     | otherwise = w doubles path
     where
