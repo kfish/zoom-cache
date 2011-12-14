@@ -17,6 +17,7 @@
 module Data.ZoomCache.TrackSpec (
     -- * TrackSpec helpers
       setCodec
+    , setCodecMultichannel
     , mkTrackSpec
     , oneTrack
 ) where
@@ -24,10 +25,13 @@ module Data.ZoomCache.TrackSpec (
 import Data.ByteString (ByteString)
 import Data.Default
 import qualified Data.IntMap as IM
+import Data.TypeLevel.Num hiding ((==))
 
 import Data.ZoomCache.Common
+import Data.ZoomCache.NList
 import Data.ZoomCache.Types
 
+import Data.ZoomCache.Multichannel.NList()
 import Data.ZoomCache.Numeric.IEEE754()
 
 ------------------------------------------------------------
@@ -59,4 +63,9 @@ mkTrackSpec a = TrackSpec (Codec a)
 
 setCodec :: ZoomReadable a => a -> TrackSpec -> TrackSpec
 setCodec a t = t { specType = Codec a }
+
+setCodecMultichannel :: ZoomReadable a
+                     => Int -> a -> TrackSpec -> TrackSpec
+setCodecMultichannel channels a t = reifyIntegral channels
+    (\n -> t { specType = Codec (NList n [a]) })
 

@@ -65,6 +65,7 @@ module Data.ZoomCache (
 
     -- * TrackSpec helpers
     , setCodec
+    , setCodecMultichannel
     , mkTrackSpec
     , oneTrack
 
