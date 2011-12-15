@@ -144,7 +144,7 @@ wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 ----------------------------------------------------------------------
 
 -- | Filter just the raw data
-enumPackets :: (Functor m, MonadIO m)
+enumPackets :: (Functor m, Monad m)
             => I.Enumeratee [Stream] [Packet] m a
 enumPackets = I.joinI . enumCTPSO . I.mapChunks (map packetFromCTPSO)
 
@@ -157,7 +157,7 @@ packetFromCTPSO (cf, trackNo, pso) = packetFromPacketSO r pso
 ----------------------------------------------------------------------
 
 -- | Filter just the raw data, timestamped by UTC
-enumPacketsUTC :: (Functor m, MonadIO m)
+enumPacketsUTC :: (Functor m, Monad m)
                => I.Enumeratee [Stream] [PacketUTC] m a
 enumPacketsUTC = I.joinI . enumCTPSO . I.mapChunks (catMaybes . map packetUTCFromCTPSO)
 
@@ -172,7 +172,7 @@ packetUTCFromCTPSO (cf, trackNo, pso) = toPacket <$> base'm
 ----------------------------------------------------------------------
 
 -- | Filter summaries at a particular summary level
-enumSummaryLevel :: (Functor m, MonadIO m)
+enumSummaryLevel :: (Functor m, Monad m)
                  => Int
                  -> I.Enumeratee [Stream] [ZoomSummary] m a
 enumSummaryLevel level =
@@ -180,7 +180,7 @@ enumSummaryLevel level =
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
 
 -- | Filter summaries at all levels
-enumSummaries :: (Functor m, MonadIO m)
+enumSummaries :: (Functor m, Monad m)
               => I.Enumeratee [Stream] [ZoomSummary] m a
 enumSummaries = I.joinI . enumCTSO .  I.mapChunks (map summaryFromCTSO)
 
@@ -194,7 +194,7 @@ summaryFromCTSO (cf, trackNo, (ZoomSummarySO zso)) =
 ----------------------------------------------------------------------
 
 -- | Filter summaries at a particular summary level
-enumSummaryUTCLevel :: (Functor m, MonadIO m)
+enumSummaryUTCLevel :: (Functor m, Monad m)
                     => Int
                     -> I.Enumeratee [Stream] [ZoomSummaryUTC] m a
 enumSummaryUTCLevel level =
@@ -202,7 +202,7 @@ enumSummaryUTCLevel level =
     I.filter (\(ZoomSummaryUTC s) -> summaryUTCLevel s == level)
 
 -- | Filter summaries at all levels
-enumSummariesUTC :: (Functor m, MonadIO m)
+enumSummariesUTC :: (Functor m, Monad m)
                  => I.Enumeratee [Stream] [ZoomSummaryUTC] m a
 enumSummariesUTC = I.joinI . enumCTSO .  I.mapChunks (catMaybes . map summaryUTCFromCTSO)
 
@@ -217,12 +217,12 @@ summaryUTCFromCTSO (cf, trackNo, (ZoomSummarySO zso)) = toZS <$> base'm
 ----------------------------------------------------------------------
 
 -- | Filter just the raw data
-enumPacketSOs :: (Functor m, MonadIO m)
+enumPacketSOs :: (Functor m, Monad m)
               => I.Enumeratee [Stream] [PacketSO] m a
 enumPacketSOs = I.joinI . enumCTPSO . I.mapChunks (map (\(_,_,p) -> p))
 
 -- | Filter summaries at a particular summary level
-enumSummarySOLevel :: (Functor m, MonadIO m)
+enumSummarySOLevel :: (Functor m, Monad m)
                    => Int
                    -> I.Enumeratee [Stream] [ZoomSummarySO] m a
 enumSummarySOLevel level =
@@ -230,12 +230,12 @@ enumSummarySOLevel level =
     I.filter (\(ZoomSummarySO s) -> summarySOLevel s == level)
 
 -- | Filter summaries at all levels
-enumSummarySOs :: (Functor m, MonadIO m)
+enumSummarySOs :: (Functor m, Monad m)
                => I.Enumeratee [Stream] [ZoomSummarySO] m a
 enumSummarySOs = I.joinI . enumCTSO .  I.mapChunks (map (\(_,_,s) -> s))
 
 -- | Filter raw data
-enumCTPSO :: (Functor m, MonadIO m)
+enumCTPSO :: (Functor m, Monad m)
           => I.Enumeratee [Stream] [(CacheFile, TrackNo, PacketSO)] m a
 enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
     where
@@ -244,7 +244,7 @@ enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
         toCTPSO _                = Nothing
 
 -- | Filter summaries
-enumCTSO :: (Functor m, MonadIO m)
+enumCTSO :: (Functor m, Monad m)
          => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummarySO)] m a
 enumCTSO = I.mapChunks (catMaybes . map toCTSO)
     where
@@ -253,7 +253,7 @@ enumCTSO = I.mapChunks (catMaybes . map toCTSO)
         toCTSO _                 = Nothing
 
 -- | Filter to a given list of track names
-filterTracksByName :: (Functor m, MonadIO m)
+filterTracksByName :: (Functor m, Monad m)
                    => CacheFile
                    -> [ByteString]
                    -> I.Enumeratee [Stream] [Stream] m a
@@ -265,7 +265,7 @@ filterTracksByName CacheFile{..} names = filterTracks tracks
         f ts = specName ts `elem` names
 
 -- | Filter to a given list of track numbers
-filterTracks :: (Functor m, MonadIO m)
+filterTracks :: (Functor m, Monad m)
              => [TrackNo]
              -> I.Enumeratee [Stream] [Stream] m a
 filterTracks tracks = I.filter fil

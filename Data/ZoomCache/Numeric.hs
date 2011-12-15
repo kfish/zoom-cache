@@ -186,21 +186,21 @@ wholeTrackSummaryUTCDouble identifiers trackNo = I.joinI $ enumCacheFile identif
         toSD :: ZoomSummaryUTC -> Maybe (SummaryUTC Double)
         toSD (ZoomSummaryUTC s) = toSummaryUTCDouble s
 
-enumDouble :: (Functor m, MonadIO m)
+enumDouble :: (Functor m, Monad m)
            => I.Enumeratee [Stream] [(TimeStamp, Double)] m a
 enumDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
     where
         f :: Packet -> [(TimeStamp, Double)]
         f Packet{..} = zip packetTimeStamps (rawToDouble packetData)
 
-enumUTCDouble :: (Functor m, MonadIO m)
+enumUTCDouble :: (Functor m, Monad m)
               => I.Enumeratee [Stream] [(UTCTime, Double)] m a
 enumUTCDouble = I.joinI . enumPacketsUTC . I.mapChunks (concatMap f)
     where
         f :: PacketUTC -> [(UTCTime, Double)]
         f PacketUTC{..} = zip packetUTCTimeStamps (rawToDouble packetUTCData)
 
-enumSummaryDouble :: (Functor m, MonadIO m)
+enumSummaryDouble :: (Functor m, Monad m)
                   => Int
                   -> I.Enumeratee [Stream] [Summary Double] m a
 enumSummaryDouble level =
@@ -210,7 +210,7 @@ enumSummaryDouble level =
         toSD :: ZoomSummary -> Maybe (Summary Double)
         toSD (ZoomSummary s) = toSummaryDouble s
 
-enumSummaryUTCDouble :: (Functor m, MonadIO m)
+enumSummaryUTCDouble :: (Functor m, Monad m)
                      => Int
                      -> I.Enumeratee [Stream] [SummaryUTC Double] m a
 enumSummaryUTCDouble level =
