@@ -134,6 +134,42 @@ toSummaryListDouble s | isJust sd = (:[]) <$> sd
         sld :: Typeable a => Summary (NList D1 a) -> [Summary Double]
         sld = catMaybes . map toSummaryDouble . sl
 
+toSummaryUTCListDouble :: Typeable a => SummaryUTC a -> Maybe [SummaryUTC Double]
+toSummaryUTCListDouble s | isJust sd = (:[]) <$> sd
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Double)) =
+                                   sl <$> (cast s :: Maybe (SummaryUTC (NList D1 Double)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Float)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Float)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Int)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Int)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Int8)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Int8)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Int16)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Int16)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Int32)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Int32)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Int64)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Int64)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Integer)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Integer)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Word)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Word)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Word8)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Word8)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Word16)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Word16)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Word32)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Word32)))
+                         | typeOf s == typeOf (undefined :: SummaryUTC (NList D1 Word64)) =
+                                  sld <$> (cast s :: Maybe (SummaryUTC (NList D1 Word64)))
+                         | otherwise = Nothing
+    where
+        sd = toSummaryUTCDouble s
+        sl :: SummaryUTC (NList D1 a) -> [SummaryUTC a]
+        sl = summaryUTCNListToList
+        sld :: Typeable a => SummaryUTC (NList D1 a) -> [SummaryUTC Double]
+        sld = catMaybes . map toSummaryUTCDouble . sl
+
 ----------------------------------------------------------------------
 
 -- | Read the summary of an entire track.
