@@ -27,6 +27,7 @@ module Data.ZoomCache.Numeric (
   , toSummaryUTCDouble
 
   , wholeTrackSummaryDouble
+  , wholeTrackSummaryUTCDouble
   , enumDouble
   , enumUTCDouble
   , enumSummaryDouble
@@ -172,6 +173,18 @@ wholeTrackSummaryDouble identifiers trackNo = I.joinI $ enumCacheFile identifier
         e = I.joinI . enumSummaries . I.mapChunks (catMaybes . map toSD)
         toSD :: ZoomSummary -> Maybe (Summary Double)
         toSD (ZoomSummary s) = toSummaryDouble s
+
+-- | Read the summary of an entire track.
+wholeTrackSummaryUTCDouble :: (Functor m, MonadIO m)
+                           => [IdentifyCodec]
+                           -> TrackNo
+                           -> I.Iteratee ByteString m (SummaryUTC Double)
+wholeTrackSummaryUTCDouble identifiers trackNo = I.joinI $ enumCacheFile identifiers .
+    I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
+    where
+        e = I.joinI . enumSummariesUTC . I.mapChunks (catMaybes . map toSD)
+        toSD :: ZoomSummaryUTC -> Maybe (SummaryUTC Double)
+        toSD (ZoomSummaryUTC s) = toSummaryUTCDouble s
 
 enumDouble :: (Functor m, MonadIO m)
            => I.Enumeratee [Stream] [(TimeStamp, Double)] m a
