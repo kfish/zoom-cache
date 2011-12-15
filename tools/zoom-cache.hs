@@ -12,6 +12,7 @@ import Control.Monad.Trans (liftIO)
 import qualified Data.ByteString.Char8 as C
 import Data.Default
 import qualified Data.IntMap as IM
+import Data.Time.Clock (getCurrentTime)
 import System.Console.GetOpt
 import UI.Command
 
@@ -142,28 +143,27 @@ zoomGenHandler = do
 
 zoomWriteFile :: Config -> FilePath -> IO ()
 zoomWriteFile Config{..} path
-    | intData   = w ints path
-    | otherwise = w doubles path
+    | intData   = w ints
+    | otherwise = w doubles
     where
     w :: (ZoomReadable a, ZoomWrite a, ZoomWritable a, ZoomWrite (SampleOffset, a))
-      => [a] -> FilePath -> IO ()
+      => [a] -> IO ()
     w d
-        | variable && channels == 1 = withFileWrite trackMap Nothing
-                          (not noRaw)
-                          (sW >> mapM_ (write track)
-                                       (zip (map SO [1,3..]) d))
-        | channels == 1 = withFileWrite trackMap Nothing
-                          (not noRaw)
-                          (sW >> mapM_ (write track) d)
-        | variable  = withFileWrite trackMap Nothing
-                          (not noRaw)
-                          (sW >> mapM_ (write track)
-                                       (zip (map SO [1,3..])
-                                            (map (replicate channels) d)))
-        | otherwise = withFileWrite trackMap Nothing
-                          (not noRaw)
-                          (sW >> mapM_ (write track)
-                                       (map (replicate channels) d))
+        | variable && channels == 1 =
+            writeData (sW >> mapM_ (write track) (zip (map SO [1,3..]) d))
+        | channels == 1             =
+            writeData (sW >> mapM_ (write track) d)
+        | variable                  =
+            writeData (sW >> mapM_ (write track)
+                                   (zip (map SO [1,3..])
+                                        (map (replicate channels) d)))
+        | otherwise                 =
+            writeData (sW >> mapM_ (write track) (map (replicate channels) d))
+
+    writeData ds = do
+        now <- getCurrentTime
+        withFileWrite trackMap (Just now) (not noRaw) ds path
+
     sW = setWatermark track wmLevel
     trackMap = IM.singleton track spec'
     spec' | channels == 1 && intData = setCodec (undefined :: Int) spec
