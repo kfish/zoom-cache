@@ -30,6 +30,9 @@ module Data.ZoomCache.Types (
     , Timestampable(..)
     , before
 
+    , UTCTimestampable(..)
+    , beforeUTC
+
     , ZoomReadable(..)
     , ZoomWritable(..)
 
@@ -67,6 +70,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import Data.Maybe (fromJust)
+import Data.Time (UTCTime)
 
 import Data.ZoomCache.Common
 
@@ -137,6 +141,24 @@ instance Timestampable (TimeStamp, a) where
 instance Timestampable a => Timestampable [a] where
     timestamp []    = Nothing
     timestamp (x:_) = timestamp x
+
+------------------------------------------------------------
+
+class UTCTimestampable a where
+    utcTimestamp :: a -> Maybe UTCTime
+
+beforeUTC :: (UTCTimestampable a) => Maybe UTCTime -> a -> Bool
+beforeUTC Nothing _ = True
+beforeUTC (Just b) x = t == Nothing || (fromJust t) < b
+  where
+    t = utcTimestamp x
+
+instance UTCTimestampable (UTCTime, a) where
+    utcTimestamp = Just . fst
+
+instance UTCTimestampable a => UTCTimestampable [a] where
+    utcTimestamp []    = Nothing
+    utcTimestamp (x:_) = utcTimestamp x
 
 ------------------------------------------------------------
 
