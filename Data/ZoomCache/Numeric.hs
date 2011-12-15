@@ -24,6 +24,7 @@ module Data.ZoomCache.Numeric (
 
   , rawToDouble
   , toSummaryDouble
+  , toSummaryUTCDouble
 
   , wholeTrackSummaryDouble
   , enumDouble
@@ -112,6 +113,39 @@ toSummaryDouble s | typeOf s == typeOf (undefined :: Summary Double) =
     where
         sd :: ZoomNum a => Summary a -> Summary Double
         sd s' = s' { summaryData = toSummaryDataDouble (summaryData s') }
+
+-- | Coercion of numeric SummaryUTC to type SummaryUTC Double.
+toSummaryUTCDouble :: Typeable a => SummaryUTC a -> Maybe (SummaryUTC Double)
+toSummaryUTCDouble s | typeOf s == typeOf (undefined :: SummaryUTC Double) =
+                                  id (cast s :: Maybe (SummaryUTC Double))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Float) =
+                                  sd <$> (cast s :: Maybe (SummaryUTC Float))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Int) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Int))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Int8) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Int8))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Int16) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Int16))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Int32) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Int32))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Int64) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Int64))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Integer) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Integer))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Word) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Word))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Word8) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Word8))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Word16) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Word16))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Word32) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Word32))
+                    | typeOf s == typeOf (undefined :: SummaryUTC Word64) =
+                              sd <$> (cast s :: Maybe (SummaryUTC Word64))
+                    | otherwise = Nothing
+    where
+        sd :: ZoomNum a => SummaryUTC a -> SummaryUTC Double
+        sd s' = s' { summaryUTCData = toSummaryDataDouble (summaryUTCData s') }
 
 toSummaryDataDouble :: ZoomNum a => SummaryData a -> SummaryData Double
 toSummaryDataDouble s = numMkSummary
