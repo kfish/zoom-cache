@@ -100,7 +100,7 @@ globalHeader = C.pack "\xe5ZXhe4d\0"
 
 -- | The major version encoded by this library
 versionMajor :: Int
-versionMajor = 2
+versionMajor = 3
 
 -- | The minor version encoded by this library
 versionMinor :: Int
