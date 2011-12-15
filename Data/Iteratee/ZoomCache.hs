@@ -60,6 +60,8 @@ module Data.Iteratee.ZoomCache (
   , enumPacketsUTC
   , enumSummaryLevel
   , enumSummaries
+  , enumSummaryUTCLevel
+  , enumSummariesUTC
   , filterTracksByName
   , filterTracks
 
@@ -176,6 +178,29 @@ summaryFromCTSO (cf, trackNo, (ZoomSummarySO zso)) =
     ZoomSummary (summaryFromSummarySO r zso)
     where
         r = specRate . fromJust . IM.lookup trackNo . cfSpecs $ cf
+
+----------------------------------------------------------------------
+
+-- | Filter summaries at a particular summary level
+enumSummaryUTCLevel :: (Functor m, MonadIO m)
+                    => Int
+                    -> I.Enumeratee [Stream] [ZoomSummaryUTC] m a
+enumSummaryUTCLevel level =
+    I.joinI . enumSummariesUTC .
+    I.filter (\(ZoomSummaryUTC s) -> summaryUTCLevel s == level)
+
+-- | Filter summaries at all levels
+enumSummariesUTC :: (Functor m, MonadIO m)
+                 => I.Enumeratee [Stream] [ZoomSummaryUTC] m a
+enumSummariesUTC = I.joinI . enumCTSO .  I.mapChunks (catMaybes . map summaryUTCFromCTSO)
+
+-- | Convert a CTSO triple into a ZoomSummaryUTC
+summaryUTCFromCTSO :: (CacheFile, TrackNo, ZoomSummarySO) -> Maybe ZoomSummaryUTC
+summaryUTCFromCTSO (cf, trackNo, (ZoomSummarySO zso)) = toZS <$> base'm
+    where
+        toZS base = ZoomSummaryUTC (summaryUTCFromSummarySO base r zso)
+        r = specRate . fromJust . IM.lookup trackNo . cfSpecs $ cf
+        base'm = baseUTC . cfGlobal $ cf
 
 ----------------------------------------------------------------------
 
