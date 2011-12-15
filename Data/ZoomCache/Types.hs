@@ -53,6 +53,10 @@ module Data.ZoomCache.Types (
     , packetUTCFromPacket
     , packetUTCFromPacketSO
 
+    , SummaryUTC(..)
+    , summaryUTCFromSummary
+    , summaryUTCFromSummarySO
+
     , PacketSO(..)
     , SummarySO(..)
     , SummaryData()
@@ -260,6 +264,32 @@ summaryFromSummarySO r SummarySO{..} = Summary {
 
 instance Timestampable (Summary a) where
     timestamp = Just . summaryEntry
+
+-- | A summary block with timestamps converted to UTCTime
+data SummaryUTC a = SummaryUTC
+    { summaryUTCTrack :: {-# UNPACK #-}!TrackNo
+    , summaryUTCLevel :: {-# UNPACK #-}!Int
+    , summaryUTCEntry :: {-# UNPACK #-}!UTCTime
+    , summaryUTCExit  :: {-# UNPACK #-}!UTCTime
+    , summaryUTCData  :: !(SummaryData a)
+    }
+    deriving (Typeable)
+
+-- | Convert a Summary to a SummaryUTC, given a UTC base time
+summaryUTCFromSummary :: UTCTime -> Summary a -> SummaryUTC a
+summaryUTCFromSummary base Summary{..} = SummaryUTC {
+      summaryUTCTrack = summaryTrack
+    , summaryUTCLevel = summaryLevel
+    , summaryUTCEntry = utcTimeFromTimeStamp base summaryEntry
+    , summaryUTCExit  = utcTimeFromTimeStamp base summaryExit
+    , summaryUTCData  = summaryData
+    }
+
+summaryUTCFromSummarySO :: UTCTime -> Rational -> SummarySO a -> SummaryUTC a
+summaryUTCFromSummarySO base r = summaryUTCFromSummary base . summaryFromSummarySO r
+
+instance UTCTimestampable (SummaryUTC a) where
+    utcTimestamp = Just . summaryUTCEntry
 
 ------------------------------------------------------------
 -- Read
