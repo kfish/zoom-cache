@@ -20,6 +20,8 @@ module Data.ZoomCache.Common (
     , timeStampDiff
     , timeStampFromSO
 
+    , utcTimeFromTimeStamp
+
     -- * SampleOffsets
     , SampleOffset(..)
     , SampleOffsetDiff(..)
@@ -38,7 +40,7 @@ module Data.ZoomCache.Common (
 
 import Data.Int
 import Data.Ratio
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime)
 
 ------------------------------------------------------------
 
@@ -86,3 +88,9 @@ timeStampFromSO r (SO so)
     where
           n = fromIntegral $ numerator r
           d = fromIntegral $ denominator r
+
+-- | @utcTimeFromTimeStamp base (TS ts) = baseUTC + ts@
+utcTimeFromTimeStamp :: UTCTime -> TimeStamp -> UTCTime
+utcTimeFromTimeStamp base (TS ts) = addUTCTime dTime base
+    where
+        dTime = fromRational . toRational $ ts
