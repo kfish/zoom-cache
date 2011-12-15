@@ -37,6 +37,10 @@ module Data.ZoomCache (
     , Packet(..)
     , Summary(..)
 
+    , ZoomSummaryUTC(..)
+    , PacketUTC(..)
+    , SummaryUTC(..)
+
     , ZoomSummarySO(..)
     , PacketSO(..)
     , SummarySO(..)
