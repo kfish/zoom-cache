@@ -28,6 +28,7 @@ module Data.ZoomCache.Numeric (
 
   , wholeTrackSummaryDouble
   , enumDouble
+  , enumUTCDouble
   , enumSummaryDouble
 
   , module Data.ZoomCache
@@ -39,6 +40,7 @@ import Data.ByteString (ByteString)
 import Data.Int
 import qualified Data.Iteratee as I
 import Data.Maybe
+import Data.Time (UTCTime)
 import Data.Typeable
 import Data.Word
 import Data.ZoomCache
@@ -176,6 +178,13 @@ enumDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
     where
         f :: Packet -> [(TimeStamp, Double)]
         f Packet{..} = zip packetTimeStamps (rawToDouble packetData)
+
+enumUTCDouble :: (Functor m, MonadIO m)
+              => I.Enumeratee [Stream] [(UTCTime, Double)] m a
+enumUTCDouble = I.joinI . enumPacketsUTC . I.mapChunks (concatMap f)
+    where
+        f :: PacketUTC -> [(UTCTime, Double)]
+        f PacketUTC{..} = zip packetUTCTimeStamps (rawToDouble packetUTCData)
 
 enumSummaryDouble :: (Functor m, MonadIO m)
                   => Int
