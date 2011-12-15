@@ -46,6 +46,7 @@ module Data.Iteratee.ZoomCache (
   -- * Reading zoom-cache files and ByteStrings
   , enumCacheFile
   , wholeTrackSummary
+  , wholeTrackSummaryUTC
 
   , iterHeaders
   , enumStream
@@ -129,6 +130,17 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
         f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
                              summaryFromCTSO ctso)
 
+-- | Read the summary of an entire track.
+wholeTrackSummaryUTC :: (Functor m, MonadIO m)
+                     => [IdentifyCodec]
+                     -> TrackNo
+                     -> Iteratee ByteString m (TrackSpec, Maybe ZoomSummaryUTC)
+wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
+    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
+    where
+        f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, Maybe ZoomSummaryUTC)
+        f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
+                             summaryUTCFromCTSO ctso)
 ----------------------------------------------------------------------
 
 -- | Filter just the raw data
