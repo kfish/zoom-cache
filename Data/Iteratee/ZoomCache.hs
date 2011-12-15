@@ -57,6 +57,7 @@ module Data.Iteratee.ZoomCache (
 
   -- * Stream enumeratees
   , enumPackets
+  , enumPacketsUTC
   , enumSummaryLevel
   , enumSummaries
   , filterTracksByName
@@ -133,11 +134,26 @@ enumPackets :: (Functor m, MonadIO m)
             => I.Enumeratee [Stream] [Packet] m a
 enumPackets = I.joinI . enumCTPSO . I.mapChunks (map packetFromCTPSO)
 
--- | Convert a CTSO triple into a ZoomSummary
+-- | Convert a CTPSO triple into a Packet
 packetFromCTPSO :: (CacheFile, TrackNo, PacketSO) -> Packet
 packetFromCTPSO (cf, trackNo, pso) = packetFromPacketSO r pso
     where
         r = specRate . fromJust . IM.lookup trackNo . cfSpecs $ cf
+
+----------------------------------------------------------------------
+
+-- | Filter just the raw data, timestamped by UTC
+enumPacketsUTC :: (Functor m, MonadIO m)
+               => I.Enumeratee [Stream] [PacketUTC] m a
+enumPacketsUTC = I.joinI . enumCTPSO . I.mapChunks (catMaybes . map packetUTCFromCTPSO)
+
+-- | Convert a CTPSO triple into a Packet
+packetUTCFromCTPSO :: (CacheFile, TrackNo, PacketSO) -> Maybe PacketUTC
+packetUTCFromCTPSO (cf, trackNo, pso) = toPacket <$> base'm
+    where
+        toPacket base = packetUTCFromPacketSO base r pso
+        r = specRate . fromJust . IM.lookup trackNo . cfSpecs $ cf
+        base'm = baseUTC . cfGlobal $ cf
 
 ----------------------------------------------------------------------
 
