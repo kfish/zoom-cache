@@ -24,7 +24,6 @@ module Data.ZoomCache.Numeric (
 
   , rawToDouble
   , toSummaryDouble
-  , toSummarySODouble
 
   , wholeTrackSummaryDouble
   , enumDouble
@@ -114,39 +113,6 @@ toSummaryDouble s | typeOf s == typeOf (undefined :: Summary Double) =
         sd :: ZoomNum a => Summary a -> Summary Double
         sd s' = s' { summaryData = toSummaryDataDouble (summaryData s') }
 
--- | Coercion of numeric SummarySO to type SummarySO Double.
-toSummarySODouble :: Typeable a => SummarySO a -> Maybe (SummarySO Double)
-toSummarySODouble s | typeOf s == typeOf (undefined :: SummarySO Double) =
-                                  id (cast s :: Maybe (SummarySO Double))
-                    | typeOf s == typeOf (undefined :: SummarySO Float) =
-                                  sd <$> (cast s :: Maybe (SummarySO Float))
-                    | typeOf s == typeOf (undefined :: SummarySO Int) =
-                              sd <$> (cast s :: Maybe (SummarySO Int))
-                    | typeOf s == typeOf (undefined :: SummarySO Int8) =
-                              sd <$> (cast s :: Maybe (SummarySO Int8))
-                    | typeOf s == typeOf (undefined :: SummarySO Int16) =
-                              sd <$> (cast s :: Maybe (SummarySO Int16))
-                    | typeOf s == typeOf (undefined :: SummarySO Int32) =
-                              sd <$> (cast s :: Maybe (SummarySO Int32))
-                    | typeOf s == typeOf (undefined :: SummarySO Int64) =
-                              sd <$> (cast s :: Maybe (SummarySO Int64))
-                    | typeOf s == typeOf (undefined :: SummarySO Integer) =
-                              sd <$> (cast s :: Maybe (SummarySO Integer))
-                    | typeOf s == typeOf (undefined :: SummarySO Word) =
-                              sd <$> (cast s :: Maybe (SummarySO Word))
-                    | typeOf s == typeOf (undefined :: SummarySO Word8) =
-                              sd <$> (cast s :: Maybe (SummarySO Word8))
-                    | typeOf s == typeOf (undefined :: SummarySO Word16) =
-                              sd <$> (cast s :: Maybe (SummarySO Word16))
-                    | typeOf s == typeOf (undefined :: SummarySO Word32) =
-                              sd <$> (cast s :: Maybe (SummarySO Word32))
-                    | typeOf s == typeOf (undefined :: SummarySO Word64) =
-                              sd <$> (cast s :: Maybe (SummarySO Word64))
-                    | otherwise = Nothing
-    where
-        sd :: ZoomNum a => SummarySO a -> SummarySO Double
-        sd s' = s' { summarySOData = toSummaryDataDouble (summarySOData s') }
-        
 toSummaryDataDouble :: ZoomNum a => SummaryData a -> SummaryData Double
 toSummaryDataDouble s = numMkSummary
     (realToFrac . numEntry $ s)
