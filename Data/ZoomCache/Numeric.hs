@@ -30,6 +30,7 @@ module Data.ZoomCache.Numeric (
   , enumDouble
   , enumUTCDouble
   , enumSummaryDouble
+  , enumSummaryUTCDouble
 
   , module Data.ZoomCache
 ) where
@@ -195,3 +196,13 @@ enumSummaryDouble level =
     where
         toSD :: ZoomSummary -> Maybe (Summary Double)
         toSD (ZoomSummary s) = toSummaryDouble s
+
+enumSummaryUTCDouble :: (Functor m, MonadIO m)
+                     => Int
+                     -> I.Enumeratee [Stream] [SummaryUTC Double] m a
+enumSummaryUTCDouble level =
+    I.joinI . enumSummaryUTCLevel level .
+    I.mapChunks (catMaybes . map toSD)
+    where
+        toSD :: ZoomSummaryUTC -> Maybe (SummaryUTC Double)
+        toSD (ZoomSummaryUTC s) = toSummaryUTCDouble s
