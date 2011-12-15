@@ -28,6 +28,10 @@ module Data.ZoomCache.Multichannel.List (
     , wholeTrackSummaryListDouble
     , enumListDouble
     , enumSummaryListDouble
+
+    , wholeTrackSummaryUTCListDouble
+    , enumUTCListDouble
+    , enumSummaryUTCListDouble
 )where
 
 import Control.Applicative ((<$>))
@@ -36,6 +40,7 @@ import Data.ByteString (ByteString)
 import Data.Int
 import qualified Data.Iteratee as I
 import Data.Maybe
+import Data.Time (UTCTime)
 import Data.Typeable
 import Data.TypeLevel.Num hiding ((==))
 import Data.Word
@@ -201,3 +206,35 @@ enumSummaryListDouble level =
     where
         toSLD :: ZoomSummary -> Maybe [Summary Double]
         toSLD (ZoomSummary s) = toSummaryListDouble s
+
+----------------------------------------------------------------------
+
+-- | Read the summary of an entire track.
+wholeTrackSummaryUTCListDouble :: (Functor m, MonadIO m)
+                               => [IdentifyCodec]
+                               -> TrackNo
+                               -> I.Iteratee ByteString m [SummaryUTC Double]
+wholeTrackSummaryUTCListDouble identifiers trackNo =
+    I.joinI $ enumCacheFile identifiers .
+    I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
+    where
+        e = I.joinI . enumSummariesUTC . I.mapChunks (catMaybes . map toSLD)
+        toSLD :: ZoomSummaryUTC -> Maybe [SummaryUTC Double]
+        toSLD (ZoomSummaryUTC s) = toSummaryUTCListDouble s
+
+enumUTCListDouble :: (Functor m, MonadIO m)
+                  => I.Enumeratee [Stream] [(UTCTime, [Double])] m a
+enumUTCListDouble = I.joinI . enumPacketsUTC . I.mapChunks (concatMap f)
+    where
+        f :: PacketUTC -> [(UTCTime, [Double])]
+        f PacketUTC{..} = zip packetUTCTimeStamps (rawToListDouble packetUTCData)
+
+enumSummaryUTCListDouble :: (Functor m, MonadIO m)
+                         => Int
+                         -> I.Enumeratee [Stream] [[SummaryUTC Double]] m a
+enumSummaryUTCListDouble level =
+    I.joinI . enumSummaryUTCLevel level .
+    I.mapChunks (catMaybes . map toSLD)
+    where
+        toSLD :: ZoomSummaryUTC -> Maybe [SummaryUTC Double]
+        toSLD (ZoomSummaryUTC s) = toSummaryUTCListDouble s
