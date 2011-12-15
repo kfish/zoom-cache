@@ -49,6 +49,10 @@ module Data.ZoomCache.Types (
     , Summary(..)
     , summaryFromSummarySO
 
+    , PacketUTC(..)
+    , packetUTCFromPacket
+    , packetUTCFromPacketSO
+
     , PacketSO(..)
     , SummarySO(..)
     , SummaryData()
@@ -192,6 +196,31 @@ packetFromPacketSO r PacketSO{..} = Packet {
 
 instance Timestampable Packet where
     timestamp = Just . packetEntry
+
+data PacketUTC = PacketUTC
+    { packetUTCTrack      :: {-# UNPACK #-}!TrackNo
+    , packetUTCEntry      :: {-# UNPACK #-}!UTCTime
+    , packetUTCExit       :: {-# UNPACK #-}!UTCTime
+    , packetUTCCount      :: {-# UNPACK #-}!Int
+    , packetUTCData       :: !ZoomRaw
+    , packetUTCTimeStamps :: ![UTCTime]
+    }
+
+packetUTCFromPacket :: UTCTime -> Packet -> PacketUTC
+packetUTCFromPacket base Packet{..} = PacketUTC {
+      packetUTCTrack = packetTrack
+    , packetUTCEntry = utcTimeFromTimeStamp base packetEntry
+    , packetUTCExit  = utcTimeFromTimeStamp base packetExit
+    , packetUTCCount = packetCount
+    , packetUTCData  = packetData
+    , packetUTCTimeStamps = map (utcTimeFromTimeStamp base) packetTimeStamps
+    }
+
+packetUTCFromPacketSO :: UTCTime -> Rational -> PacketSO -> PacketUTC
+packetUTCFromPacketSO base r = packetUTCFromPacket base . packetFromPacketSO r
+
+instance UTCTimestampable PacketUTC where
+    utcTimestamp = Just . packetUTCEntry
 
 ------------------------------------------------------------
 -- | A recorded block of summary data
