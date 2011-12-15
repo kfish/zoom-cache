@@ -27,6 +27,7 @@ module Data.ZoomCache.Multichannel.NList (
     , SummaryWork(..)
 
     , summaryNListToList
+    , summaryUTCNListToList
 )where
 
 import Blaze.ByteString.Builder
@@ -51,6 +52,14 @@ summaryNListToList s = map mkSummary (expandData (summaryData s))
     where
         mkSummary :: SummaryData a -> Summary a
         mkSummary sd = s { summaryData = sd }
+        expandData :: SummaryData (NList n a) -> [SummaryData a]
+        expandData (SummaryNList (NList _ l)) = l
+
+summaryUTCNListToList :: SummaryUTC (NList n a) -> [SummaryUTC a]
+summaryUTCNListToList s = map mkSummaryUTC (expandData (summaryUTCData s))
+    where
+        mkSummaryUTC :: SummaryData a -> SummaryUTC a
+        mkSummaryUTC sd = s { summaryUTCData = sd }
         expandData :: SummaryData (NList n a) -> [SummaryData a]
         expandData (SummaryNList (NList _ l)) = l
 
