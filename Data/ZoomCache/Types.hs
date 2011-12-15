@@ -39,6 +39,7 @@ module Data.ZoomCache.Types (
     , ZoomRaw(..)
 
     , ZoomSummary(..)
+    , ZoomSummaryUTC(..)
     , ZoomSummarySO(..)
 
     , ZoomWork(..)
@@ -335,6 +336,11 @@ data ZoomSummary = forall a . ZoomReadable a => ZoomSummary (Summary a)
 
 instance Timestampable ZoomSummary where
     timestamp (ZoomSummary s) = timestamp s
+
+data ZoomSummaryUTC = forall a . ZoomReadable a => ZoomSummaryUTC (SummaryUTC a)
+
+instance UTCTimestampable ZoomSummaryUTC where
+    utcTimestamp (ZoomSummaryUTC s) = utcTimestamp s
 
 ------------------------------------------------------------
 -- Write
