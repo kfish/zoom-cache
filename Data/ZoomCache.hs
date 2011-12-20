@@ -28,6 +28,7 @@ module Data.ZoomCache (
     , IdentifyCodec
     , SampleRateType(..)
 
+    , Global(..)
     , CacheFile(..)
 
     , ZoomReadable(..)
