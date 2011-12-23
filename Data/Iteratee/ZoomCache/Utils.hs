@@ -17,6 +17,7 @@
 module Data.Iteratee.ZoomCache.Utils (
     -- * Seeking
       seekTimeStamp
+    , seekUTCTime
 
     -- * Raw data reading iteratees
     , readInt8
@@ -46,6 +47,7 @@ import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
 import Data.Ratio
+import Data.Time.Clock (UTCTime)
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -59,6 +61,12 @@ seekTimeStamp :: (LL.ListLike s el, I.Nullable s, I.NullPoint s, Timestampable e
 seekTimeStamp ts = do
     I.seek 0
     dropWhileB (before ts)
+
+seekUTCTime :: (LL.ListLike s el, I.Nullable s, I.NullPoint s, UTCTimestampable el, Monad m)
+            => Maybe UTCTime -> Iteratee s m ()
+seekUTCTime uts = do
+    I.seek 0
+    dropWhileB (beforeUTC uts)
 
 -- |Skip all elements while the predicate is true, but also return the last false element
 --

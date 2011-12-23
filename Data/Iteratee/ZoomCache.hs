@@ -55,6 +55,7 @@ module Data.Iteratee.ZoomCache (
 
   -- * Seeking
   , seekTimeStamp
+  , seekUTCTime
 
   -- * Stream enumeratees
   , enumPackets
