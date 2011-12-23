@@ -21,6 +21,11 @@ module Data.ZoomCache (
     , Timestampable(..)
     , before
 
+    , UTCTimestampable(..)
+    , beforeUTC
+    , timeStampFromUTCTime
+    , utcTimeFromTimeStamp
+
     -- * Types
     , SampleOffset(..)
     , TrackNo
