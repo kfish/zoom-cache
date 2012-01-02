@@ -92,6 +92,7 @@ import Data.Maybe
 import Data.Ratio
 import Data.Time
 
+import Data.Iteratee.ZoomCache.Seek
 import Data.Iteratee.ZoomCache.Utils
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
