@@ -41,7 +41,7 @@
 
 module Data.Iteratee.ZoomCache (
   -- * Types
-    Stream(..)
+    Block(..)
 
   -- * Reading zoom-cache files and ByteStrings
   , enumCacheFile
@@ -102,7 +102,7 @@ import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 
-data Stream =
+data Block =
     StreamPacket
         { strmFile    :: CacheFile
         , strmTrack   :: TrackNo
@@ -114,7 +114,7 @@ data Stream =
         , strmSummary :: ZoomSummarySO
         }
 
-instance Timestampable Stream where
+instance Timestampable Block where
     timestamp (StreamPacket c t p) = timestamp (packetFromCTPSO (c,t,p))
     timestamp (StreamSummary c t s) = timestamp (summaryFromCTSO (c,t,s))
 
@@ -147,7 +147,7 @@ wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 
 -- | Filter just the raw data
 enumPackets :: (Functor m, Monad m)
-            => I.Enumeratee [Stream] [Packet] m a
+            => I.Enumeratee [Block] [Packet] m a
 enumPackets = I.joinI . enumCTPSO . I.mapChunks (map packetFromCTPSO)
 
 -- | Convert a CTPSO triple into a Packet
@@ -160,7 +160,7 @@ packetFromCTPSO (cf, trackNo, pso) = packetFromPacketSO r pso
 
 -- | Filter just the raw data, timestamped by UTC
 enumPacketsUTC :: (Functor m, Monad m)
-               => I.Enumeratee [Stream] [PacketUTC] m a
+               => I.Enumeratee [Block] [PacketUTC] m a
 enumPacketsUTC = I.joinI . enumCTPSO . I.mapChunks (catMaybes . map packetUTCFromCTPSO)
 
 -- | Convert a CTPSO triple into a Packet
@@ -176,14 +176,14 @@ packetUTCFromCTPSO (cf, trackNo, pso) = toPacket <$> base'm
 -- | Filter summaries at a particular summary level
 enumSummaryLevel :: (Functor m, Monad m)
                  => Int
-                 -> I.Enumeratee [Stream] [ZoomSummary] m a
+                 -> I.Enumeratee [Block] [ZoomSummary] m a
 enumSummaryLevel level =
     I.joinI . enumSummaries .
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
 
 -- | Filter summaries at all levels
 enumSummaries :: (Functor m, Monad m)
-              => I.Enumeratee [Stream] [ZoomSummary] m a
+              => I.Enumeratee [Block] [ZoomSummary] m a
 enumSummaries = I.joinI . enumCTSO .  I.mapChunks (map summaryFromCTSO)
 
 -- | Convert a CTSO triple into a ZoomSummary
@@ -198,14 +198,14 @@ summaryFromCTSO (cf, trackNo, (ZoomSummarySO zso)) =
 -- | Filter summaries at a particular summary level
 enumSummaryUTCLevel :: (Functor m, Monad m)
                     => Int
-                    -> I.Enumeratee [Stream] [ZoomSummaryUTC] m a
+                    -> I.Enumeratee [Block] [ZoomSummaryUTC] m a
 enumSummaryUTCLevel level =
     I.joinI . enumSummariesUTC .
     I.filter (\(ZoomSummaryUTC s) -> summaryUTCLevel s == level)
 
 -- | Filter summaries at all levels
 enumSummariesUTC :: (Functor m, Monad m)
-                 => I.Enumeratee [Stream] [ZoomSummaryUTC] m a
+                 => I.Enumeratee [Block] [ZoomSummaryUTC] m a
 enumSummariesUTC = I.joinI . enumCTSO .  I.mapChunks (catMaybes . map summaryUTCFromCTSO)
 
 -- | Convert a CTSO triple into a ZoomSummaryUTC
@@ -220,37 +220,37 @@ summaryUTCFromCTSO (cf, trackNo, (ZoomSummarySO zso)) = toZS <$> base'm
 
 -- | Filter just the raw data
 enumPacketSOs :: (Functor m, Monad m)
-              => I.Enumeratee [Stream] [PacketSO] m a
+              => I.Enumeratee [Block] [PacketSO] m a
 enumPacketSOs = I.joinI . enumCTPSO . I.mapChunks (map (\(_,_,p) -> p))
 
 -- | Filter summaries at a particular summary level
 enumSummarySOLevel :: (Functor m, Monad m)
                    => Int
-                   -> I.Enumeratee [Stream] [ZoomSummarySO] m a
+                   -> I.Enumeratee [Block] [ZoomSummarySO] m a
 enumSummarySOLevel level =
     I.joinI . enumSummarySOs .
     I.filter (\(ZoomSummarySO s) -> summarySOLevel s == level)
 
 -- | Filter summaries at all levels
 enumSummarySOs :: (Functor m, Monad m)
-               => I.Enumeratee [Stream] [ZoomSummarySO] m a
+               => I.Enumeratee [Block] [ZoomSummarySO] m a
 enumSummarySOs = I.joinI . enumCTSO .  I.mapChunks (map (\(_,_,s) -> s))
 
 -- | Filter raw data
 enumCTPSO :: (Functor m, Monad m)
-          => I.Enumeratee [Stream] [(CacheFile, TrackNo, PacketSO)] m a
+          => I.Enumeratee [Block] [(CacheFile, TrackNo, PacketSO)] m a
 enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
     where
-        toCTPSO :: Stream -> Maybe (CacheFile, TrackNo, PacketSO)
+        toCTPSO :: Block -> Maybe (CacheFile, TrackNo, PacketSO)
         toCTPSO StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
         toCTPSO _                = Nothing
 
 -- | Filter summaries
 enumCTSO :: (Functor m, Monad m)
-         => I.Enumeratee [Stream] [(CacheFile, TrackNo, ZoomSummarySO)] m a
+         => I.Enumeratee [Block] [(CacheFile, TrackNo, ZoomSummarySO)] m a
 enumCTSO = I.mapChunks (catMaybes . map toCTSO)
     where
-        toCTSO :: Stream -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
+        toCTSO :: Block -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
         toCTSO StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
         toCTSO _                 = Nothing
 
@@ -258,7 +258,7 @@ enumCTSO = I.mapChunks (catMaybes . map toCTSO)
 filterTracksByName :: (Functor m, Monad m)
                    => CacheFile
                    -> [ByteString]
-                   -> I.Enumeratee [Stream] [Stream] m a
+                   -> I.Enumeratee [Block] [Block] m a
 filterTracksByName CacheFile{..} names = filterTracks tracks
     where
         tracks :: [TrackNo]
@@ -269,19 +269,19 @@ filterTracksByName CacheFile{..} names = filterTracks tracks
 -- | Filter to a given list of track numbers
 filterTracks :: (Functor m, Monad m)
              => [TrackNo]
-             -> I.Enumeratee [Stream] [Stream] m a
+             -> I.Enumeratee [Block] [Block] m a
 filterTracks tracks = I.filter fil
     where
-        fil :: Stream -> Bool
+        fil :: Block -> Bool
         fil StreamPacket{..}  = strmTrack `elem` tracks
         fil StreamSummary{..} = strmTrack `elem` tracks
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
--- 'CacheFile' visible in the 'Stream' elements.
+-- 'CacheFile' visible in the 'Block' elements.
 enumCacheFile :: (Functor m, MonadIO m)
               => [IdentifyCodec]
-              -> I.Enumeratee ByteString [Stream] m a
+              -> I.Enumeratee ByteString [Block] m a
 enumCacheFile identifiers iter = do
     fi <- iterHeaders identifiers
     enumStream fi iter
@@ -298,12 +298,12 @@ enumCacheFile identifiers iter = do
 enumStreamTrackNo :: (Functor m, MonadIO m)
                   => CacheFile
                   -> TrackNo
-                  -> I.Enumeratee ByteString [Stream] m a
+                  -> I.Enumeratee ByteString [Block] m a
 enumStreamTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go cf0
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
-           -> Iteratee ByteString m (CacheFile, [Stream])
+           -> Iteratee ByteString m (CacheFile, [Block])
         go cf = do
             header <- I.joinI $ I.takeUpTo 8 I.stream2list
             case parseHeader (B.pack header) of
@@ -320,7 +320,7 @@ enumStreamTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore 
 -- | An iteratee of zoom-cache which produces a singleton list of zoom-cache
 -- stream, if it can.
 iterStream :: (Functor m, MonadIO m) =>
-              CacheFile -> Iteratee ByteString m [Stream]
+              CacheFile -> Iteratee ByteString m [Block]
 iterStream cf = do
     header <- I.joinI $ I.takeUpTo 8 I.stream2list
     case parseHeader (B.pack header) of
@@ -340,7 +340,7 @@ iterStream cf = do
 -- map.
 enumStream :: (Functor m, MonadIO m)
             => CacheFile
-            -> I.Enumeratee ByteString [Stream] m a
+            -> I.Enumeratee ByteString [Block] m a
 enumStream = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
              liftM (cf, ) (iterStream cf)
 
@@ -366,7 +366,7 @@ convStreamIncomplete fi = I.eneeCheckIfDonePass check
 -- bit is incomplete (perhaps still being written to).
 enumStreamIncomplete :: (Functor m, MonadIO m) =>
                         CacheFile
-                     -> I.Enumeratee ByteString [Stream] m a
+                     -> I.Enumeratee ByteString [Block] m a
 enumStreamIncomplete = convStreamIncomplete . iterStream
 
 ------------------------------------------------------------

@@ -48,7 +48,7 @@ zoomDumpSummaryLevel :: Int
                      -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
 zoomDumpSummaryLevel lvl = dumpSomething (dumpSummaryLevel lvl)
 
-dumpSomething :: (Stream -> IO ()) -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
+dumpSomething :: (Block -> IO ()) -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
 dumpSomething f identifiers trackNo = I.fileDriverRandom
     (I.joinI . enumCacheFile identifiers . I.joinI . filterTracks [trackNo] . I.mapM_ $ f)
 
@@ -59,10 +59,10 @@ info CacheFile{..} = do
     putStrLn . prettyGlobal $ cfGlobal
     mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ cfSpecs
 
-streamRate :: Stream -> Maybe Rational
+streamRate :: Block -> Maybe Rational
 streamRate s = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
 
-dumpData :: Stream -> IO ()
+dumpData :: Block -> IO ()
 dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> putStrLn $ printf "%s: %s" t d) tds
     where
         pretty = case streamRate s of
@@ -73,7 +73,7 @@ dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> putStrLn $ printf "%s: %s" t d) t
         f (ZoomRaw a) = map prettyRaw a
 dumpData _ = return ()
 
-dumpSummary :: Stream -> IO ()
+dumpSummary :: Block -> IO ()
 dumpSummary s@StreamSummary{..} = case streamRate s of
         Just r  -> putStrLn $ f r strmSummary
         Nothing -> return ()
@@ -81,7 +81,7 @@ dumpSummary s@StreamSummary{..} = case streamRate s of
         f r (ZoomSummarySO a) = prettySummarySO r a
 dumpSummary _ = return ()
 
-dumpSummaryLevel :: Int -> Stream -> IO ()
+dumpSummaryLevel :: Int -> Block -> IO ()
 dumpSummaryLevel level s@StreamSummary{..}
     | level == opLevel strmSummary = dumpSummary s
     | otherwise                    = return ()
