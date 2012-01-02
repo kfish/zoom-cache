@@ -42,6 +42,7 @@
 module Data.Iteratee.ZoomCache (
   -- * Types
     Block(..)
+  , BlockData(..)
 
   -- * Reading zoom-cache files and ByteStrings
   , enumCacheFile
@@ -102,21 +103,17 @@ import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 
-data Block =
-    StreamPacket
-        { strmFile    :: CacheFile
-        , strmTrack   :: TrackNo
-        , strmPacket  :: PacketSO
-        }
-    | StreamSummary
-        { strmFile    :: CacheFile
-        , strmTrack   :: TrackNo
-        , strmSummary :: ZoomSummarySO
+data Block = Block
+        { blkFile  :: CacheFile
+        , blkTrack :: TrackNo
+        , blkData  :: BlockData
         }
 
+data BlockData = BlockPacket PacketSO | BlockSummary ZoomSummarySO
+
 instance Timestampable Block where
-    timestamp (StreamPacket c t p) = timestamp (packetFromCTPSO (c,t,p))
-    timestamp (StreamSummary c t s) = timestamp (summaryFromCTSO (c,t,s))
+    timestamp (Block c t (BlockPacket p)) = timestamp (packetFromCTPSO (c,t,p))
+    timestamp (Block c t (BlockSummary s)) = timestamp (summaryFromCTSO (c,t,s))
 
 ----------------------------------------------------------------------
 
@@ -242,8 +239,8 @@ enumCTPSO :: (Functor m, Monad m)
 enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
     where
         toCTPSO :: Block -> Maybe (CacheFile, TrackNo, PacketSO)
-        toCTPSO StreamPacket{..} = Just (strmFile, strmTrack, strmPacket)
-        toCTPSO _                = Nothing
+        toCTPSO (Block c t (BlockPacket p)) = Just (c, t, p)
+        toCTPSO _                           = Nothing
 
 -- | Filter summaries
 enumCTSO :: (Functor m, Monad m)
@@ -251,8 +248,8 @@ enumCTSO :: (Functor m, Monad m)
 enumCTSO = I.mapChunks (catMaybes . map toCTSO)
     where
         toCTSO :: Block -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
-        toCTSO StreamSummary{..} = Just (strmFile, strmTrack, strmSummary)
-        toCTSO _                 = Nothing
+        toCTSO (Block c t (BlockSummary s)) = Just (c, t, s)
+        toCTSO _                            = Nothing
 
 -- | Filter to a given list of track names
 filterTracksByName :: (Functor m, Monad m)
@@ -273,8 +270,7 @@ filterTracks :: (Functor m, Monad m)
 filterTracks tracks = I.filter fil
     where
         fil :: Block -> Bool
-        fil StreamPacket{..}  = strmTrack `elem` tracks
-        fil StreamSummary{..} = strmTrack `elem` tracks
+        fil b = (blkTrack b) `elem` tracks
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
@@ -309,11 +305,11 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
             case parseHeader (B.pack header) of
                 Just PacketHeader -> do
                     (_, packet) <- readPacketTrackNo (cfSpecs cf) trackNo
-                    let res = maybe [] (\p -> [StreamPacket cf trackNo p]) packet
+                    let res = maybe [] (\p -> [Block cf trackNo (BlockPacket p)]) packet
                     return (cf, res)
                 Just SummaryHeader -> do
                     (_, summary) <- readSummaryBlockTrackNo (cfSpecs cf) trackNo
-                    let res = maybe [] (\s -> [StreamSummary cf trackNo s]) summary
+                    let res = maybe [] (\s -> [Block cf trackNo (BlockSummary s)]) summary
                     return (cf, res)
                 _ -> return (cf, [])
 
@@ -326,10 +322,10 @@ iterBlock cf = do
     case parseHeader (B.pack header) of
         Just PacketHeader -> do
              (trackNo, packet) <- readPacket (cfSpecs cf)
-             return [StreamPacket cf trackNo (fromJust packet)]
+             return [Block cf trackNo (BlockPacket $ fromJust packet)]
         Just SummaryHeader -> do
              (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
-             return [StreamSummary cf trackNo (fromJust summary)]
+             return [Block cf trackNo (BlockSummary $ fromJust summary)]
         _ -> return []
 
 -- | An iteratee of zoom-cache data, after global and track headers

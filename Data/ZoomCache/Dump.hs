@@ -59,32 +59,32 @@ info CacheFile{..} = do
     putStrLn . prettyGlobal $ cfGlobal
     mapM_ (putStrLn . uncurry prettyTrackSpec) . IM.assocs $ cfSpecs
 
-streamRate :: Block -> Maybe Rational
-streamRate s = specRate <$> IM.lookup (strmTrack s) (cfSpecs (strmFile s))
+blockRate :: Block -> Maybe Rational
+blockRate b = specRate <$> IM.lookup (blkTrack b) (cfSpecs (blkFile b))
 
 dumpData :: Block -> IO ()
-dumpData s@StreamPacket{..} = mapM_ (\(t,d) -> putStrLn $ printf "%s: %s" t d) tds
+dumpData b@(Block _ _ (BlockPacket p)) = mapM_ (\(t,d) -> putStrLn $ printf "%s: %s" t d) tds
     where
-        pretty = case streamRate s of
+        pretty = case blockRate b of
             Just r  -> prettySampleOffset r
             Nothing -> show . unSO
-        tds = zip (map pretty (packetSOSampleOffsets strmPacket)) vals
-        vals = f (packetSOData strmPacket)
+        tds = zip (map pretty (packetSOSampleOffsets p)) vals
+        vals = f (packetSOData p)
         f (ZoomRaw a) = map prettyRaw a
 dumpData _ = return ()
 
 dumpSummary :: Block -> IO ()
-dumpSummary s@StreamSummary{..} = case streamRate s of
-        Just r  -> putStrLn $ f r strmSummary
+dumpSummary b@(Block _ _ (BlockSummary s)) = case blockRate b of
+        Just r  -> putStrLn $ f r s
         Nothing -> return ()
     where
         f r (ZoomSummarySO a) = prettySummarySO r a
 dumpSummary _ = return ()
 
 dumpSummaryLevel :: Int -> Block -> IO ()
-dumpSummaryLevel level s@StreamSummary{..}
-    | level == opLevel strmSummary = dumpSummary s
-    | otherwise                    = return ()
+dumpSummaryLevel level b@(Block _ _ (BlockSummary s))
+    | level == opLevel s = dumpSummary b
+    | otherwise          = return ()
     where opLevel (ZoomSummarySO a) = summarySOLevel a
 dumpSummaryLevel _ _ = return ()
 
