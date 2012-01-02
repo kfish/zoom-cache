@@ -49,9 +49,9 @@ module Data.Iteratee.ZoomCache (
   , wholeTrackSummaryUTC
 
   , iterHeaders
-  , enumStream
-  , enumStreamIncomplete
-  , enumStreamTrackNo
+  , enumBlock
+  , enumBlockIncomplete
+  , enumBlockTrackNo
 
   -- * Seeking
   , seekTimeStamp
@@ -284,7 +284,7 @@ enumCacheFile :: (Functor m, MonadIO m)
               -> I.Enumeratee ByteString [Block] m a
 enumCacheFile identifiers iter = do
     fi <- iterHeaders identifiers
-    enumStream fi iter
+    enumBlock fi iter
 
 -- | An enumeratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
@@ -293,13 +293,13 @@ enumCacheFile identifiers iter = do
 -- This function should only be used in applications where only one track is
 -- used from a file; if you need to process multiple tracks independently then
 -- give each an iteratee filtered by filterTracks or filterTracksByName, and
--- run these in parallel on the output of 'enumCacheFile' or 'enumStream'.
+-- run these in parallel on the output of 'enumCacheFile' or 'enumBlock'.
 -- Using this function multiple times in parallel will duplicate some parsing.
-enumStreamTrackNo :: (Functor m, MonadIO m)
+enumBlockTrackNo :: (Functor m, MonadIO m)
                   => CacheFile
                   -> TrackNo
                   -> I.Enumeratee ByteString [Block] m a
-enumStreamTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go cf0
+enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go cf0
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
@@ -319,9 +319,9 @@ enumStreamTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore 
 
 -- | An iteratee of zoom-cache which produces a singleton list of zoom-cache
 -- stream, if it can.
-iterStream :: (Functor m, MonadIO m) =>
+iterBlock :: (Functor m, MonadIO m) =>
               CacheFile -> Iteratee ByteString m [Block]
-iterStream cf = do
+iterBlock cf = do
     header <- I.joinI $ I.takeUpTo 8 I.stream2list
     case parseHeader (B.pack header) of
         Just PacketHeader -> do
@@ -338,11 +338,11 @@ iterStream cf = do
 -- Unfortunately the iteratee library does not have a convStreamCheck function
 -- (yet), so we end up doing a (trivial) fold when we really just want to do a
 -- map.
-enumStream :: (Functor m, MonadIO m)
+enumBlock :: (Functor m, MonadIO m)
             => CacheFile
             -> I.Enumeratee ByteString [Block] m a
-enumStream = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
-             liftM (cf, ) (iterStream cf)
+enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
+             liftM (cf, ) (iterBlock cf)
 
 -- | A version of convStream which will not fail in case EOF is reached at an
 -- unexpected point.
@@ -362,12 +362,12 @@ convStreamIncomplete fi = I.eneeCheckIfDonePass check
           I.eneeCheckIfDonePass check $ k str
         e@(Just _) -> I.eneeCheckIfDonePass check . k $ I.EOF e
 
--- | A version of enumStream which won't fail with an EofException if the last
+-- | A version of enumBlock which won't fail with an EofException if the last
 -- bit is incomplete (perhaps still being written to).
-enumStreamIncomplete :: (Functor m, MonadIO m) =>
+enumBlockIncomplete :: (Functor m, MonadIO m) =>
                         CacheFile
                      -> I.Enumeratee ByteString [Block] m a
-enumStreamIncomplete = convStreamIncomplete . iterStream
+enumBlockIncomplete = convStreamIncomplete . iterBlock
 
 ------------------------------------------------------------
 
