@@ -90,11 +90,13 @@ Library
     time,
     transformers              >= 0.2     && < 0.3,
     type-level,
+    unix,
     zlib
 
   Exposed-modules:
     Blaze.ByteString.Builder.ZoomCache
     Data.ByteString.Offset
+    Data.Iteratee.IO.OffsetFd
     Data.Iteratee.ZoomCache
     Data.Iteratee.ZoomCache.Seek
     Data.Iteratee.ZoomCache.Utils
@@ -147,6 +149,7 @@ Executable zoom-cache
     transformers              >= 0.2     && < 0.3,
     type-level,
     ui-command,
+    unix,
     zlib
 
 Test-suite tests
@@ -163,6 +166,7 @@ Test-suite tests
     random                     == 1.0.*,
     transformers               >= 0.2     && < 0.3,
     type-level,
+    unix,
     zoom-cache
 
 
