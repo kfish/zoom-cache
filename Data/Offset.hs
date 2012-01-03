@@ -1,6 +1,6 @@
 {-# OPTIONS -Wall #-}
 
-module Data.ByteString.Offset (
+module Data.Offset (
     -- * Types
       Offset(..)
 ) where

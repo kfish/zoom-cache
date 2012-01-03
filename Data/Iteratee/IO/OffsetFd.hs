@@ -11,9 +11,9 @@ module Data.Iteratee.IO.OffsetFd (
 import Control.Arrow (second)
 import qualified Data.ByteString as B
 import Data.ByteString (ByteString)
-import Data.ByteString.Offset (Offset(..))
 import Data.Iteratee.Iteratee
 import Data.Iteratee.Binary()
+import Data.Offset (Offset(..))
 
 import Control.Concurrent (yield)
 import Control.Exception
