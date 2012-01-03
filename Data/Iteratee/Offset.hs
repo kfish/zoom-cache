@@ -6,9 +6,10 @@ module Data.Iteratee.Offset (
     -- * ListLike
     , head
     , peek
+    , drop
 ) where
 
-import Prelude hiding (head)
+import Prelude hiding (drop, head)
 
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
@@ -49,3 +50,13 @@ peek = I.liftI step
       | LL.null vec = I.liftI step
       | otherwise   = I.idone (Just $ Offset o (LL.head vec)) s
     step stream     = I.idone Nothing stream
+
+drop :: (Monad m)
+     => Int -> Iteratee (Offset ByteString) m ()
+drop 0  = return ()
+drop n' = I.liftI (step n')
+  where
+    step n (I.Chunk (Offset o str))
+      | LL.length str < n = I.liftI (step (n - LL.length str))
+      | otherwise         = I.idone () (I.Chunk $ Offset (o + fromIntegral n) (LL.drop n str))
+    step _ stream         = I.idone () stream
