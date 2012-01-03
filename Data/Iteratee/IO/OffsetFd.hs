@@ -10,7 +10,8 @@ module Data.Iteratee.IO.OffsetFd (
 
 import Control.Arrow (second)
 import qualified Data.ByteString as B
-import Data.ByteString.Offset (ByteString(..))
+import Data.ByteString (ByteString)
+import Data.ByteString.Offset (Offset(..))
 import Data.Iteratee.Iteratee
 import Data.Iteratee.Binary()
 
@@ -87,12 +88,12 @@ makefdCallbackOBS ::
   -> ByteCount
   -> Fd
   -> st
-  -> m (Either SomeException ((Bool, st), ByteString))
+  -> m (Either SomeException ((Bool, st), Offset ByteString))
 makefdCallbackOBS p bufsize fd st = do
   o <- liftIO $ myfdSeek fd RelativeSeek 0
   case o of
       Left  _  -> return $ Left (error "myfdSeek failed")
-      Right o' -> liftM (fmap (second (OBS o'))) (makefdCallback p bufsize fd st)
+      Right o' -> liftM (fmap (second (Offset o'))) (makefdCallback p bufsize fd st)
 
 -- |A variant of enumFd that catches exceptions raised by the @Iteratee@.
 enumFdCatchOBS
@@ -100,7 +101,7 @@ enumFdCatchOBS
     => Int
     -> Fd
     -> (e -> m (Maybe EnumException))
-    -> Enumerator ByteString m a
+    -> Enumerator (Offset ByteString) m a
 enumFdCatchOBS bs fd handler iter =
   let bufsize = bs
   in CIO.bracket (liftIO $ mallocBytes bufsize)
@@ -113,7 +114,7 @@ enumFdRandomOBS
  :: forall m a.(MonadCatchIO m) =>
     Int
     -> Fd
-    -> Enumerator ByteString m a
+    -> Enumerator (Offset ByteString) m a
 enumFdRandomOBS bs fd iter = enumFdCatchOBS bs fd handler iter
   where
     handler (SeekException off) =
@@ -124,9 +125,9 @@ enumFdRandomOBS bs fd iter = enumFdCatchOBS bs fd handler iter
 
 fileDriverOBS
   :: (MonadCatchIO m) =>
-     (Int -> Fd -> Enumerator ByteString m a)
+     (Int -> Fd -> Enumerator (Offset ByteString) m a)
      -> Int
-     -> Iteratee ByteString m a
+     -> Iteratee (Offset ByteString) m a
      -> FilePath
      -> m a
 fileDriverOBS enumf bufsize iter filepath = CIO.bracket
@@ -138,16 +139,16 @@ fileDriverOBS enumf bufsize iter filepath = CIO.bracket
 fileDriverRandomFdOBS
   :: (MonadCatchIO m) =>
      Int
-     -> Iteratee ByteString m a
+     -> Iteratee (Offset ByteString) m a
      -> FilePath
      -> m a
 fileDriverRandomFdOBS = fileDriverOBS enumFdRandomOBS
 
 enumFile'OBS :: (MonadCatchIO m) =>
-  (Int -> Fd -> Enumerator ByteString m a)
+  (Int -> Fd -> Enumerator (Offset ByteString) m a)
   -> Int -- ^Buffer size
   -> FilePath
-  -> Enumerator ByteString m a
+  -> Enumerator (Offset ByteString) m a
 enumFile'OBS enumf bufsize filepath iter = CIO.bracket
   (liftIO $ openFd filepath ReadOnly Nothing defaultFileFlags)
   (liftIO . closeFd)
@@ -157,14 +158,14 @@ enumFileRandomOBS ::
   (MonadCatchIO m)
   => Int                 -- ^Buffer size
   -> FilePath
-  -> Enumerator ByteString m a
+  -> Enumerator (Offset ByteString) m a
 enumFileRandomOBS = enumFile'OBS enumFdRandomOBS
 
 -- |Process a file using the given Iteratee.  This function wraps
 -- enumFdRandom as a convenience.
 fileDriverRandomOBS
   :: (MonadCatchIO m) =>
-     Iteratee ByteString m a
+     Iteratee (Offset ByteString) m a
      -> FilePath
      -> m a
 fileDriverRandomOBS = fileDriverRandomFdOBS defaultBufSize

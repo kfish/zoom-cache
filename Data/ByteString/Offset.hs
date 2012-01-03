@@ -2,20 +2,19 @@
 
 module Data.ByteString.Offset (
     -- * Types
-      ByteString(..)
+      Offset(..)
 ) where
 
-import qualified Data.ByteString as BS
 import Data.Nullable
 import Data.NullPoint
 import System.Posix.Types (FileOffset)
 
 ----------------------------------------------------------------------
 
-data ByteString = OBS {-# UNPACK #-}!FileOffset {-# UNPACK #-}!BS.ByteString
+data Offset a = Offset {-# UNPACK #-}!FileOffset !a
 
-instance Nullable ByteString where
-    nullC (OBS _ bs) = nullC bs
+instance Nullable a => Nullable (Offset a) where
+    nullC (Offset _ bs) = nullC bs
 
-instance NullPoint ByteString where
-    empty = OBS 0 empty
+instance NullPoint a => NullPoint (Offset a) where
+    empty = Offset 0 empty
