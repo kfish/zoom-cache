@@ -1,8 +1,10 @@
 {-# OPTIONS -Wall #-}
 
 module Data.Iteratee.Offset (
+      tell
+
     -- * ListLike
-      head
+    , head
     , peek
 ) where
 
@@ -13,8 +15,20 @@ import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
 import Data.Word
+import System.Posix (FileOffset)
 
 import Data.Offset
+
+----------------------------------------------------------------------
+
+tell :: (Monad m)
+     => Iteratee (Offset ByteString) m FileOffset
+tell = I.liftI step
+  where
+    step s@(I.Chunk (Offset o vec))
+      | LL.null vec = I.liftI step
+      | otherwise   = I.idone o s
+    step stream     = I.icont step (Just (I.setEOF stream))
 
 ----------------------------------------------------------------------
 
