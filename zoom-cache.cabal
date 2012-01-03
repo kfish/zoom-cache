@@ -97,6 +97,7 @@ Library
     Blaze.ByteString.Builder.ZoomCache
     Data.Offset
     Data.Iteratee.IO.OffsetFd
+    Data.Iteratee.Offset
     Data.Iteratee.ZoomCache
     Data.Iteratee.ZoomCache.Seek
     Data.Iteratee.ZoomCache.Utils
