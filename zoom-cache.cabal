@@ -94,6 +94,7 @@ Library
 
   Exposed-modules:
     Blaze.ByteString.Builder.ZoomCache
+    Data.ByteString.Offset
     Data.Iteratee.ZoomCache
     Data.Iteratee.ZoomCache.Seek
     Data.Iteratee.ZoomCache.Utils
