@@ -3,6 +3,7 @@
 module Data.Iteratee.Offset (
     -- * ListLike
       head
+    , peek
 ) where
 
 import Prelude hiding (head)
@@ -26,3 +27,11 @@ head = I.liftI step
     | otherwise   = I.idone (Offset o (LL.head vec)) (I.Chunk $ Offset (o+1) (LL.tail vec))
   step stream     = I.icont step (Just (I.setEOF stream))
 
+peek :: (Monad m)
+     => Iteratee (Offset ByteString) m (Maybe (Offset Word8))
+peek = I.liftI step
+  where
+    step s@(I.Chunk (Offset o vec))
+      | LL.null vec = I.liftI step
+      | otherwise   = I.idone (Just $ Offset o (LL.head vec)) s
+    step stream     = I.idone Nothing stream
