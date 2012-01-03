@@ -5,6 +5,7 @@
 module Data.Iteratee.IO.OffsetFd (
       enumFileRandomOBS
     , fileDriverRandomFdOBS
+    , fileDriverRandomOBS
 ) where
 
 import Control.Arrow (second)
@@ -53,6 +54,13 @@ myfdSeek (Fd fd) mode off = do
 
 foreign import ccall unsafe "unistd.h lseek" cLSeek
   :: CInt -> FileOffset -> CInt -> IO FileOffset
+
+----------------------------------------------------------------------
+-- Copied from Data.Iteratee.IO
+
+-- | The default buffer size.
+defaultBufSize :: Int
+defaultBufSize = 1024
 
 ----------------------------------------------------------------------
 
@@ -152,3 +160,11 @@ enumFileRandomOBS ::
   -> Enumerator ByteString m a
 enumFileRandomOBS = enumFile'OBS enumFdRandomOBS
 
+-- |Process a file using the given Iteratee.  This function wraps
+-- enumFdRandom as a convenience.
+fileDriverRandomOBS
+  :: (MonadCatchIO m) =>
+     Iteratee ByteString m a
+     -> FilePath
+     -> m a
+fileDriverRandomOBS = fileDriverRandomFdOBS defaultBufSize
