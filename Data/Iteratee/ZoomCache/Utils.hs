@@ -31,6 +31,7 @@ module Data.Iteratee.ZoomCache.Utils (
 
     -- * Codec reading
     , readCodec
+    , readCodecOBS
 ) where
 
 import Control.Applicative ((<$>))
@@ -41,7 +42,9 @@ import Data.ByteString (ByteString)
 import Data.Int
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
+import qualified Data.Iteratee.Offset as OffI
 import qualified Data.ListLike as LL
+import Data.Offset
 import Data.Ratio
 import Data.Word
 import Unsafe.Coerce (unsafeCoerce)
@@ -195,6 +198,14 @@ readCodec :: (Functor m, Monad m)
           -> Iteratee ByteString m (Maybe Codec)
 readCodec identifiers n = do
     tt <- B.pack <$> (I.joinI $ I.takeUpTo n I.stream2list)
+    return (parseCodec identifiers tt)
+
+readCodecOBS :: (Functor m, Monad m)
+             => [IdentifyCodec]
+             -> Int
+             -> Iteratee (Offset ByteString) m (Maybe Codec)
+readCodecOBS identifiers n = do
+    tt <- OffI.takeBS n
     return (parseCodec identifiers tt)
 
 parseCodec :: [IdentifyCodec] -> IdentifyCodec
