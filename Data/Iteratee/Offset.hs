@@ -6,12 +6,14 @@ module Data.Iteratee.Offset (
     -- * ListLike
     , takeBS
     , head
+    , offHead
     , peek
     , drop
 ) where
 
 import Prelude hiding (drop, head)
 
+import Control.Monad (liftM)
 import qualified Data.ByteString as B
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
@@ -52,8 +54,12 @@ takeBS n' = I.liftI (step n' B.empty)
 ----------------------------------------------------------------------
 
 head :: (Monad m)
-     => Iteratee (Offset ByteString) m (Offset Word8)
-head = I.liftI step
+     => Iteratee (Offset ByteString) m Word8
+head = liftM unwrapOffset offHead
+
+offHead :: (Monad m)
+        => Iteratee (Offset ByteString) m (Offset Word8)
+offHead = I.liftI step
   where
   step (I.Chunk (Offset o vec))
     | LL.null vec = I.icont step Nothing
