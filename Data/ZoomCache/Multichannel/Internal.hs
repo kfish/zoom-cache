@@ -20,15 +20,15 @@ module Data.ZoomCache.Multichannel.Internal (
     , mkTrackSpecMultichannel
 ) where
 
-import Control.Applicative ((<$>))
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import Data.Functor.Identity
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
 import Data.TypeLevel.Num hiding ((==))
 
+import qualified Data.Iteratee.Offset as OffI
 import Data.Iteratee.ZoomCache.Utils
+import Data.Offset
 import Data.ZoomCache.Common
 import Data.ZoomCache.Multichannel.Common
 import Data.ZoomCache.Multichannel.NList()
@@ -45,16 +45,16 @@ runner1 :: Identity (I.Iteratee s Identity c) -> c
 runner1 = runIdentity . I.run . runIdentity
 
 identifyCodecMultichannel :: [IdentifyCodec] -> IdentifyCodec
-identifyCodecMultichannel identifiers bs = runner1 $ I.enumPure1Chunk bs identifyMulti
+identifyCodecMultichannel identifiers bs = runner1 $ I.enumPure1Chunk (Offset 0 bs) identifyMulti
     where
-        identifyMulti :: (Functor m, Monad m) => I.Iteratee ByteString m (Maybe Codec)
+        identifyMulti :: (Functor m, Monad m) => I.Iteratee (Offset ByteString) m (Maybe Codec)
         identifyMulti = do
-            mIdent <- B.pack <$> (I.joinI $ I.takeUpTo 8 I.stream2list)
+            mIdent <- OffI.takeBS 8
             if mIdent == trackTypeMultichannel
                 then do
                     channels <- readInt32be
                     subIdentLength <- readInt32be
-                    subCodec <- readCodec identifiers subIdentLength
+                    subCodec <- readCodecOBS identifiers subIdentLength
                     return (fmap (foo channels) subCodec)
                 else return Nothing
 

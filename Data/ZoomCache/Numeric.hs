@@ -45,6 +45,8 @@ import Data.Maybe
 import Data.Time (UTCTime)
 import Data.Typeable
 import Data.Word
+
+import Data.Offset
 import Data.ZoomCache
 import Data.ZoomCache.Numeric.Types
 import Data.ZoomCache.Types
@@ -166,7 +168,7 @@ toSummaryDataDouble s = numMkSummary
 wholeTrackSummaryDouble :: (Functor m, MonadIO m)
                         => [IdentifyCodec]
                         -> TrackNo
-                        -> I.Iteratee ByteString m (Summary Double)
+                        -> I.Iteratee (Offset ByteString) m (Summary Double)
 wholeTrackSummaryDouble identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
     where
@@ -178,7 +180,7 @@ wholeTrackSummaryDouble identifiers trackNo = I.joinI $ enumCacheFile identifier
 wholeTrackSummaryUTCDouble :: (Functor m, MonadIO m)
                            => [IdentifyCodec]
                            -> TrackNo
-                           -> I.Iteratee ByteString m (SummaryUTC Double)
+                           -> I.Iteratee (Offset ByteString) m (SummaryUTC Double)
 wholeTrackSummaryUTCDouble identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
     where

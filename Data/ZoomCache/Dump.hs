@@ -27,6 +27,7 @@ import Control.Applicative ((<$>))
 import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
+import qualified Data.Iteratee.IO.OffsetFd as OffI
 import Text.Printf
 
 import Data.ZoomCache
@@ -36,7 +37,7 @@ import Data.ZoomCache
 zoomInfoFile :: [IdentifyCodec]
              -> FilePath -> IO ()
 zoomInfoFile identifiers path =
-    I.fileDriverRandom (iterHeaders identifiers) path >>= info
+    OffI.fileDriverRandomOBS (iterHeaders identifiers) path >>= info
 
 zoomDumpFile :: [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
 zoomDumpFile = dumpSomething dumpData
@@ -49,7 +50,7 @@ zoomDumpSummaryLevel :: Int
 zoomDumpSummaryLevel lvl = dumpSomething (dumpSummaryLevel lvl)
 
 dumpSomething :: (Block -> IO ()) -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
-dumpSomething f identifiers trackNo = I.fileDriverRandom
+dumpSomething f identifiers trackNo = OffI.fileDriverRandomOBS
     (I.joinI . enumCacheFile identifiers . I.joinI . filterTracks [trackNo] . I.mapM_ $ f)
 
 ----------------------------------------------------------------------

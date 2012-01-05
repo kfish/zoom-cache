@@ -52,12 +52,8 @@ module Data.ZoomCache.Unit (
 import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import Data.Iteratee (Iteratee)
-import qualified Data.Iteratee as I
-import qualified Data.ListLike as LL
 import Data.Monoid
-import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
@@ -87,11 +83,9 @@ instance ZoomReadable () where
 prettyPacketUnit :: () -> String
 prettyPacketUnit = const "."
 
-readSummaryUnit :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-               => Iteratee s m (SummaryData ())
+readSummaryUnit :: (Functor m, Monad m)
+               => Iteratee ByteString m (SummaryData ())
 readSummaryUnit = SummaryUnit <$> readInt32be
-{-# SPECIALIZE INLINE readSummaryUnit :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData ()) #-}
-{-# SPECIALIZE INLINE readSummaryUnit :: (Functor m, Monad m) => Iteratee B.ByteString m (SummaryData ()) #-}
 
 prettySummaryUnit :: SummaryData () -> String
 prettySummaryUnit SummaryUnit{..} = printf "count: %d" summaryUnitCount

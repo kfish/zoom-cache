@@ -46,12 +46,9 @@ module Data.ZoomCache.Bool (
 import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import Data.Int
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
-import qualified Data.ListLike as LL
-import Data.Word
 import Text.Printf
 
 import Data.ZoomCache.Codec
@@ -81,15 +78,13 @@ instance ZoomReadable Bool where
 prettyPacketBool :: Bool -> String
 prettyPacketBool = show
 
-readBool :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-         => Iteratee s m Bool
+readBool :: (Functor m, Monad m)
+         => Iteratee ByteString m Bool
 readBool = (/= 0) <$> I.head
 
-readSummaryBool :: (I.Nullable s, LL.ListLike s Word8, Functor m, Monad m)
-                => Iteratee s m (SummaryData Bool)
-readSummaryBool = SummaryBool <$>readDouble64be
-{-# SPECIALIZE INLINE readSummaryBool :: (Functor m, Monad m) => Iteratee [Word8] m (SummaryData Bool) #-}
-{-# SPECIALIZE INLINE readSummaryBool :: (Functor m, Monad m) => Iteratee B.ByteString m (SummaryData Bool) #-}
+readSummaryBool :: (Functor m, Monad m)
+                => Iteratee ByteString m (SummaryData Bool)
+readSummaryBool = SummaryBool <$> readDouble64be
 
 prettySummaryBool :: SummaryData Bool -> String
 prettySummaryBool SummaryBool{..} = printf "expected: %.3f" summaryBoolExpected

@@ -46,6 +46,7 @@ import Data.TypeLevel.Num hiding ((==))
 import Data.Word
 
 import Data.Iteratee.ZoomCache
+import Data.Offset
 import Data.ZoomCache.Codec
 import Data.ZoomCache.Multichannel.NList
 import Data.ZoomCache.NList
@@ -181,7 +182,7 @@ toSummaryUTCListDouble s | isJust sd = (:[]) <$> sd
 wholeTrackSummaryListDouble :: (Functor m, MonadIO m)
                             => [IdentifyCodec]
                             -> TrackNo
-                            -> I.Iteratee ByteString m [Summary Double]
+                            -> I.Iteratee (Offset ByteString) m [Summary Double]
 wholeTrackSummaryListDouble identifiers trackNo =
     I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
@@ -213,7 +214,7 @@ enumSummaryListDouble level =
 wholeTrackSummaryUTCListDouble :: (Functor m, MonadIO m)
                                => [IdentifyCodec]
                                -> TrackNo
-                               -> I.Iteratee ByteString m [SummaryUTC Double]
+                               -> I.Iteratee (Offset ByteString) m [SummaryUTC Double]
 wholeTrackSummaryUTCListDouble identifiers trackNo =
     I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last

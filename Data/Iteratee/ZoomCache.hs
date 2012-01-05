@@ -81,13 +81,13 @@ import Control.Monad (replicateM, liftM)
 import Control.Monad.Trans (MonadIO)
 import Data.Bits
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import Data.Functor.Identity
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
+import qualified Data.Iteratee.Offset as OffI
 import Data.Iteratee.ZLib
 import Data.Maybe
 import Data.Ratio
@@ -95,6 +95,7 @@ import Data.Time
 
 import Data.Iteratee.ZoomCache.Seek
 import Data.Iteratee.ZoomCache.Utils
+import Data.Offset
 import Data.ZoomCache.Common
 import Data.ZoomCache.Format
 import Data.ZoomCache.Multichannel.Internal (supportMultichannel)
@@ -121,7 +122,7 @@ instance Timestampable Block where
 wholeTrackSummary :: (Functor m, MonadIO m)
                   => [IdentifyCodec]
                   -> TrackNo
-                  -> Iteratee ByteString m (TrackSpec, ZoomSummary)
+                  -> Iteratee (Offset ByteString) m (TrackSpec, ZoomSummary)
 wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
@@ -133,7 +134,7 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 wholeTrackSummaryUTC :: (Functor m, MonadIO m)
                      => [IdentifyCodec]
                      -> TrackNo
-                     -> Iteratee ByteString m (TrackSpec, Maybe ZoomSummaryUTC)
+                     -> Iteratee (Offset ByteString) m (TrackSpec, Maybe ZoomSummaryUTC)
 wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
     I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
@@ -277,7 +278,7 @@ filterTracks tracks = I.filter fil
 -- 'CacheFile' visible in the 'Block' elements.
 enumCacheFile :: (Functor m, MonadIO m)
               => [IdentifyCodec]
-              -> I.Enumeratee ByteString [Block] m a
+              -> I.Enumeratee (Offset ByteString) [Block] m a
 enumCacheFile identifiers iter = do
     fi <- iterHeaders identifiers
     enumBlock fi iter
@@ -294,21 +295,21 @@ enumCacheFile identifiers iter = do
 enumBlockTrackNo :: (Functor m, MonadIO m)
                   => CacheFile
                   -> TrackNo
-                  -> I.Enumeratee ByteString [Block] m a
+                  -> I.Enumeratee (Offset ByteString) [Block] m a
 enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go cf0
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
-           -> Iteratee ByteString m (CacheFile, [Block])
+           -> Iteratee (Offset ByteString) m (CacheFile, [Block])
         go cf = do
-            header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (B.pack header) of
+            header <- OffI.takeBS 8
+            case parseHeader header of
                 Just PacketHeader -> do
-                    (_, packet) <- readPacketTrackNo (cfSpecs cf) trackNo
+                    (_, packet) <- OffI.convOffset $ readPacketTrackNo (cfSpecs cf) trackNo
                     let res = maybe [] (\p -> [Block cf trackNo (BlockPacket p)]) packet
                     return (cf, res)
                 Just SummaryHeader -> do
-                    (_, summary) <- readSummaryBlockTrackNo (cfSpecs cf) trackNo
+                    (_, summary) <- OffI.convOffset $ readSummaryBlockTrackNo (cfSpecs cf) trackNo
                     let res = maybe [] (\s -> [Block cf trackNo (BlockSummary s)]) summary
                     return (cf, res)
                 _ -> return (cf, [])
@@ -316,15 +317,15 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
 -- | An iteratee of zoom-cache which produces a singleton list of zoom-cache
 -- stream, if it can.
 iterBlock :: (Functor m, MonadIO m) =>
-              CacheFile -> Iteratee ByteString m [Block]
+              CacheFile -> Iteratee (Offset ByteString) m [Block]
 iterBlock cf = do
-    header <- I.joinI $ I.takeUpTo 8 I.stream2list
-    case parseHeader (B.pack header) of
+    header <- OffI.takeBS 8
+    case parseHeader header of
         Just PacketHeader -> do
-             (trackNo, packet) <- readPacket (cfSpecs cf)
+             (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
              return [Block cf trackNo (BlockPacket $ fromJust packet)]
         Just SummaryHeader -> do
-             (trackNo, summary) <- readSummaryBlock (cfSpecs cf)
+             (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
              return [Block cf trackNo (BlockSummary $ fromJust summary)]
         _ -> return []
 
@@ -336,7 +337,7 @@ iterBlock cf = do
 -- map.
 enumBlock :: (Functor m, MonadIO m)
             => CacheFile
-            -> I.Enumeratee ByteString [Block] m a
+            -> I.Enumeratee (Offset ByteString) [Block] m a
 enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
              liftM (cf, ) (iterBlock cf)
 
@@ -362,7 +363,7 @@ convStreamIncomplete fi = I.eneeCheckIfDonePass check
 -- bit is incomplete (perhaps still being written to).
 enumBlockIncomplete :: (Functor m, MonadIO m) =>
                         CacheFile
-                     -> I.Enumeratee ByteString [Block] m a
+                     -> I.Enumeratee (Offset ByteString) [Block] m a
 enumBlockIncomplete = convStreamIncomplete . iterBlock
 
 ------------------------------------------------------------
@@ -384,23 +385,23 @@ parseHeader h
 -- a 'CacheFile'
 iterHeaders :: (Functor m, Monad m)
             => [IdentifyCodec]
-            -> I.Iteratee ByteString m CacheFile
+            -> I.Iteratee (Offset ByteString) m CacheFile
 iterHeaders identifiers = iterGlobal >>= go
     where
         iterGlobal :: (Functor m, Monad m)
-                   => Iteratee ByteString m CacheFile
+                   => Iteratee (Offset ByteString) m CacheFile
         iterGlobal = do
-            header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (B.pack header) of
-                Just GlobalHeader -> mkCacheFile <$> readGlobalHeader
+            header <- OffI.takeBS 8
+            case parseHeader header of
+                Just GlobalHeader -> mkCacheFile <$> (OffI.convOffset readGlobalHeader)
                 _                 -> error "No global header"
 
         go :: (Functor m, Monad m)
            => CacheFile
-           -> Iteratee ByteString m CacheFile
+           -> Iteratee (Offset ByteString) m CacheFile
         go fi = do
-            header <- I.joinI $ I.takeUpTo 8 I.stream2list
-            case parseHeader (B.pack header) of
+            header <- OffI.takeBS 8
+            case parseHeader header of
                 Just TrackHeader -> do
                     (trackNo, spec) <- readTrackHeader identifiers
                     let fi' = fi{cfSpecs = IM.insert trackNo spec (cfSpecs fi)}
@@ -429,7 +430,7 @@ readGlobalHeader = do
 
 readTrackHeader :: (Functor m, Monad m)
                 => [IdentifyCodec]
-                -> Iteratee ByteString m (TrackNo, TrackSpec)
+                -> Iteratee (Offset ByteString) m (TrackNo, TrackSpec)
 readTrackHeader identifiers = do
     trackNo <- readInt32be
     (drType, delta, zlib) <- readFlags
@@ -437,11 +438,11 @@ readTrackHeader identifiers = do
     identLength <- readInt32be
     trackType <- maybe (error "Unknown track type") return =<< readCodecMultichannel identLength
     nameLength <- readInt32be
-    name <- B.pack <$> (I.joinI $ I.takeUpTo nameLength I.stream2list)
+    name <- OffI.takeBS nameLength
 
     return (trackNo, TrackSpec trackType delta zlib drType rate name)
     where
-        readCodecMultichannel = readCodec (supportMultichannel identifiers)
+        readCodecMultichannel = readCodecOBS (supportMultichannel identifiers)
 
 ------------------------------------------------------------
 -- Packet, Summary reading
@@ -601,7 +602,7 @@ readVersion :: (Functor m, Monad m)
 readVersion = Version <$> readInt16be <*> readInt16be
 
 readFlags :: (Functor m, Monad m)
-          => Iteratee ByteString m (SampleRateType, Bool, Bool)
+          => Iteratee (Offset ByteString) m (SampleRateType, Bool, Bool)
 readFlags = do
     (n :: Int16) <- readInt16be
     let drType = case n .&. 1 of
