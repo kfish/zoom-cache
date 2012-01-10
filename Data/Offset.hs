@@ -14,7 +14,9 @@ module Data.Offset (
 import Data.Monoid
 import Data.Nullable
 import Data.NullPoint
+import Data.Word
 import qualified Data.ListLike.FoldableLL as LL
+import qualified Data.ListLike as LL
 import System.Posix.Types (FileOffset)
 
 ----------------------------------------------------------------------
@@ -43,6 +45,13 @@ foldlO f a (Offset _ xs) = LL.foldl f a xs
 
 foldrO :: LL.FoldableLL s el => (el -> b -> b) -> b -> Offset s -> b
 foldrO f b (Offset _ xs) = LL.foldr f b xs
+
+instance LL.ListLike s Word8 => LL.ListLike (Offset s) Word8 where
+    singleton = Offset 0 . LL.singleton
+    head (Offset _ xs) = LL.head xs
+    tail (Offset o xs) = Offset (o+1) (LL.tail xs)
+    null (Offset _ xs) = LL.null xs
+    length (Offset _ xs) = LL.length xs
 
 ----------------------------------------------------------------------
 
