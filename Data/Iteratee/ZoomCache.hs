@@ -145,7 +145,7 @@ wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 
 -- | Filter just the raw data
 enumPackets :: (Functor m, Monad m)
-            => I.Enumeratee [Block] [Packet] m a
+            => I.Enumeratee [Offset Block] [Packet] m a
 enumPackets = I.joinI . enumCTPSO . I.mapChunks (map packetFromCTPSO)
 
 -- | Convert a CTPSO triple into a Packet
@@ -158,7 +158,7 @@ packetFromCTPSO (cf, trackNo, pso) = packetFromPacketSO r pso
 
 -- | Filter just the raw data, timestamped by UTC
 enumPacketsUTC :: (Functor m, Monad m)
-               => I.Enumeratee [Block] [PacketUTC] m a
+               => I.Enumeratee [Offset Block] [PacketUTC] m a
 enumPacketsUTC = I.joinI . enumCTPSO . I.mapChunks (catMaybes . map packetUTCFromCTPSO)
 
 -- | Convert a CTPSO triple into a Packet
@@ -174,14 +174,14 @@ packetUTCFromCTPSO (cf, trackNo, pso) = toPacket <$> base'm
 -- | Filter summaries at a particular summary level
 enumSummaryLevel :: (Functor m, Monad m)
                  => Int
-                 -> I.Enumeratee [Block] [ZoomSummary] m a
+                 -> I.Enumeratee [Offset Block] [ZoomSummary] m a
 enumSummaryLevel level =
     I.joinI . enumSummaries .
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
 
 -- | Filter summaries at all levels
 enumSummaries :: (Functor m, Monad m)
-              => I.Enumeratee [Block] [ZoomSummary] m a
+              => I.Enumeratee [Offset Block] [ZoomSummary] m a
 enumSummaries = I.joinI . enumCTSO .  I.mapChunks (map summaryFromCTSO)
 
 -- | Convert a CTSO triple into a ZoomSummary
@@ -196,14 +196,14 @@ summaryFromCTSO (cf, trackNo, (ZoomSummarySO zso)) =
 -- | Filter summaries at a particular summary level
 enumSummaryUTCLevel :: (Functor m, Monad m)
                     => Int
-                    -> I.Enumeratee [Block] [ZoomSummaryUTC] m a
+                    -> I.Enumeratee [Offset Block] [ZoomSummaryUTC] m a
 enumSummaryUTCLevel level =
     I.joinI . enumSummariesUTC .
     I.filter (\(ZoomSummaryUTC s) -> summaryUTCLevel s == level)
 
 -- | Filter summaries at all levels
 enumSummariesUTC :: (Functor m, Monad m)
-                 => I.Enumeratee [Block] [ZoomSummaryUTC] m a
+                 => I.Enumeratee [Offset Block] [ZoomSummaryUTC] m a
 enumSummariesUTC = I.joinI . enumCTSO .  I.mapChunks (catMaybes . map summaryUTCFromCTSO)
 
 -- | Convert a CTSO triple into a ZoomSummaryUTC
@@ -218,26 +218,26 @@ summaryUTCFromCTSO (cf, trackNo, (ZoomSummarySO zso)) = toZS <$> base'm
 
 -- | Filter just the raw data
 enumPacketSOs :: (Functor m, Monad m)
-              => I.Enumeratee [Block] [PacketSO] m a
+              => I.Enumeratee [Offset Block] [PacketSO] m a
 enumPacketSOs = I.joinI . enumCTPSO . I.mapChunks (map (\(_,_,p) -> p))
 
 -- | Filter summaries at a particular summary level
 enumSummarySOLevel :: (Functor m, Monad m)
                    => Int
-                   -> I.Enumeratee [Block] [ZoomSummarySO] m a
+                   -> I.Enumeratee [Offset Block] [ZoomSummarySO] m a
 enumSummarySOLevel level =
     I.joinI . enumSummarySOs .
     I.filter (\(ZoomSummarySO s) -> summarySOLevel s == level)
 
 -- | Filter summaries at all levels
 enumSummarySOs :: (Functor m, Monad m)
-               => I.Enumeratee [Block] [ZoomSummarySO] m a
+               => I.Enumeratee [Offset Block] [ZoomSummarySO] m a
 enumSummarySOs = I.joinI . enumCTSO .  I.mapChunks (map (\(_,_,s) -> s))
 
 -- | Filter raw data
 enumCTPSO :: (Functor m, Monad m)
-          => I.Enumeratee [Block] [(CacheFile, TrackNo, PacketSO)] m a
-enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
+          => I.Enumeratee [Offset Block] [(CacheFile, TrackNo, PacketSO)] m a
+enumCTPSO = I.mapChunks (catMaybes . map (toCTPSO . unwrapOffset))
     where
         toCTPSO :: Block -> Maybe (CacheFile, TrackNo, PacketSO)
         toCTPSO (Block c t (BlockPacket p)) = Just (c, t, p)
@@ -245,8 +245,8 @@ enumCTPSO = I.mapChunks (catMaybes . map toCTPSO)
 
 -- | Filter summaries
 enumCTSO :: (Functor m, Monad m)
-         => I.Enumeratee [Block] [(CacheFile, TrackNo, ZoomSummarySO)] m a
-enumCTSO = I.mapChunks (catMaybes . map toCTSO)
+         => I.Enumeratee [Offset Block] [(CacheFile, TrackNo, ZoomSummarySO)] m a
+enumCTSO = I.mapChunks (catMaybes . map (toCTSO . unwrapOffset))
     where
         toCTSO :: Block -> Maybe (CacheFile, TrackNo, ZoomSummarySO)
         toCTSO (Block c t (BlockSummary s)) = Just (c, t, s)
@@ -256,7 +256,7 @@ enumCTSO = I.mapChunks (catMaybes . map toCTSO)
 filterTracksByName :: (Functor m, Monad m)
                    => CacheFile
                    -> [ByteString]
-                   -> I.Enumeratee [Block] [Block] m a
+                   -> I.Enumeratee [Offset Block] [Offset Block] m a
 filterTracksByName CacheFile{..} names = filterTracks tracks
     where
         tracks :: [TrackNo]
@@ -267,8 +267,8 @@ filterTracksByName CacheFile{..} names = filterTracks tracks
 -- | Filter to a given list of track numbers
 filterTracks :: (Functor m, Monad m)
              => [TrackNo]
-             -> I.Enumeratee [Block] [Block] m a
-filterTracks tracks = I.filter fil
+             -> I.Enumeratee [Offset Block] [Offset Block] m a
+filterTracks tracks = I.filter (fil . unwrapOffset)
     where
         fil :: Block -> Bool
         fil b = (blkTrack b) `elem` tracks
@@ -278,7 +278,7 @@ filterTracks tracks = I.filter fil
 -- 'CacheFile' visible in the 'Block' elements.
 enumCacheFile :: (Functor m, MonadIO m)
               => [IdentifyCodec]
-              -> I.Enumeratee (Offset ByteString) [Block] m a
+              -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumCacheFile identifiers iter = do
     fi <- iterHeaders identifiers
     enumBlock fi iter
@@ -293,40 +293,43 @@ enumCacheFile identifiers iter = do
 -- run these in parallel on the output of 'enumCacheFile' or 'enumBlock'.
 -- Using this function multiple times in parallel will duplicate some parsing.
 enumBlockTrackNo :: (Functor m, MonadIO m)
-                  => CacheFile
-                  -> TrackNo
-                  -> I.Enumeratee (Offset ByteString) [Block] m a
+                 => CacheFile
+                 -> TrackNo
+                 -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore go cf0
     where
         go :: (Functor m, MonadIO m)
            => CacheFile
-           -> Iteratee (Offset ByteString) m (CacheFile, [Block])
+           -> Iteratee (Offset ByteString) m (CacheFile, [Offset Block])
         go cf = do
+            o <- OffI.tell
             header <- OffI.takeBS 8
             case parseHeader header of
                 Just PacketHeader -> do
                     (_, packet) <- OffI.convOffset $ readPacketTrackNo (cfSpecs cf) trackNo
-                    let res = maybe [] (\p -> [Block cf trackNo (BlockPacket p)]) packet
+                    let res = maybe [] (\p -> [Offset o (Block cf trackNo (BlockPacket p))]) packet
                     return (cf, res)
                 Just SummaryHeader -> do
                     (_, summary) <- OffI.convOffset $ readSummaryBlockTrackNo (cfSpecs cf) trackNo
-                    let res = maybe [] (\s -> [Block cf trackNo (BlockSummary s)]) summary
+                    let res = maybe [] (\s -> [Offset o (Block cf trackNo (BlockSummary s))]) summary
                     return (cf, res)
                 _ -> return (cf, [])
 
 -- | An iteratee of zoom-cache which produces a singleton list of zoom-cache
 -- stream, if it can.
-iterBlock :: (Functor m, MonadIO m) =>
-              CacheFile -> Iteratee (Offset ByteString) m [Block]
+iterBlock :: (Functor m, MonadIO m)
+          => CacheFile
+          -> Iteratee (Offset ByteString) m [Offset Block]
 iterBlock cf = do
+    o <- OffI.tell
     header <- OffI.takeBS 8
     case parseHeader header of
         Just PacketHeader -> do
              (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
-             return [Block cf trackNo (BlockPacket $ fromJust packet)]
+             return $ maybe [] (\p -> [Offset o (Block cf trackNo (BlockPacket p))]) packet
         Just SummaryHeader -> do
              (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
-             return [Block cf trackNo (BlockSummary $ fromJust summary)]
+             return $ maybe [] (\s -> [Offset o (Block cf trackNo (BlockSummary s))]) summary
         _ -> return []
 
 -- | An iteratee of zoom-cache data, after global and track headers
@@ -336,15 +339,15 @@ iterBlock cf = do
 -- (yet), so we end up doing a (trivial) fold when we really just want to do a
 -- map.
 enumBlock :: (Functor m, MonadIO m)
-            => CacheFile
-            -> I.Enumeratee (Offset ByteString) [Block] m a
+          => CacheFile
+          -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
              liftM (cf, ) (iterBlock cf)
 
 -- | A version of convStream which will not fail in case EOF is reached at an
 -- unexpected point.
-convStreamIncomplete :: (Monad m, I.Nullable s) =>
-                        I.Iteratee s m s'
+convStreamIncomplete :: (Monad m, I.Nullable s)
+                     => I.Iteratee s m s'
                      -> I.Enumeratee s s' m a
 convStreamIncomplete fi = I.eneeCheckIfDonePass check
   where
@@ -363,7 +366,7 @@ convStreamIncomplete fi = I.eneeCheckIfDonePass check
 -- bit is incomplete (perhaps still being written to).
 enumBlockIncomplete :: (Functor m, MonadIO m) =>
                         CacheFile
-                     -> I.Enumeratee (Offset ByteString) [Block] m a
+                     -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlockIncomplete = convStreamIncomplete . iterBlock
 
 ------------------------------------------------------------

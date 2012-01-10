@@ -28,6 +28,7 @@ import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
 import qualified Data.Iteratee.IO.OffsetFd as OffI
+import Data.Offset
 import Text.Printf
 
 import Data.ZoomCache
@@ -51,7 +52,7 @@ zoomDumpSummaryLevel lvl = dumpSomething (dumpSummaryLevel lvl)
 
 dumpSomething :: (Block -> IO ()) -> [IdentifyCodec] -> TrackNo -> FilePath -> IO ()
 dumpSomething f identifiers trackNo = OffI.fileDriverRandomOBS
-    (I.joinI . enumCacheFile identifiers . I.joinI . filterTracks [trackNo] . I.mapM_ $ f)
+    (I.joinI . enumCacheFile identifiers . I.joinI . filterTracks [trackNo] . I.mapM_ $ (f . unwrapOffset))
 
 ----------------------------------------------------------------------
 

@@ -192,7 +192,7 @@ wholeTrackSummaryListDouble identifiers trackNo =
         toSLD (ZoomSummary s) = toSummaryListDouble s
 
 enumListDouble :: (Functor m, Monad m)
-               => I.Enumeratee [Block] [(TimeStamp, [Double])] m a
+               => I.Enumeratee [Offset Block] [(TimeStamp, [Double])] m a
 enumListDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
     where
         f :: Packet -> [(TimeStamp, [Double])]
@@ -200,7 +200,7 @@ enumListDouble = I.joinI . enumPackets . I.mapChunks (concatMap f)
 
 enumSummaryListDouble :: (Functor m, Monad m)
                       => Int
-                      -> I.Enumeratee [Block] [[Summary Double]] m a
+                      -> I.Enumeratee [Offset Block] [[Summary Double]] m a
 enumSummaryListDouble level =
     I.joinI . enumSummaryLevel level .
     I.mapChunks (catMaybes . map toSLD)
@@ -224,7 +224,7 @@ wholeTrackSummaryUTCListDouble identifiers trackNo =
         toSLD (ZoomSummaryUTC s) = toSummaryUTCListDouble s
 
 enumUTCListDouble :: (Functor m, Monad m)
-                  => I.Enumeratee [Block] [(UTCTime, [Double])] m a
+                  => I.Enumeratee [Offset Block] [(UTCTime, [Double])] m a
 enumUTCListDouble = I.joinI . enumPacketsUTC . I.mapChunks (concatMap f)
     where
         f :: PacketUTC -> [(UTCTime, [Double])]
@@ -232,7 +232,7 @@ enumUTCListDouble = I.joinI . enumPacketsUTC . I.mapChunks (concatMap f)
 
 enumSummaryUTCListDouble :: (Functor m, Monad m)
                          => Int
-                         -> I.Enumeratee [Block] [[SummaryUTC Double]] m a
+                         -> I.Enumeratee [Offset Block] [[SummaryUTC Double]] m a
 enumSummaryUTCListDouble level =
     I.joinI . enumSummaryUTCLevel level .
     I.mapChunks (catMaybes . map toSLD)
