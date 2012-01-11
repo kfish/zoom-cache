@@ -81,6 +81,7 @@ import Data.Iteratee (Iteratee)
 import Data.Maybe (fromJust)
 import Data.Time (UTCTime)
 
+import Data.Offset
 import Data.ZoomCache.Common
 
 ------------------------------------------------------------
@@ -151,6 +152,9 @@ instance Timestampable a => Timestampable [a] where
     timestamp []    = Nothing
     timestamp (x:_) = timestamp x
 
+instance Timestampable a => Timestampable (Offset a) where
+    timestamp (Offset _ xs) = timestamp xs
+
 ------------------------------------------------------------
 
 class UTCTimestampable a where
@@ -168,6 +172,9 @@ instance UTCTimestampable (UTCTime, a) where
 instance UTCTimestampable a => UTCTimestampable [a] where
     utcTimestamp []    = Nothing
     utcTimestamp (x:_) = utcTimestamp x
+
+instance UTCTimestampable a => UTCTimestampable (Offset a) where
+    utcTimestamp (Offset _ xs) = utcTimestamp xs
 
 ------------------------------------------------------------
 
