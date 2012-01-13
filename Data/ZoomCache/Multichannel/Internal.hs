@@ -54,7 +54,7 @@ identifyCodecMultichannel identifiers bs = runner1 $ I.enumPure1Chunk (Offset 0 
                 then do
                     channels <- readInt32be
                     subIdentLength <- readInt32be
-                    subCodec <- readCodecOBS identifiers subIdentLength
+                    subCodec <- readCodec identifiers subIdentLength
                     return (fmap (foo channels) subCodec)
                 else return Nothing
 

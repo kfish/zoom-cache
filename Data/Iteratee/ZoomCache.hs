@@ -445,7 +445,7 @@ readTrackHeader identifiers = do
 
     return (trackNo, TrackSpec trackType delta zlib drType rate name)
     where
-        readCodecMultichannel = readCodecOBS (supportMultichannel identifiers)
+        readCodecMultichannel = readCodec (supportMultichannel identifiers)
 
 ------------------------------------------------------------
 -- Packet, Summary reading
