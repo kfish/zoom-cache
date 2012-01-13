@@ -9,10 +9,6 @@ module Data.Iteratee.Offset (
 
     -- * ListLike
     , takeBS
-    , head
-    , offHead
-    , peek
-    , drop
 ) where
 
 import Prelude hiding (drop, head)
@@ -95,37 +91,3 @@ takeBS n' = I.liftI (step n' B.empty)
             | LL.null tail' -> I.icont (step (n - LL.length str') (acc `mappend` str')) Nothing
             | otherwise     -> I.idone (acc `mappend` str') (I.Chunk $ Offset (o + fromIntegral n) tail')
     step _ acc stream     = I.idone acc stream
-
-----------------------------------------------------------------------
-
-head :: (Monad m)
-     => Iteratee (Offset ByteString) m Word8
-head = liftM unwrapOffset offHead
-
-offHead :: (Monad m)
-        => Iteratee (Offset ByteString) m (Offset Word8)
-offHead = I.liftI step
-  where
-  step (I.Chunk (Offset o vec))
-    | LL.null vec = I.icont step Nothing
-    | otherwise   = I.idone (Offset o (LL.head vec)) (I.Chunk $ Offset (o+1) (LL.tail vec))
-  step stream     = I.icont step (Just (I.setEOF stream))
-
-peek :: (Monad m)
-     => Iteratee (Offset ByteString) m (Maybe (Offset Word8))
-peek = I.liftI step
-  where
-    step s@(I.Chunk (Offset o vec))
-      | LL.null vec = I.liftI step
-      | otherwise   = I.idone (Just $ Offset o (LL.head vec)) s
-    step stream     = I.idone Nothing stream
-
-drop :: (Monad m)
-     => Int -> Iteratee (Offset ByteString) m ()
-drop 0  = return ()
-drop n' = I.liftI (step n')
-  where
-    step n (I.Chunk (Offset o str))
-      | LL.length str < n = I.liftI (step (n - LL.length str))
-      | otherwise         = I.idone () (I.Chunk $ Offset (o + fromIntegral n) (LL.drop n str))
-    step _ stream         = I.idone () stream
