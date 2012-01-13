@@ -30,7 +30,6 @@ module Data.Iteratee.ZoomCache.Utils (
     , readRational64be
 
     -- * Codec reading
-    , readCodec
     , readCodecOBS
 ) where
 
@@ -191,14 +190,6 @@ readRational64be = do
         else return (num % den)
 
 ----------------------------------------------------------------------
-
-readCodec :: (Functor m, Monad m)
-          => [IdentifyCodec]
-          -> Int
-          -> Iteratee ByteString m (Maybe Codec)
-readCodec identifiers n = do
-    tt <- B.pack <$> (I.joinI $ I.takeUpTo n I.stream2list)
-    return (parseCodec identifiers tt)
 
 readCodecOBS :: (Functor m, Monad m)
              => [IdentifyCodec]
