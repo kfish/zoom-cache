@@ -119,11 +119,10 @@ instance Timestampable Block where
 
 -- | Read the summary of an entire track.
 wholeTrackSummary :: (Functor m, MonadIO m)
-                  => [IdentifyCodec]
-                  -> TrackNo
-                  -> Iteratee ByteString m (TrackSpec, ZoomSummary)
-wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
+                  => TrackNo
+                  -> Iteratee [Block] m (TrackSpec, ZoomSummary)
+wholeTrackSummary trackNo = I.joinI $
+    filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
         f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummary)
         f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
@@ -131,11 +130,10 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 
 -- | Read the summary of an entire track.
 wholeTrackSummaryUTC :: (Functor m, MonadIO m)
-                     => [IdentifyCodec]
-                     -> TrackNo
-                     -> Iteratee ByteString m (TrackSpec, Maybe ZoomSummaryUTC)
-wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
+                     => TrackNo
+                     -> Iteratee [Block] m (TrackSpec, Maybe ZoomSummaryUTC)
+wholeTrackSummaryUTC trackNo = I.joinI $
+    filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
         f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, Maybe ZoomSummaryUTC)
         f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
