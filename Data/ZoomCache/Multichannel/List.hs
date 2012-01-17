@@ -36,7 +36,6 @@ module Data.ZoomCache.Multichannel.List (
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans (MonadIO)
-import Data.ByteString (ByteString)
 import Data.Int
 import qualified Data.Iteratee as I
 import Data.Maybe
@@ -180,12 +179,10 @@ toSummaryUTCListDouble s | isJust sd = (:[]) <$> sd
 
 -- | Read the summary of an entire track.
 wholeTrackSummaryListDouble :: (Functor m, MonadIO m)
-                            => [IdentifyCodec]
-                            -> TrackNo
-                            -> I.Iteratee (Offset ByteString) m [Summary Double]
-wholeTrackSummaryListDouble identifiers trackNo =
-    I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
+                            => TrackNo
+                            -> I.Iteratee [Offset Block] m [Summary Double]
+wholeTrackSummaryListDouble trackNo =
+    I.joinI $ filterTracks [trackNo] .  I.joinI . e $ I.last
     where
         e = I.joinI . enumSummaries . I.mapChunks (catMaybes . map toSLD)
         toSLD :: ZoomSummary -> Maybe [Summary Double]
@@ -212,12 +209,10 @@ enumSummaryListDouble level =
 
 -- | Read the summary of an entire track.
 wholeTrackSummaryUTCListDouble :: (Functor m, MonadIO m)
-                               => [IdentifyCodec]
-                               -> TrackNo
-                               -> I.Iteratee (Offset ByteString) m [SummaryUTC Double]
-wholeTrackSummaryUTCListDouble identifiers trackNo =
-    I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . e $ I.last
+                               => TrackNo
+                               -> I.Iteratee [Offset Block] m [SummaryUTC Double]
+wholeTrackSummaryUTCListDouble trackNo =
+    I.joinI $ filterTracks [trackNo] .  I.joinI . e $ I.last
     where
         e = I.joinI . enumSummariesUTC . I.mapChunks (catMaybes . map toSLD)
         toSLD :: ZoomSummaryUTC -> Maybe [SummaryUTC Double]

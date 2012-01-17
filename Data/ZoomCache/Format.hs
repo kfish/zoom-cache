@@ -22,8 +22,11 @@ Field encoding formats:
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Format (
+    -- * One-byte marker at start of all headers
+      headerMarker
+
     -- * Global header
-      globalHeader
+    , globalHeader
     , versionMajor
     , versionMinor
 
@@ -39,6 +42,10 @@ module Data.ZoomCache.Format (
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as C
+import Data.Word
+
+headerMarker :: Word8
+headerMarker = 0xe5
 
 {- |
 

@@ -120,11 +120,10 @@ instance Timestampable Block where
 
 -- | Read the summary of an entire track.
 wholeTrackSummary :: (Functor m, MonadIO m)
-                  => [IdentifyCodec]
-                  -> TrackNo
-                  -> Iteratee (Offset ByteString) m (TrackSpec, ZoomSummary)
-wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
+                  => TrackNo
+                  -> Iteratee [Offset Block] m (TrackSpec, ZoomSummary)
+wholeTrackSummary trackNo = I.joinI $
+    filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
         f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, ZoomSummary)
         f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
@@ -132,11 +131,10 @@ wholeTrackSummary identifiers trackNo = I.joinI $ enumCacheFile identifiers .
 
 -- | Read the summary of an entire track.
 wholeTrackSummaryUTC :: (Functor m, MonadIO m)
-                     => [IdentifyCodec]
-                     -> TrackNo
-                     -> Iteratee (Offset ByteString) m (TrackSpec, Maybe ZoomSummaryUTC)
-wholeTrackSummaryUTC identifiers trackNo = I.joinI $ enumCacheFile identifiers .
-    I.joinI . filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
+                     => TrackNo
+                     -> Iteratee [Offset Block] m (TrackSpec, Maybe ZoomSummaryUTC)
+wholeTrackSummaryUTC trackNo = I.joinI $
+    filterTracks [trackNo] .  I.joinI . enumCTSO $ f <$> I.last
     where
         f :: (CacheFile, TrackNo, ZoomSummarySO) -> (TrackSpec, Maybe ZoomSummaryUTC)
         f ctso@(cf, _, _) = (fromJust $ IM.lookup trackNo (cfSpecs cf),
@@ -321,6 +319,7 @@ iterBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> Iteratee (Offset ByteString) m [Offset Block]
 iterBlock cf = do
+    I.dropWhile (/= headerMarker)
     o <- OffI.tell
     header <- OffI.takeBS 8
     case parseHeader header of
@@ -341,7 +340,7 @@ iterBlock cf = do
 enumBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> I.Enumeratee (Offset ByteString) [Offset Block] m a
-enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
+enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $ \cf ->
              liftM (cf, ) (iterBlock cf)
 
 -- | A version of convStream which will not fail in case EOF is reached at an
