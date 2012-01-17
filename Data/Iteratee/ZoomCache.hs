@@ -335,7 +335,7 @@ iterBlock cf = do
 enumBlock :: (Functor m, MonadIO m)
             => CacheFile
             -> I.Enumeratee ByteString [Block] m a
-enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore $ \cf ->
+enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $ \cf ->
              liftM (cf, ) (iterBlock cf)
 
 -- | A version of convStream which will not fail in case EOF is reached at an
