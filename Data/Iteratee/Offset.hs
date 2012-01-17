@@ -20,7 +20,6 @@ import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
 import Data.Monoid (mappend)
-import Data.Word
 import System.Posix (FileOffset)
 
 import Data.Offset
