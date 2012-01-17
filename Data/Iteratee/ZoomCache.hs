@@ -316,6 +316,7 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
 iterBlock :: (Functor m, MonadIO m) =>
               CacheFile -> Iteratee ByteString m [Block]
 iterBlock cf = do
+    I.dropWhile (/= headerMarker)
     header <- I.joinI $ I.takeUpTo 8 I.stream2list
     case parseHeader (B.pack header) of
         Just PacketHeader -> do
