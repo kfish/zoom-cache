@@ -3,7 +3,8 @@
 {-# OPTIONS -Wall #-}
 
 module Data.Iteratee.IO.OffsetFd (
-      enumFileRandomOBS
+      enumFdRandomOBS
+    , enumFileRandomOBS
     , fileDriverRandomFdOBS
     , fileDriverRandomOBS
 ) where
