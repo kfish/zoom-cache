@@ -317,7 +317,7 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
 -- stream, if it can.
 iterBlock :: (Functor m, MonadIO m)
           => CacheFile
-          -> Iteratee (Offset ByteString) m [Offset Block]
+          -> Iteratee (Offset ByteString) m (CacheFile, [Offset Block])
 iterBlock cf = do
     I.dropWhile (/= headerMarker)
     o <- OffI.tell
@@ -325,23 +325,18 @@ iterBlock cf = do
     case parseHeader header of
         Just PacketHeader -> do
              (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
-             return $ maybe [] (\p -> [Offset o (Block cf trackNo (BlockPacket p))]) packet
+             return $ (cf, ) $ maybe [] (\p -> [Offset o (Block cf trackNo (BlockPacket p))]) packet
         Just SummaryHeader -> do
              (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
-             return $ maybe [] (\s -> [Offset o (Block cf trackNo (BlockSummary s))]) summary
-        _ -> return []
+             return $ (cf, ) $ maybe [] (\s -> [Offset o (Block cf trackNo (BlockSummary s))]) summary
+        _ -> return (cf, [])
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
-
--- Unfortunately the iteratee library does not have a convStreamCheck function
--- (yet), so we end up doing a (trivial) fold when we really just want to do a
--- map.
 enumBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> I.Enumeratee (Offset ByteString) [Offset Block] m a
-enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $ \cf ->
-             liftM (cf, ) (iterBlock cf)
+enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass iterBlock
 
 -- | A version of convStream which will not fail in case EOF is reached at an
 -- unexpected point.
