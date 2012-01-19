@@ -325,11 +325,14 @@ iterBlock cf = do
     case parseHeader header of
         Just PacketHeader -> do
              (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
-             return $ maybe [] (\p -> [Offset o (Block cf trackNo (BlockPacket p))]) packet
+             return $ maybe [] (retPacket trackNo o) packet
         Just SummaryHeader -> do
              (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
-             return $ maybe [] (\s -> [Offset o (Block cf trackNo (BlockSummary s))]) summary
+             return $ maybe [] (retSummary trackNo o) summary
         _ -> return []
+    where
+        retPacket trackNo o p = [Offset o (Block cf trackNo (BlockPacket p))]
+        retSummary trackNo o s = [Offset o (Block cf trackNo (BlockSummary s))]
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
