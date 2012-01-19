@@ -349,7 +349,10 @@ iterBlock cf = do
 
         offs' :: Maybe Int -> FileOffset -> IntMap FileOffset -> IntMap FileOffset
         offs' Nothing  _ = id
-        offs' (Just x) o = IM.insert x o
+        offs' (Just x) o = IM.alter f x
+            where
+                f Nothing   = Just o
+                f (Just o0) = Just (min o0 o)
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
