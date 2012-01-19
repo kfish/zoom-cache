@@ -77,7 +77,7 @@ module Data.Iteratee.ZoomCache (
 ) where
 
 import Control.Applicative
-import Control.Monad (replicateM, liftM)
+import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import Data.Bits
 import Data.ByteString (ByteString)
@@ -318,7 +318,7 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
 -- stream, if it can.
 iterBlock :: (Functor m, MonadIO m)
           => CacheFile
-          -> Iteratee (Offset ByteString) m [Offset Block]
+          -> Iteratee (Offset ByteString) m (CacheFile, [Offset Block])
 iterBlock cf = do
     I.dropWhile (/= headerMarker)
     o <- OffI.tell
@@ -326,19 +326,19 @@ iterBlock cf = do
     case parseHeader header of
         Just PacketHeader -> do
              (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
-             return $ maybe [] (retPacket trackNo o) packet
+             return $ maybe (cf, []) (retPacket trackNo o) packet
         Just SummaryHeader -> do
              (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
-             return $ maybe [] (retSummary trackNo o) summary
-        _ -> return []
+             return $ maybe (cf, []) (retSummary trackNo o) summary
+        _ -> return (cf, [])
     where
-        retPacket trackNo o p = [Offset o (Block cf' trackNo (BlockPacket p))]
+        retPacket trackNo o p = (cf', [Offset o (Block cf' trackNo (BlockPacket p))])
             where
                 ms = toMS <$> (flip timeStampFromSO) (packetSOEntry p) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
                 cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
         retSummary trackNo o (ZoomSummarySO s) =
-            [Offset o (Block cf' trackNo (BlockSummary (ZoomSummarySO s)))]
+            (cf', [Offset o (Block cf' trackNo (BlockSummary (ZoomSummarySO s)))])
             where
                 ms = toMS <$> (flip timeStampFromSO) (summarySOEntry s) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
@@ -356,40 +356,25 @@ iterBlock cf = do
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
-
--- Unfortunately the iteratee library does not have a convStreamCheck function
--- (yet), so we end up doing a (trivial) fold when we really just want to do a
--- map.
 enumBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> I.Enumeratee (Offset ByteString) [Offset Block] m a
-enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $ \cf ->
-             liftM (cf, ) (iterBlock cf)
-
--- | A version of convStream which will not fail in case EOF is reached at an
--- unexpected point.
-convStreamIncomplete :: (Monad m, I.Nullable s)
-                     => I.Iteratee s m s'
-                     -> I.Enumeratee s s' m a
-convStreamIncomplete fi = I.eneeCheckIfDonePass check
-  where
-    check k (Just e) = do
-      I.throwRecoverableErr e (const I.identity)
-      check k Nothing
-    check k Nothing = do
-      isEOF <- I.isStreamFinished
-      case isEOF of
-        Nothing -> do
-          str <- either (I.EOF . Just) I.Chunk `liftM` I.checkErr fi
-          I.eneeCheckIfDonePass check $ k str
-        e@(Just _) -> I.eneeCheckIfDonePass check . k $ I.EOF e
+enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass iterBlock
 
 -- | A version of enumBlock which won't fail with an EofException if the last
 -- bit is incomplete (perhaps still being written to).
 enumBlockIncomplete :: (Functor m, MonadIO m) =>
                         CacheFile
                      -> I.Enumeratee (Offset ByteString) [Offset Block] m a
-enumBlockIncomplete = convStreamIncomplete . iterBlock
+enumBlockIncomplete = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $
+                      catchAndIgnoreAcc iterBlock
+
+catchAndIgnoreAcc :: (Monad m, I.NullPoint a, I.Nullable s) =>
+                     (acc -> Iteratee s m (acc, a)) -> acc
+                  -> Iteratee s m (acc, a)
+catchAndIgnoreAcc fi acc = I.checkErr (fi acc) >>= either onErr return
+  where
+    onErr _ = return (acc, I.empty)
 
 ------------------------------------------------------------
 
