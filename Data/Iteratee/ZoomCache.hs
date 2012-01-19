@@ -92,6 +92,7 @@ import Data.Iteratee.ZLib
 import Data.Maybe
 import Data.Ratio
 import Data.Time
+import System.Posix.Types (FileOffset)
 
 import Data.Iteratee.ZoomCache.Seek
 import Data.Iteratee.ZoomCache.Utils
@@ -331,8 +332,24 @@ iterBlock cf = do
              return $ maybe [] (retSummary trackNo o) summary
         _ -> return []
     where
-        retPacket trackNo o p = [Offset o (Block cf trackNo (BlockPacket p))]
-        retSummary trackNo o s = [Offset o (Block cf trackNo (BlockSummary s))]
+        retPacket trackNo o p = [Offset o (Block cf' trackNo (BlockPacket p))]
+            where
+                ms = toMS <$> (flip timeStampFromSO) (packetSOEntry p) <$> r
+                r = specRate <$> IM.lookup trackNo (cfSpecs cf)
+                cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
+        retSummary trackNo o (ZoomSummarySO s) =
+            [Offset o (Block cf' trackNo (BlockSummary (ZoomSummarySO s)))]
+            where
+                ms = toMS <$> (flip timeStampFromSO) (summarySOEntry s) <$> r
+                r = specRate <$> IM.lookup trackNo (cfSpecs cf)
+                cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
+
+        toMS :: TimeStamp -> Int
+        toMS (TS ts) = floor . (* 1000.0) $ ts
+
+        offs' :: Maybe Int -> FileOffset -> IntMap FileOffset -> IntMap FileOffset
+        offs' Nothing  _ = id
+        offs' (Just x) o = IM.insert x o
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.

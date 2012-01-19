@@ -80,6 +80,7 @@ import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import Data.Maybe (fromJust)
 import Data.Time (UTCTime)
+import System.Posix.Types (FileOffset)
 
 import Data.Offset
 import Data.ZoomCache.Common
@@ -124,15 +125,16 @@ type IdentifyCodec = ByteString -> Maybe Codec
 data CacheFile = CacheFile
     { cfGlobal :: Global
     , cfSpecs  :: IntMap TrackSpec
+    , cfOffsets :: IntMap FileOffset
     }
 
 -- | Create an empty 'CacheFile' using the given 'Global'
 mkCacheFile :: Global -> CacheFile
-mkCacheFile g = CacheFile g IM.empty
+mkCacheFile g = CacheFile g IM.empty IM.empty
 
 -- | Determine whether all tracks of a 'CacheFile' are specified
 fiFull :: CacheFile -> Bool
-fiFull (CacheFile g specs) = IM.size specs == noTracks g
+fiFull CacheFile{..} = IM.size cfSpecs == noTracks cfGlobal
 
 ------------------------------------------------------------
 
