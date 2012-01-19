@@ -361,7 +361,22 @@ convStreamIncomplete fi = I.eneeCheckIfDonePass check
 enumBlockIncomplete :: (Functor m, MonadIO m) =>
                         CacheFile
                      -> I.Enumeratee (Offset ByteString) [Offset Block] m a
-enumBlockIncomplete = convStreamIncomplete . iterBlock
+enumBlockIncomplete = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $
+                      catchAndIgnoreAcc iterBlock
+
+catchAndIgnore :: (Monad m, I.NullPoint a, I.Nullable s) =>
+                  Iteratee s m a -> Iteratee s m a
+catchAndIgnore fi = I.checkErr fi >>= either onErr onDone
+  where
+    onErr _ = return I.empty
+    onDone = return
+
+catchAndIgnoreAcc :: (Monad m, I.NullPoint a, I.Nullable s) =>
+                     (acc -> Iteratee s m (acc, a)) -> acc
+                  -> Iteratee s m (acc, a)
+catchAndIgnoreAcc fi acc = I.checkErr (fi acc) >>= either onErr return
+  where
+    onErr _ = return (acc, I.empty)
 
 ------------------------------------------------------------
 
