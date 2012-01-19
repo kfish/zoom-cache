@@ -77,7 +77,7 @@ module Data.Iteratee.ZoomCache (
 ) where
 
 import Control.Applicative
-import Control.Monad (replicateM, liftM)
+import Control.Monad (replicateM)
 import Control.Monad.Trans (MonadIO)
 import Data.Bits
 import Data.ByteString (ByteString)
@@ -338,24 +338,6 @@ enumBlock :: (Functor m, MonadIO m)
           -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass iterBlock
 
--- | A version of convStream which will not fail in case EOF is reached at an
--- unexpected point.
-convStreamIncomplete :: (Monad m, I.Nullable s)
-                     => I.Iteratee s m s'
-                     -> I.Enumeratee s s' m a
-convStreamIncomplete fi = I.eneeCheckIfDonePass check
-  where
-    check k (Just e) = do
-      I.throwRecoverableErr e (const I.identity)
-      check k Nothing
-    check k Nothing = do
-      isEOF <- I.isStreamFinished
-      case isEOF of
-        Nothing -> do
-          str <- either (I.EOF . Just) I.Chunk `liftM` I.checkErr fi
-          I.eneeCheckIfDonePass check $ k str
-        e@(Just _) -> I.eneeCheckIfDonePass check . k $ I.EOF e
-
 -- | A version of enumBlock which won't fail with an EofException if the last
 -- bit is incomplete (perhaps still being written to).
 enumBlockIncomplete :: (Functor m, MonadIO m) =>
@@ -363,13 +345,6 @@ enumBlockIncomplete :: (Functor m, MonadIO m) =>
                      -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlockIncomplete = I.unfoldConvStreamCheck I.eneeCheckIfDonePass $
                       catchAndIgnoreAcc iterBlock
-
-catchAndIgnore :: (Monad m, I.NullPoint a, I.Nullable s) =>
-                  Iteratee s m a -> Iteratee s m a
-catchAndIgnore fi = I.checkErr fi >>= either onErr onDone
-  where
-    onErr _ = return I.empty
-    onDone = return
 
 catchAndIgnoreAcc :: (Monad m, I.NullPoint a, I.Nullable s) =>
                      (acc -> Iteratee s m (acc, a)) -> acc
