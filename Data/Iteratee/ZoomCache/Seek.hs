@@ -20,10 +20,12 @@ module Data.Iteratee.ZoomCache.Seek (
     , seekUTCTime
 ) where
 
+import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
 import qualified Data.Iteratee as I
 import qualified Data.ListLike as LL
 import Data.Time.Clock (UTCTime)
+import System.Posix.Types (FileOffset)
 
 import Data.ZoomCache.Common
 import Data.ZoomCache.Types
@@ -31,16 +33,26 @@ import Data.ZoomCache.Types
 ----------------------------------------------------------------------
 
 seekTimeStamp :: (LL.ListLike s el, I.Nullable s, I.NullPoint s, Timestampable el, Monad m)
-              => Maybe TimeStamp -> Iteratee s m ()
-seekTimeStamp ts = do
-    I.seek 0
-    dropWhileB (before ts)
+              => CacheFile -> Maybe TimeStamp -> Iteratee s m ()
+seekTimeStamp _  Nothing   = return ()
+seekTimeStamp cf (Just ts) = do
+    I.seek (nearOffset cf ts)
+    dropWhileB (before (Just ts))
 
 seekUTCTime :: (LL.ListLike s el, I.Nullable s, I.NullPoint s, UTCTimestampable el, Monad m)
             => Maybe UTCTime -> Iteratee s m ()
 seekUTCTime uts = do
     I.seek 0
     dropWhileB (beforeUTC uts)
+
+nearOffset :: CacheFile -> TimeStamp -> FileOffset
+nearOffset cf (TS ts)
+    | IM.null earlier = 0
+    | otherwise       = snd (IM.findMax earlier)
+    where
+        earlier = fst $ IM.split ms (cfOffsets cf)
+        ms :: Int
+        ms = floor . (* 1000.0) $ ts
 
 -- |Skip all elements while the predicate is true, but also return the last false element
 --
