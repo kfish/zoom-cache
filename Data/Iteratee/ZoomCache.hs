@@ -334,13 +334,13 @@ iterBlock cf = do
     where
         retPacket trackNo o p = (cf', [Offset o (Block cf' trackNo (BlockPacket p))])
             where
-                ms = toMS <$> (flip timeStampFromSO) (packetSOEntry p) <$> r
+                ms = toMS <$> (flip timeStampFromSO) (packetSOExit p) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
                 cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
         retSummary trackNo o (ZoomSummarySO s) =
             (cf', [Offset o (Block cf' trackNo (BlockSummary (ZoomSummarySO s)))])
             where
-                ms = toMS <$> (flip timeStampFromSO) (summarySOEntry s) <$> r
+                ms = toMS <$> (flip timeStampFromSO) (summarySOExit s) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
                 cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
 
