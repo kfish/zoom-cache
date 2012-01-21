@@ -32,14 +32,14 @@ readSummaryNum = do
     [en,ex,mn,mx] <- replicateM 4 readRaw
     [avg,rms] <- replicateM 2 readDouble64be
     return (numMkSummary en ex mn mx avg rms)
-{-# INLINABLE readSummaryNum #-}
+{-# INLINE readSummaryNum #-}
 
 fromSummaryNum :: ZoomNum a
                => SummaryData a -> Builder
 fromSummaryNum s = mconcat $
     map fromRaw [numEntry s, numExit s, numMin s, numMax s] ++
     map fromDouble [numAvg s, numRMS s]
-{-# INLINABLE fromSummaryNum #-}
+{-# INLINE fromSummaryNum #-}
 
 initSummaryNumBounded :: (Bounded a, ZoomNum a)
                       => SampleOffset -> SummaryWork a

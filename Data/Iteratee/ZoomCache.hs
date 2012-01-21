@@ -177,11 +177,13 @@ enumSummaryLevel :: (Functor m, Monad m)
 enumSummaryLevel level =
     I.joinI . enumSummaries .
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
+{-# INLINE enumSummaryLevel #-}
 
 -- | Filter summaries at all levels
 enumSummaries :: (Functor m, Monad m)
               => I.Enumeratee [Offset Block] [ZoomSummary] m a
 enumSummaries = I.joinI . enumCTSO .  I.mapChunks (map summaryFromCTSO)
+{-# INLINE enumSummaries #-}
 
 -- | Convert a CTSO triple into a ZoomSummary
 summaryFromCTSO :: (CacheFile, TrackNo, ZoomSummarySO) -> ZoomSummary
@@ -271,6 +273,7 @@ filterTracks tracks = I.filter (fil . unwrapOffset)
     where
         fil :: Block -> Bool
         fil b = (blkTrack b) `elem` tracks
+{-# INLINE filterTracks #-}
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
@@ -281,6 +284,7 @@ enumCacheFile :: (Functor m, MonadIO m)
 enumCacheFile identifiers iter = do
     fi <- iterHeaders identifiers
     enumBlock fi iter
+{-# INLINE enumCacheFile #-}
 
 -- | An enumeratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
@@ -360,6 +364,7 @@ enumBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass iterBlock
+{-# INLINE enumBlock #-}
 
 -- | A version of enumBlock which won't fail with an EofException if the last
 -- bit is incomplete (perhaps still being written to).
