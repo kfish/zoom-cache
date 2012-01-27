@@ -83,9 +83,12 @@ module Data.ZoomCache.Numeric.IEEE754 (
     , SummaryWork(..)
 )where
 
+#if __GLASGOW_HASKELL__ >= 702
 import Blaze.ByteString.Builder
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
+#endif
+
 import Text.Printf
 
 import Data.ZoomCache.Codec
