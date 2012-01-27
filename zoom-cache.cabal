@@ -15,9 +15,11 @@ Description:
     to move around and to zoom in and out.
     .
     This library provides a monadic writing and an iteratee reading interface
-    for zoom-cache files.
+    for zoom-cache files. To build GUI applications, see the scope package:
     .
-    What's neat about this format and library? Glad you asked!
+    <http://hackage.haskell.org/package/scope>
+    .
+    What's neat about the zoom-cache format and library? Glad you asked!
     .
         * Data can be stored at variable or constant rates. For variable rate
     data, a timestamp is explicitly written into the file for every value,
