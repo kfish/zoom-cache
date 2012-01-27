@@ -22,8 +22,8 @@ for type a.
 ----------------------------------------------------------------------
 
 module Data.ZoomCache.Multichannel.List (
-      SummaryData(..)
-    , SummaryWork(..)
+      SummaryData()
+    , SummaryWork()
 
     , wholeTrackSummaryListDouble
     , enumListDouble

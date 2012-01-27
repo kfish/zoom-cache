@@ -60,7 +60,6 @@ module Data.ZoomCache.Types (
 
     , PacketSO(..)
     , SummarySO(..)
-    , SummaryData()
 
     , summarySODuration
 
