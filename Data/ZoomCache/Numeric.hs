@@ -48,7 +48,6 @@ import Data.Word
 import Data.Offset
 import Data.ZoomCache
 import Data.ZoomCache.Numeric.Types
-import Data.ZoomCache.Types
 
 ----------------------------------------------------------------------
 

@@ -73,7 +73,6 @@ module Data.ZoomCache.Types (
 import Blaze.ByteString.Builder
 import Data.ByteString (ByteString)
 import Data.Dynamic
-import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM
 import Data.Iteratee (Iteratee)
