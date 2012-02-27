@@ -173,11 +173,14 @@ module Data.ZoomCache.Numeric.Int (
     , SummaryWork(..)
 )where
 
+#if __GLASGOW_HASKELL__ >= 702
+import Data.ByteString (ByteString)
+import Data.Iteratee (Iteratee)
+#endif
+
 import Blaze.ByteString.Builder
 import Control.Applicative ((<$>))
-import Data.ByteString (ByteString)
 import Data.Int
-import Data.Iteratee (Iteratee)
 import Data.Maybe (fromMaybe)
 import Text.Printf
 

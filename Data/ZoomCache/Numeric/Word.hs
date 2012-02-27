@@ -144,10 +144,13 @@ module Data.ZoomCache.Numeric.Word (
     , SummaryWork(..)
 )where
 
-import Blaze.ByteString.Builder
-import Control.Applicative ((<$>))
+#if __GLASGOW_HASKELL__ >= 702
 import Data.ByteString (ByteString)
 import Data.Iteratee (Iteratee)
+#endif
+
+import Blaze.ByteString.Builder
+import Control.Applicative ((<$>))
 import Data.Word
 import Text.Printf
 

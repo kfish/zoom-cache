@@ -24,7 +24,6 @@ module Data.ZoomCache.Dump (
 ) where
 
 import Control.Applicative ((<$>))
-import Data.Int
 import qualified Data.IntMap as IM
 import qualified Data.Iteratee as I
 import qualified Data.Iteratee.IO.OffsetFd as OffI

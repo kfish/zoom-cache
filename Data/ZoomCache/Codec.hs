@@ -22,7 +22,6 @@
 module Data.ZoomCache.Codec (
     -- * Required interfaces
       ZoomReadable(..)
-    , SummaryData()
     , ZoomWritable(..)
     , ZoomWrite(..)
 

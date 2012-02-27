@@ -3,7 +3,7 @@ Name:                zoom-cache
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             1.2.0.0
+Version:             1.2.1.0
 
 Synopsis:            A streamable, seekable, zoomable cache file format
 
@@ -15,9 +15,11 @@ Description:
     to move around and to zoom in and out.
     .
     This library provides a monadic writing and an iteratee reading interface
-    for zoom-cache files.
+    for zoom-cache files. To build GUI applications, see the scope package:
     .
-    What's neat about this format and library? Glad you asked!
+    <http://hackage.haskell.org/package/scope>
+    .
+    What's neat about the zoom-cache format and library? Glad you asked!
     .
         * Data can be stored at variable or constant rates. For variable rate
     data, a timestamp is explicitly written into the file for every value,
