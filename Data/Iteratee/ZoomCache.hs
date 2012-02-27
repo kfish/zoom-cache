@@ -108,10 +108,10 @@ import Data.ZoomCache.Types
 data Block = Block
         { blkFile  :: CacheFile
         , blkTrack :: TrackNo
-        , blkData  :: BlockData
+        , blkData  :: !BlockData
         }
 
-data BlockData = BlockPacket PacketSO | BlockSummary ZoomSummarySO
+data BlockData = BlockPacket !PacketSO | BlockSummary !ZoomSummarySO
 
 instance Timestampable Block where
     timestamp (Block c t (BlockPacket p)) = timestamp (packetFromCTPSO (c,t,p))
@@ -323,17 +323,17 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
 iterBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> Iteratee (Offset ByteString) m (CacheFile, [Offset Block])
-iterBlock cf = do
+iterBlock cf = {-# SCC "iterBlock" #-} do
     I.dropWhile (/= headerMarker)
     o <- OffI.tell
     header <- OffI.takeBS 8
     case parseHeader header of
         Just PacketHeader -> do
-             (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
-             return $ maybe (cf, []) (retPacket trackNo o) packet
+             (!trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
+             return $! maybe (cf, []) (retPacket trackNo o) packet
         Just SummaryHeader -> do
-             (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
-             return $ maybe (cf, []) (retSummary trackNo o) summary
+             (!trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
+             return $! maybe (cf, []) (retSummary trackNo o) summary
         _ -> return (cf, [])
     where
         retPacket trackNo o p = (cf', [Offset o (Block cf' trackNo (BlockPacket p))])
@@ -357,6 +357,7 @@ iterBlock cf = do
             where
                 f Nothing   = Just o
                 f (Just o0) = Just (min o0 o)
+{-# INLINE iterBlock #-}
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
@@ -607,6 +608,7 @@ readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
         readSummaryAs :: (ZoomReadable a, Functor m, Monad m)
                       => a -> Iteratee ByteString m (SummaryData a)
         readSummaryAs = const readSummary
+{-# INLINE readSummaryBlockData #-}
 
 
 ----------------------------------------------------------------------

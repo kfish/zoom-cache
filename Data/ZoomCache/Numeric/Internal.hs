@@ -29,9 +29,9 @@ import Data.ZoomCache.Numeric.Types
 readSummaryNum :: (Functor m, Monad m, ZoomNum a)
                => Iteratee ByteString m (SummaryData a)
 readSummaryNum = do
-    [en,ex,mn,mx] <- replicateM 4 readRaw
-    [avg,rms] <- replicateM 2 readDouble64be
-    return (numMkSummary en ex mn mx avg rms)
+    [!en,!ex,!mn,!mx] <- replicateM 4 readRaw
+    [!avg,!rms] <- replicateM 2 readDouble64be
+    return $! numMkSummary en ex mn mx avg rms
 {-# INLINE readSummaryNum #-}
 
 fromSummaryNum :: ZoomNum a

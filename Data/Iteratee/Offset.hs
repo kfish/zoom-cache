@@ -34,6 +34,7 @@ tell = I.liftI step
       | LL.null vec = I.liftI step
       | otherwise   = I.idone o s
     step stream     = I.icont step (Just (I.setEOF stream))
+{-# INLINE tell #-}
 
 ----------------------------------------------------------------------
 
