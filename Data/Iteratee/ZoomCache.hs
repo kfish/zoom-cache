@@ -340,13 +340,15 @@ iterBlock cf = {-# SCC "iterBlock" #-} do
             where
                 ms = toMS <$> (flip timeStampFromSO) (packetSOExit p) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
-                cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
+                !cfO' = offs' ms o (cfOffsets cf)
+                cf' = cf { cfOffsets = cfO' }
         retSummary trackNo o (ZoomSummarySO s) =
             (cf', [Offset o (Block cf' trackNo (BlockSummary (ZoomSummarySO s)))])
             where
                 ms = toMS <$> (flip timeStampFromSO) (summarySOExit s) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
-                cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
+                !cfO' = offs' ms o (cfOffsets cf)
+                cf' = cf { cfOffsets = cfO' }
 
         toMS :: TimeStamp -> Int
         toMS (TS ts) = floor . (* 1000.0) $ ts
