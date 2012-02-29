@@ -108,10 +108,10 @@ import Data.ZoomCache.Types
 data Block = Block
         { blkFile  :: CacheFile
         , blkTrack :: TrackNo
-        , blkData  :: BlockData
+        , blkData  :: !BlockData
         }
 
-data BlockData = BlockPacket PacketSO | BlockSummary ZoomSummarySO
+data BlockData = BlockPacket !PacketSO | BlockSummary !ZoomSummarySO
 
 instance Timestampable Block where
     timestamp (Block c t (BlockPacket p)) = timestamp (packetFromCTPSO (c,t,p))
@@ -177,11 +177,13 @@ enumSummaryLevel :: (Functor m, Monad m)
 enumSummaryLevel level =
     I.joinI . enumSummaries .
     I.filter (\(ZoomSummary s) -> summaryLevel s == level)
+{-# INLINE enumSummaryLevel #-}
 
 -- | Filter summaries at all levels
 enumSummaries :: (Functor m, Monad m)
               => I.Enumeratee [Offset Block] [ZoomSummary] m a
 enumSummaries = I.joinI . enumCTSO .  I.mapChunks (map summaryFromCTSO)
+{-# INLINE enumSummaries #-}
 
 -- | Convert a CTSO triple into a ZoomSummary
 summaryFromCTSO :: (CacheFile, TrackNo, ZoomSummarySO) -> ZoomSummary
@@ -271,6 +273,7 @@ filterTracks tracks = I.filter (fil . unwrapOffset)
     where
         fil :: Block -> Bool
         fil b = (blkTrack b) `elem` tracks
+{-# INLINE filterTracks #-}
 
 -- | An enumeratee of a zoom-cache file, from the global header onwards.
 -- The global and track headers will be transparently read, and the 
@@ -281,6 +284,7 @@ enumCacheFile :: (Functor m, MonadIO m)
 enumCacheFile identifiers iter = do
     fi <- iterHeaders identifiers
     enumBlock fi iter
+{-# INLINE enumCacheFile #-}
 
 -- | An enumeratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
@@ -319,30 +323,32 @@ enumBlockTrackNo cf0 trackNo = I.unfoldConvStreamCheck I.eneeCheckIfDoneIgnore g
 iterBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> Iteratee (Offset ByteString) m (CacheFile, [Offset Block])
-iterBlock cf = do
+iterBlock cf = {-# SCC "iterBlock" #-} do
     I.dropWhile (/= headerMarker)
     o <- OffI.tell
     header <- OffI.takeBS 8
     case parseHeader header of
         Just PacketHeader -> do
-             (trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
-             return $ maybe (cf, []) (retPacket trackNo o) packet
+             (!trackNo, packet) <- OffI.convOffset $ readPacket (cfSpecs cf)
+             return $! maybe (cf, []) (retPacket trackNo o) packet
         Just SummaryHeader -> do
-             (trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
-             return $ maybe (cf, []) (retSummary trackNo o) summary
+             (!trackNo, summary) <- OffI.convOffset $ readSummaryBlock (cfSpecs cf)
+             return $! maybe (cf, []) (retSummary trackNo o) summary
         _ -> return (cf, [])
     where
         retPacket trackNo o p = (cf', [Offset o (Block cf' trackNo (BlockPacket p))])
             where
                 ms = toMS <$> (flip timeStampFromSO) (packetSOExit p) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
-                cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
+                !cfO' = offs' ms o (cfOffsets cf)
+                cf' = cf { cfOffsets = cfO' }
         retSummary trackNo o (ZoomSummarySO s) =
             (cf', [Offset o (Block cf' trackNo (BlockSummary (ZoomSummarySO s)))])
             where
                 ms = toMS <$> (flip timeStampFromSO) (summarySOExit s) <$> r
                 r = specRate <$> IM.lookup trackNo (cfSpecs cf)
-                cf' = cf { cfOffsets = offs' ms o (cfOffsets cf) }
+                !cfO' = offs' ms o (cfOffsets cf)
+                cf' = cf { cfOffsets = cfO' }
 
         toMS :: TimeStamp -> Int
         toMS (TS ts) = floor . (* 1000.0) $ ts
@@ -353,6 +359,7 @@ iterBlock cf = do
             where
                 f Nothing   = Just o
                 f (Just o0) = Just (min o0 o)
+{-# INLINE iterBlock #-}
 
 -- | An iteratee of zoom-cache data, after global and track headers
 -- have been read, or if the 'CacheFile' has been acquired elsewhere.
@@ -360,6 +367,7 @@ enumBlock :: (Functor m, MonadIO m)
           => CacheFile
           -> I.Enumeratee (Offset ByteString) [Offset Block] m a
 enumBlock = I.unfoldConvStreamCheck I.eneeCheckIfDonePass iterBlock
+{-# INLINE enumBlock #-}
 
 -- | A version of enumBlock which won't fail with an EofException if the last
 -- bit is incomplete (perhaps still being written to).
@@ -602,6 +610,7 @@ readSummaryBlockData specs trackNo lvl entryTime exitTime byteLength =
         readSummaryAs :: (ZoomReadable a, Functor m, Monad m)
                       => a -> Iteratee ByteString m (SummaryData a)
         readSummaryAs = const readSummary
+{-# INLINE readSummaryBlockData #-}
 
 
 ----------------------------------------------------------------------
