@@ -36,7 +36,6 @@ module Data.Iteratee.ZoomCache.Utils (
 import Control.Applicative ((<$>))
 import Control.Monad (msum)
 import Data.Bits
-import qualified Data.ByteString as B
 import Data.ByteString (ByteString)
 import Data.Int
 import Data.Iteratee (Iteratee)
