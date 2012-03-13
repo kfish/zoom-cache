@@ -3,5 +3,6 @@ language: haskell
 install:
   - cabal update
   - cabal install c2hs
+  - export PATH="~/.cabal/bin:$PATH"
   - cabal install
 
