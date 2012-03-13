@@ -2,5 +2,6 @@ language: haskell
 
 install:
   - cabal update
+  - cabal install c2hs
   - cabal install
 
