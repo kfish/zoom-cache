@@ -164,7 +164,7 @@ Test-suite tests
     base >= 3 && < 6,
     blaze-builder,
     iteratee                   >= 0.8.7.6 && < 0.9,
-    test-framework             >= 0.3.3 && < 0.5,
+    test-framework             >= 0.3.3 && < 0.5.0,
     test-framework-quickcheck2 >= 0.2.9 && < 0.3,
     QuickCheck                 >= 2.4.0.1,
     random                     == 1.0.*,
