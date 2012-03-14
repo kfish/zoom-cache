@@ -1,6 +1,8 @@
 zoom-cache: A streamable, seekable, zoomable cache file format
 ==============================================================
 
+[![Build Status](https://secure.travis-ci.org/kfish/zoom-cache.png)](http://travis-ci.org/kfish/zoom-cache)
+
 These are some of the goals of the zoom-cache format:
 
 Writing
