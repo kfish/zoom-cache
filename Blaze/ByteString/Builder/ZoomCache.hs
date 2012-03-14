@@ -86,7 +86,7 @@ fromIntegerVLC x0 = enc x1 `mappend` buildVLC xHi
         -- the top (len-n) bits and (the lower n bits with the
         -- extension bit set if any of the top (len-n) bits are
         -- non-zero). We assume n < 8.
-        bCont :: Bits a => Int -> a -> (a, a)
+        bCont :: (Num a, Bits a) => Int -> a -> (a, a)
         bCont n v 
             | hi == 0   = (hi, lo)
             | otherwise = (hi, lo .|. (2^n))
