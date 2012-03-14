@@ -1,7 +1,6 @@
 language: haskell
 
 install:
-  - cabal update
-  - cabal install c2hs test-framework-quickcheck2
-  - PATH="$HOME/.cabal/bin:$PATH" cabal install
+  - cabal install test-framework-quickcheck2
+  - cabal install
 
