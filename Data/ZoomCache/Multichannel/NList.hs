@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
@@ -90,17 +91,19 @@ mkTrackTypeNList (NList nv l) = mconcat
 prettyPacketNList :: (Nat n, ZoomReadable a) => NList n a -> String
 prettyPacketNList (NList _ l) = "[" ++ (concat $ intersperse "," (map prettyRaw l)) ++ "]"
 
-readNList :: (Functor m, Monad m, Nat n, ZoomReadable a)
+readNList :: forall m n a. (Functor m, Monad m, Nat n, ZoomReadable a)
           => Iteratee ByteString m (NList n a)
 readNList = NList unify <$> replicateM (toInt unify) readRaw
     where
+        unify :: n
         unify = undefined
 
-readSummaryNList :: (Functor m, Monad m, Nat n, ZoomReadable a)
+readSummaryNList :: forall m n a. (Functor m, Monad m, Nat n, ZoomReadable a)
                  => Iteratee ByteString m (SummaryData (NList n a))
 readSummaryNList = SummaryNList .
     NList unify <$> replicateM (toInt unify) readSummary
     where
+        unify :: n
         unify = undefined
 
 prettySummaryNList :: (Nat n, ZoomReadable a) => SummaryData (NList n a) -> String
@@ -130,11 +133,12 @@ instance (Nat n, ZoomWritable a) => ZoomWritable (NList n a) where
 fromNList :: ZoomWritable a => (NList n a) -> Builder
 fromNList (NList _ l) = mconcat $ map fromRaw l
 
-initSummaryNList :: (Nat n, ZoomWritable a)
+initSummaryNList :: forall n a. (Nat n, ZoomWritable a)
                  => SampleOffset -> SummaryWork (NList n a)
 initSummaryNList entry = SummaryWorkNList $
     NList unify (replicate (toInt unify) (initSummaryWork entry))
     where
+        unify :: n
         unify = undefined
 
 mkSummaryNList :: ZoomWritable a
