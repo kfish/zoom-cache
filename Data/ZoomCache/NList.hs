@@ -41,9 +41,10 @@ instance Typeable a => Typeable (NList n a) where
     typeOf _ = mkTyConApp (mkTyCon "Data.ZoomCache.NList") [typeOf (undefined :: a)]
 #endif
 
-instance (Nat n, Arbitrary a) => Arbitrary (NList n a) where
+instance forall n a. (Nat n, Arbitrary a) => Arbitrary (NList n a) where
     arbitrary = NList unify <$> sequence [ arbitrary | _ <- [1..(toInt unify)] ]
         where
+            unify :: n
             unify = undefined
 
 nListToList :: NList n a -> [a]

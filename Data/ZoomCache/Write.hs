@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -508,6 +509,9 @@ appendSummarySO s1 s2 = SummarySO
 
 ------------------------------------------------------------
 
+#if !MIN_VERSION_base(4,5,0)
+
 (<>) :: Monoid a => a -> a -> a
 (<>) = mappend
 
+#endif
