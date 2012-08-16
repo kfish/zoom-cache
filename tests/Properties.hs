@@ -79,7 +79,7 @@ roundTripNListD7Double = roundTrip
 ----------------------------------------------------------------------
 -- * Delta encoding roundtrips
 
-deltaEncDec :: Num a => [a] -> Bool
+deltaEncDec :: (Eq a, Num a) => [a] -> Bool
 deltaEncDec xs = xs == encDec
     where
         encDec = deltaDecode (deltaEncode xs)
