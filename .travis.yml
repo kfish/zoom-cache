@@ -2,5 +2,5 @@ language: haskell
 
 install:
   - cabal install c2hs test-framework-quickcheck2
-  - cabal install
+  - cabal install --enable-tests
 
