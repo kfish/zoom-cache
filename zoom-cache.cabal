@@ -168,7 +168,7 @@ Test-suite tests
     test-framework-quickcheck2 >= 0.2.9 && < 0.3,
     QuickCheck                 >= 2.4.0.1,
     random                     == 1.0.*,
-    transformers               >= 0.2     && < 0.6,
+    transformers               >= 0.2     && < 0.4,
     type-level,
     unix,
     zoom-cache
